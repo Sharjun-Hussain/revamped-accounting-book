@@ -1,7 +1,7 @@
 "use client"; // Required for useState
 
 import { useState } from "react";
-import { columns } from "@/components/employees/columns";
+import { columns } from "@/components/members/columns";
 import { DataTable } from "@/components/general/data-table";
 import { Button } from "@/components/ui/button";
 import {

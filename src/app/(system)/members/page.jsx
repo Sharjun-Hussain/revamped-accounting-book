@@ -1,4 +1,4 @@
-import EmployeesPage from "@/components/employees/employee-management";
+import EmployeesPage from "@/components/members/employee-management";
 import React from "react";
 
 const page = () => {
@@ -8,6 +8,6 @@ const page = () => {
 export default page;
 
 export const metadata = {
-  title: "Employees | EMI-POS  ",
+  title: "Members | Masjidh Accounting System ",
   description: "Developed By : Inzeedo (PVT) Ltd.",
 };

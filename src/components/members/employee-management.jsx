@@ -1,7 +1,7 @@
 "use client"; // Required for useState
 
 import { useState } from "react";
-import { columns } from "@/components/employees/columns";
+import { columns } from "@/components/members/columns";
 import { DataTable } from "@/components/general/data-table";
 import { Button } from "@/components/ui/button";
 import {
@@ -103,7 +103,6 @@ const EmployeeBulkActions = ({ table }) => {
   const handleDelete = () => {
     const selectedIds = selectedRows.map((row) => row.original.id);
     console.log("Deleting employees:", selectedIds);
-    // Add your API call logic here
     table.resetRowSelection();
   };
 

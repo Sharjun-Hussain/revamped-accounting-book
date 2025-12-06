@@ -1,4 +1,4 @@
-import { EmployeeForm } from "@/components/employees/new/employee-add-new-form";
+import { EmployeeForm } from "@/components/members/new/employee-add-new-form";
 
 // Mock data for dropdowns, which would normally come from an API
 const mockCategories = [
