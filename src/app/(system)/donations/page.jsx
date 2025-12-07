@@ -1,13 +1,13 @@
-import MembersPage from "@/components/members/members-management";
+import DonationsPage from "@/components/donations/donation-management";
 import React from "react";
 
 const page = () => {
-  return <MembersPage />;
+  return <DonationsPage />;
 };
 
 export default page;
 
 export const metadata = {
-  title: "Members | Masjidh Accounting System ",
+  title: "Donations | Masjidh Accounting System ",
   description: "Developed By : Inzeedo (PVT) Ltd.",
 };

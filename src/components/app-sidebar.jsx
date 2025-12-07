@@ -2,22 +2,21 @@
 
 import * as React from "react";
 import {
-  AudioWaveform,
   BookOpen,
   Bot,
   ChartPie,
-  Command,
   Frame,
-  GalleryVerticalEnd,
-  Map,
-  Origami,
-  PanelsTopLeft,
-  PieChart,
-  Settings,
   Settings2,
-  SquareTerminal,
   Users,
-  UsersRoundIcon,
+  LayoutDashboard,
+  Receipt,
+  HandCoins,
+  Wallet,
+  FileText,
+  AlertCircle,
+  ShieldCheck,
+  Landmark,
+  CreditCard,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -44,149 +43,112 @@ export function AppSidebar({ ...props }) {
     },
     teams: [
       {
-        name: "EMI POS",
-        logo: GalleryVerticalEnd,
-        plan: "Enterprise",
+        name: "Masjid Admin",
+        logo: Landmark, 
+        plan: "Accounting",
       },
     ],
+    // Collapsible Sections
     navMain: [
       {
-        title: "Configuration",
+        title: "Sanda Management",
         url: "#",
-        icon: Settings2,
+        icon: CreditCard,
         items: [
           {
-            title: "Main Category",
-            url: "/main-category",
+            title: "Collect Payment", // Quick link to record a payment
+            url: "/billing/create",
           },
           {
-            title: "Sub Category",
-            url: "/sub-category",
+            title: "Payment History",
+            url: "/billing/history",
           },
           {
-            title: "Brand",
-            url: "/brand",
+            title: "Monthly Bills", // Generated bills view
+            url: "/billing/invoices",
           },
           {
-            title: "Branch",
-            url: "/branches",
-          },
-
-          {
-            title: "Account Detail",
-            url: "#",
-          },
-          {
-            title: "Expense Type",
-            url: "#",
-          },
-          {
-            title: "Unit Measurement",
-            url: "/unit-measurement",
-          },
-          {
-            title: "Unit",
-            url: "/units",
-          },
-          {
-            title: "Containers",
-            url: "/containers",
+            title: "Outstanding / Arrears", // Who hasn't paid
+            url: "/billing/outstanding",
           },
         ],
       },
       {
-        title: "Products",
+        title: "Accounting",
         url: "#",
-        icon: Settings,
+        icon: Wallet,
         items: [
           {
-            title: "Product List",
-            url: "/products",
+            title: "Expenses",
+            url: "/accounting/expenses",
           },
-
-          // {
-          //   title: "Inventory / Stock",
-          //   url: "/products/inventory",
-          // },
           {
-            title: "Barcodes",
-            url: "/barcode",
+            title: "Expense Categories", // Electricity, Salary, Maintenance
+            url: "/accounting/categories",
+          },
+          {
+            title: "Income Summary",
+            url: "/accounting/income",
+          },
+          {
+            title: "Bank Accounts", // Optional: If managing bank deposits
+            url: "/accounting/bank",
           },
         ],
       },
-      // {
-      //   title: "Analytics",
-      //   url: "#",
-      //   icon: ChartPie,
-      //   items: [
-      //     {
-      //       title: "Sales Reports",
-      //       url: "/analytics/sales-reports",
-      //     },
-
-      //     {
-      //       title: "Inventory Reports",
-      //       url: "/analytics/inventory-reports",
-      //     },
-      //   ],
-      // },
     ],
+    // Flat Lists for High-Frequency Access
     Core: [
       {
-        name: "Employees",
-        url: "/employees",
-        icon: Frame,
+        name: "Dashboard",
+        url: "/",
+        icon: LayoutDashboard,
       },
       {
-        name: "Customers",
-        url: "#",
-        icon: PieChart,
-      },
-    ],
-    Purchase: [
-      {
-        name: "Suppliers",
-        url: "/purchase/suppliers",
-        icon: UsersRoundIcon,
-      },
-      {
-        name: "Purchase Orders",
-        url: "/purchase/purchase-orders",
-        icon: Bot,
-      },
-      // {
-      //   name: "Good Received Notes",
-      //   url: "/good-received-notes",
-      //   icon: Command,
-      // },
-    ],
-    Settings: [
-      {
-        name: "Reports",
-        url: "/reports",
-        icon: ChartPie,
-      },
-      {
-        name: "Settings",
-        url: "/settings",
-        icon: Settings,
-      },
-      {
-        name: "Organizations",
-        url: "/organizations",
-        icon: Origami,
-      },
-      {
-        name: "Internal Users",
-        url: "/users",
+        name: "Members Registry",
+        url: "/members",
         icon: Users,
       },
     ],
-    pos: [
+    Donations: [
       {
-        name: "Point of Sale",
-        url: "/pos",
-        icon: AudioWaveform,
+        name: "Donations List",
+        url: "/donations",
+        icon: HandCoins,
+      },
+      {
+        name: "Donors",
+        url: "/donations/donors",
+        icon: Bot, 
+      },
+    ],
+    Reports: [
+      {
+        name: "Financial Reports", // Income vs Expense
+        url: "/reports/financial",
+        icon: ChartPie,
+      },
+      {
+        name: "Member Statements",
+        url: "/reports/members",
+        icon: FileText,
+      },
+      {
+        name: "Audit Logs",
+        url: "/reports/audit-logs",
+        icon: ShieldCheck,
+      },
+    ],
+    Settings: [
+      {
+        name: "System Settings",
+        url: "/settings",
+        icon: Settings2,
+      },
+      {
+        name: "User Roles (RBAC)",
+        url: "/users",
+        icon: Frame,
       },
     ],
   };
@@ -197,12 +159,16 @@ export function AppSidebar({ ...props }) {
         <TeamSwitcher teams={data.teams} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavProjects projects={data.pos} type="pos" />
-        <NavProjects projects={data.Core} label="Users Management" />
-        <NavProjects projects={data.Purchase} label="Purchases" />
+     
+        <NavProjects projects={data.Core} label="Overview" />
+        
 
-        <NavProjects projects={data.Settings} label="Internal Setings" />
+        <NavMain items={data.navMain} />
+        
+        <NavProjects projects={data.Donations} label="Donations" />
+
+        <NavProjects projects={data.Reports} label="Reporting" />
+        <NavProjects projects={data.Settings} label="Administration" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />
