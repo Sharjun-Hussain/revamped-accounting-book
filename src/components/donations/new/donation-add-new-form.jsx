@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -46,6 +46,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { JoinedDatePicker } from "./JoinedDatePicker";
 import { Badge } from "@/components/ui/badge";
+import { donationService } from "@/services/donationService";
+import { memberService } from "@/services/memberService";
 
 // --- CONFIGURATION ---
 const MOSQUE_DETAILS = {
@@ -62,10 +64,16 @@ const fundTypes = [
   { id: "Jummah", name: "Friday Collection", icon: Users, color: "bg-purple-100 text-purple-700 border-purple-200" },
 ];
 
-const mockMembers = [
-  { id: "M-001", name: "Abdul Rahman", phone: "0771234567" },
-  { id: "M-002", name: "Mohamed Fazil", phone: "0719876543" },
-];
+// ... (keep other imports)
+
+// Remove mockMembers
+// const mockMembers = ... 
+
+// Inside component
+// const [members, setMembers] = useState([]);
+
+// Fetch members on mount
+// useState(() => { ... }, []);
 
 // --- THERMAL RECEIPT COMPONENT ---
 const ThermalReceipt = ({ data }) => {
@@ -154,23 +162,38 @@ const formSchema = z.object({
   autoPrint: z.boolean().default(false),
 });
 
-export default function DonationEntryWithPrint() {
+export default function DonationEntryWithPrint({ initialData }) {
   const [recentEntries, setRecentEntries] = useState([]);
   const [printData, setPrintData] = useState(null);
   const [openMemberSearch, setOpenMemberSearch] = useState(false);
+  const [members, setMembers] = useState([]); // Real members state
   const guestInputRef = useRef(null); 
+  const isEditMode = !!initialData;
+
+  // Fetch members on mount
+  useEffect(() => {
+      const fetchMembers = async () => {
+          try {
+              const data = await memberService.getAll();
+              setMembers(data);
+          } catch (error) {
+              console.error("Failed to fetch members", error);
+          }
+      };
+      fetchMembers();
+  }, []);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      donorType: "guest",
-      memberId: "",
-      donorName: "",
-      amount: "",
-      date: new Date(),
-      purpose: "General",
-      paymentMethod: "Cash",
-      isAnonymous: false,
+      donorType: initialData?.donorType || "guest",
+      memberId: initialData?.memberId || "",
+      donorName: initialData?.donorName || "",
+      amount: initialData?.amount || "",
+      date: initialData?.date ? new Date(initialData.date) : new Date(),
+      purpose: initialData?.purpose || "General",
+      paymentMethod: initialData?.paymentMethod || "Cash",
+      isAnonymous: initialData?.isAnonymous || false,
       autoPrint: false, 
     },
   });
@@ -186,45 +209,75 @@ export default function DonationEntryWithPrint() {
     }, 100);
   };
 
-  function onSubmit(data) {
+  async function onSubmit(data) {
     let displayName = "Anonymous";
     if (!data.isAnonymous) {
         if (data.donorType === "member") {
-            const member = mockMembers.find(m => m.id === data.memberId);
+            const member = members.find(m => m.id === data.memberId);
             displayName = member ? member.name : "Unknown Member";
         } else {
             displayName = data.donorName || "Guest";
         }
     }
 
-    const newEntry = {
-      id: Date.now(),
-      name: displayName,
-      memberId: data.donorType === 'member' ? data.memberId : null,
-      amount: data.amount,
-      purpose: data.purpose,
-      type: data.donorType,
-      paymentMethod: data.paymentMethod,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
+    try {
+        let newEntry;
+        if (isEditMode) {
+            newEntry = await donationService.update(initialData.id, {
+                amount: data.amount,
+                date: data.date,
+                purpose: data.purpose,
+                paymentMethod: data.paymentMethod,
+                isAnonymous: data.isAnonymous,
+                donorType: data.donorType,
+                donorName: data.donorName,
+                memberId: data.memberId,
+            });
+            toast.success("Donation Updated Successfully");
+        } else {
+            newEntry = await donationService.create({
+                amount: data.amount,
+                date: data.date,
+                purpose: data.purpose,
+                paymentMethod: data.paymentMethod,
+                isAnonymous: data.isAnonymous,
+                donorType: data.donorType,
+                donorName: data.donorName,
+                memberId: data.memberId,
+                // bankAccountId: selectedBankAccountId // TODO: Add bank account selector if needed
+            });
+            toast.success("Saved Successfully");
+        }
 
-    setRecentEntries([newEntry, ...recentEntries]);
-    toast.success("Saved Successfully");
+        // Add display fields for UI
+        const entryForUI = {
+            ...newEntry,
+            name: displayName,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            type: data.donorType
+        };
 
-    if (data.autoPrint) {
-        triggerPrint(newEntry);
-    }
+        setRecentEntries([entryForUI, ...recentEntries]);
+        toast.success("Saved Successfully");
 
-    form.reset({
-      ...data,
-      amount: "",
-      memberId: "",
-      donorName: "",
-      isAnonymous: false,
-    });
+        if (data.autoPrint) {
+            triggerPrint(entryForUI);
+        }
 
-    if (data.donorType === "guest") {
-        setTimeout(() => guestInputRef.current?.focus(), 100);
+        form.reset({
+            ...data,
+            amount: "",
+            memberId: "",
+            donorName: "",
+            isAnonymous: false,
+        });
+
+        if (data.donorType === "guest") {
+            setTimeout(() => guestInputRef.current?.focus(), 100);
+        }
+    } catch (error) {
+        console.error("Error saving donation:", error);
+        toast.error("Failed to save donation");
     }
   }
 
@@ -247,7 +300,7 @@ export default function DonationEntryWithPrint() {
                     <div className="p-2 bg-emerald-600 rounded-lg text-white">
                         <HandCoins className="w-5 h-5" />
                     </div>
-                    Donation Entry
+                    {isEditMode ? "Edit Donation" : "Donation Entry"}
                 </h2>
                 <div className="flex items-center gap-2">
                     <FormField
@@ -358,7 +411,7 @@ export default function DonationEntryWithPrint() {
                                         <PopoverTrigger asChild>
                                             <FormControl>
                                             <Button variant="outline" role="combobox" className={cn("w-full justify-between h-12 text-base bg-white", !field.value && "text-muted-foreground")}>
-                                                {field.value ? mockMembers.find((m) => m.id === field.value)?.name : "Select member..."}
+                                                {field.value ? members.find((m) => m.id === field.value)?.name : "Select member..."}
                                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                             </Button>
                                             </FormControl>
@@ -369,10 +422,17 @@ export default function DonationEntryWithPrint() {
                                             <CommandList>
                                                 <CommandEmpty>No member found.</CommandEmpty>
                                                 <CommandGroup>
-                                                {mockMembers.map((member) => (
-                                                    <CommandItem value={member.name} key={member.id} onSelect={() => { form.setValue("memberId", member.id); setOpenMemberSearch(false); }}>
+                                                {members.map((member) => (
+                                                    <CommandItem 
+                                                        value={`${member.name} ${member.contact || member.phone || ''}`} 
+                                                        key={member.id} 
+                                                        onSelect={() => { form.setValue("memberId", member.id); setOpenMemberSearch(false); }}
+                                                    >
                                                     <Check className={cn("mr-2 h-4 w-4", member.id === field.value ? "opacity-100" : "opacity-0")} />
-                                                    {member.name}
+                                                    <div className="flex flex-col">
+                                                        <span>{member.name}</span>
+                                                        <span className="text-xs text-muted-foreground">{member.contact || member.phone}</span>
+                                                    </div>
                                                     </CommandItem>
                                                 ))}
                                                 </CommandGroup>
@@ -419,7 +479,7 @@ export default function DonationEntryWithPrint() {
 
                     <Button type="submit" size="lg" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg shadow-md shadow-emerald-100 h-14">
                         <Save className="w-5 h-5 mr-2" /> 
-                        Save & {autoPrint ? 'Print' : 'Next'}
+                        {isEditMode ? 'Update Donation' : (autoPrint ? 'Save & Print' : 'Save & Next')}
                     </Button>
                 </div>
               </div>

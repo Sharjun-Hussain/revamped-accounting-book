@@ -30,6 +30,11 @@ import {
   DropdownMenuLabel
 } from "@/components/ui/dropdown-menu";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -49,45 +54,12 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 // Import Shared PDF Utility
 import { exportToPDF, exportToCSV } from "@/lib/export-utils"; 
 
-// --- 1. MOCK DATA ---
-const mockArrears = [
-  { 
-    id: "M-001", 
-    name: "Abdul Rahman", 
-    phone: "94771234567", 
-    arrears: 5000, 
-    months_due: 5, 
-    last_paid: "2024-07-15",
-    status: "Active" 
-  },
-  { 
-    id: "M-003", 
-    name: "Yusuf Khan", 
-    phone: "94755551234", 
-    arrears: 12000, 
-    months_due: 12, 
-    last_paid: "2023-12-01",
-    status: "Active" 
-  },
-  { 
-    id: "M-004", 
-    name: "Zaid Ahmed", 
-    phone: "94761112222", 
-    arrears: 1000, 
-    months_due: 1, 
-    last_paid: "2024-11-10",
-    status: "Active" 
-  },
-  { 
-    id: "M-008", 
-    name: "Farook Hameed", 
-    phone: "94718889999", 
-    arrears: 2500, 
-    months_due: 2, 
-    last_paid: "2024-10-05",
-    status: "Moved" 
-  },
-];
+import { accountingService } from "@/services/accountingService";
+import { toast } from "sonner";
+
+import { BillingSkeleton } from "@/components/billing/BillingSkeleton";
+
+// --- MOCK DATA REMOVED ---
 
 // --- 2. ACTION HANDLERS ---
 
@@ -160,14 +132,37 @@ const columns = [
     header: "Pending Duration",
     cell: ({ row }) => {
         const count = row.getValue("months_due");
+        const details = row.original.details || [];
+        
         return (
-            <Badge variant="outline" className={
-                count >= 6 ? "bg-rose-50 text-rose-700 border-rose-200" :
-                count >= 3 ? "bg-amber-50 text-amber-700 border-amber-200" :
-                "bg-slate-50 text-slate-700 border-slate-200"
-            }>
-                {count} Months
-            </Badge>
+            <Popover>
+                <PopoverTrigger asChild>
+                    <Badge variant="outline" className={`cursor-pointer hover:bg-slate-100 ${
+                        count >= 6 ? "bg-rose-50 text-rose-700 border-rose-200" :
+                        count >= 3 ? "bg-amber-50 text-amber-700 border-amber-200" :
+                        "bg-slate-50 text-slate-700 border-slate-200"
+                    }`}>
+                        {count} Months
+                    </Badge>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-3">
+                    <div className="space-y-2">
+                        <h4 className="font-medium text-sm text-slate-900 border-b pb-1 mb-2">Unpaid Months</h4>
+                        {details.length > 0 ? (
+                            <div className="max-h-[200px] overflow-y-auto space-y-1">
+                                {details.map((inv, i) => (
+                                    <div key={i} className="flex justify-between text-xs">
+                                        <span className="text-slate-600">{inv.period}</span>
+                                        <span className="font-mono font-medium text-rose-600">Rs. {inv.balance.toLocaleString()}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-xs text-slate-500">No details available</p>
+                        )}
+                    </div>
+                </PopoverContent>
+            </Popover>
         )
     }
   },
@@ -215,12 +210,33 @@ const columns = [
   },
 ];
 
+
+  
 export default function ArrearsPage() {
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
+  const [arrearsData, setArrearsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchArrears = async () => {
+    try {
+        setLoading(true);
+        const data = await accountingService.getOutstandingArrears();
+        setArrearsData(data);
+    } catch (error) {
+        console.error("Error fetching arrears:", error);
+        toast.error("Failed to load outstanding arrears");
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  useState(() => {
+    fetchArrears();
+  }, []);
   
   const table = useReactTable({
-    data: mockArrears,
+    data: arrearsData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -233,8 +249,25 @@ export default function ArrearsPage() {
 
   // Export Full List
   const handleExportList = () => {
-    exportToCSV(mockArrears, "arrears_list.csv");
+    // Flatten data for CSV
+    const exportData = arrearsData.map(m => {
+        const months = m.details ? m.details.map(d => `${d.period} (${d.balance})`).join("; ") : "";
+        return {
+            "Member ID": m.id,
+            "Name": m.name,
+            "Phone": m.phone,
+            "Total Arrears": m.arrears,
+            "Months Count": m.months_due,
+            "Unpaid Months Details": months,
+            "Status": m.status
+        };
+    });
+    exportToCSV(exportData, "arrears_list_detailed.csv");
   };
+
+  if (loading) {
+    return <BillingSkeleton />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 relative">
@@ -267,8 +300,8 @@ export default function ArrearsPage() {
                     <Wallet className="h-4 w-4 text-rose-600" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold text-slate-900">Rs. 20,500</div>
-                    <p className="text-xs text-rose-600 mt-1">Across 4 members</p>
+                    <div className="text-2xl font-bold text-slate-900">Rs. {arrearsData.reduce((sum, m) => sum + m.arrears, 0).toLocaleString()}</div>
+                    <p className="text-xs text-rose-600 mt-1">Across {arrearsData.length} members</p>
                 </CardContent>
              </Card>
              <Card className="rounded-xl border-slate-200 shadow-sm">
@@ -277,7 +310,7 @@ export default function ArrearsPage() {
                     <AlertCircle className="h-4 w-4 text-amber-500" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold text-slate-900">1 Member</div>
+                    <div className="text-2xl font-bold text-slate-900">{arrearsData.filter(m => m.months_due > 6).length} Members</div>
                     <p className="text-xs text-slate-500 mt-1">Needs immediate attention</p>
                 </CardContent>
              </Card>

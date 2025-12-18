@@ -3,12 +3,11 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
-
-// Form & Validation
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
 import * as z from "zod";
 
 // Icons
@@ -42,6 +41,8 @@ const loginSchema = z.object({
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
   const [showPassword, setShowPassword] = useState(false);
   const [globalError, setGlobalError] = useState(null);
 
@@ -67,7 +68,7 @@ export default function LoginPage() {
         setGlobalError("Invalid email or password.");
         form.setValue("password", "");
       } else {
-        router.push("/dashboard");
+        router.push(callbackUrl);
         router.refresh();
       }
     } catch (error) {

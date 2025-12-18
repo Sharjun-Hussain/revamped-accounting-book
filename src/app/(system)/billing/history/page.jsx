@@ -60,13 +60,12 @@ import { DataTable } from "@/components/general/data-table";
 import { exportToCSV, exportToPDF } from "@/lib/export-utils";
 import { cn } from "@/lib/utils";
 
-// --- MOCK DATA ---
-const mockPayments = [
-  { id: "REC-88502", member_id: "M-001", name: "Abdul Rahman", amount: 3000, date: "2025-12-05T10:30:00", method: "Cash", months_covered: ["Oct", "Nov", "Dec"], status: "Valid" },
-  { id: "REC-88501", member_id: "M-002", name: "Mohamed Fazil", amount: 2000, date: "2025-12-04T14:15:00", method: "Bank Transfer", months_covered: ["Dec"], status: "Valid" },
-  { id: "REC-88500", member_id: "M-004", name: "Zaid Ahmed", amount: 1000, date: "2025-12-01T09:00:00", method: "Cash", months_covered: ["Nov"], status: "Voided" },
-  { id: "REC-88499", member_id: "M-003", name: "Yusuf Khan", amount: 12000, date: "2025-11-28T16:45:00", method: "Online", months_covered: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"], status: "Valid" },
-];
+import { accountingService } from "@/services/accountingService";
+import { toast } from "sonner";
+
+import { BillingSkeleton } from "@/components/billing/BillingSkeleton";
+
+// --- MOCK DATA REMOVED ---
 
 // --- COLUMNS ---
 const columns = [
@@ -145,8 +144,33 @@ export default function PaymentHistoryPage() {
   // DATE RANGE STATE
   const [dateRange, setDateRange] = useState(undefined);
 
+  const [payments, setPayments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Fetch Payments
+  const fetchPayments = async () => {
+    try {
+        setLoading(true);
+        const params = {};
+        if (dateRange?.from) params.from = dateRange.from.toISOString();
+        if (dateRange?.to) params.to = dateRange.to.toISOString();
+        
+        const data = await accountingService.getPaymentHistory(params);
+        setPayments(data);
+    } catch (error) {
+        console.error("Error fetching payments:", error);
+        toast.error("Failed to load payment history");
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  useState(() => {
+    fetchPayments();
+  }, [dateRange]);
+
   const table = useReactTable({
-    data: mockPayments,
+    data: payments,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -210,6 +234,10 @@ export default function PaymentHistoryPage() {
         exportToPDF(columns, pdfData, "Payment History Report", "payment_report.pdf");
     }
   };
+
+  if (loading) {
+    return <BillingSkeleton />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 relative">

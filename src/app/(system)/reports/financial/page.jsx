@@ -54,9 +54,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { accountingService } from "@/services/accountingService";
+import { toast } from "sonner";
 
 // Import Shared PDF Utility
 import { generateFinancialPDF } from "@/lib/report-generator";
+import { FinancialReportSkeleton } from "@/components/reports/FinancialReportSkeleton";
 
 // --- DATA & THEME ---
 const THEME = {
@@ -67,60 +70,7 @@ const THEME = {
   gold: "#f59e0b",
 };
 
-const financialSummary = {
-  totalIncome: 1250000,
-  totalExpense: 850000,
-  netSurplus: 400000,
-  cashOnHand: 150000,
-  bankBalance: 850000,
-  pendingBills: 45000,
-};
-
-const incomeStatementData = {
-  income: [
-    { category: "Sanda Collections", amount: 650000 },
-    { category: "General Donations", amount: 350000 },
-    { category: "Jummah Collections", amount: 150000 },
-    { category: "Zakat Fund", amount: 100000 },
-  ],
-  expenses: [
-    { category: "Staff Salaries", amount: 450000 },
-    { category: "Utilities (Elec/Water)", amount: 120000 },
-    { category: "Maintenance & Repairs", amount: 80000 },
-    { category: "Charity Distributions", amount: 150000 },
-    { category: "Events & Refreshments", amount: 50000 },
-  ],
-};
-
-const balanceSheetData = {
-  assets: [
-    { name: "Cash on Hand", value: 150000 },
-    { name: "Bank Accounts", value: 850000 },
-    { name: "Fixed Assets", value: 5000000 },
-    { name: "Furniture & Equipment", value: 450000 },
-  ],
-  liabilities: [
-    { name: "Accounts Payable", value: 45000 },
-    { name: "Restricted Funds (Zakat)", value: 150000 },
-  ],
-  equity: [{ name: "General Fund Balance", value: 6255000 }],
-};
-
-const monthlyPerformance = [
-  { name: "Aug", Income: 400000, Expense: 380000 },
-  { name: "Sep", Income: 420000, Expense: 350000 },
-  { name: "Oct", Income: 450000, Expense: 400000 },
-  { name: "Nov", Income: 580000, Expense: 420000 },
-  { name: "Dec", Income: 520000, Expense: 390000 },
-];
-
-const expenseBreakdown = [
-  { name: "Salaries", value: 450000, color: THEME.slate },
-  { name: "Utilities", value: 120000, color: THEME.gold },
-  { name: "Charity", value: 150000, color: THEME.emerald },
-  { name: "Maint.", value: 80000, color: "#64748b" },
-  { name: "Events", value: 50000, color: THEME.teal },
-];
+// --- MOCK DATA REMOVED ---
 
 export default function FinancialReportsPage() {
   const [dateRange, setDateRange] = useState({
@@ -129,6 +79,48 @@ export default function FinancialReportsPage() {
   });
   const [activeTab, setActiveTab] = useState("dashboard");
   const [reportMonth, setReportMonth] = useState("December 2025");
+  
+  const [financialSummary, setFinancialSummary] = useState({
+    totalIncome: 0, totalExpense: 0, netSurplus: 0, cashOnHand: 0, bankBalance: 0, pendingBills: 0
+  });
+  const [incomeStatementData, setIncomeStatementData] = useState({ income: [], expenses: [] });
+  const [balanceSheetData, setBalanceSheetData] = useState({ assets: [], liabilities: [], equity: [] });
+  const [monthlyPerformance, setMonthlyPerformance] = useState([]);
+  const [expenseBreakdown, setExpenseBreakdown] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchReportData = async () => {
+      setLoading(true);
+      try {
+          const params = {};
+          if (dateRange?.from) params.from = dateRange.from.toISOString();
+          if (dateRange?.to) params.to = dateRange.to.toISOString();
+
+          const data = await accountingService.getFinancialReport(params);
+          setFinancialSummary(data.summary);
+          setIncomeStatementData(data.incomeStatement);
+          setBalanceSheetData(data.balanceSheet);
+          setMonthlyPerformance(data.monthlyPerformance);
+          
+          // Generate expense breakdown for pie chart
+          const breakdown = data.incomeStatement.expenses.map((e, i) => ({
+              name: e.category,
+              value: e.amount,
+              color: Object.values(THEME)[i % Object.values(THEME).length]
+          }));
+          setExpenseBreakdown(breakdown);
+
+      } catch (error) {
+          console.error("Failed to fetch report data", error);
+          toast.error("Failed to load financial reports");
+      } finally {
+          setLoading(false);
+      }
+  };
+
+  useState(() => {
+      fetchReportData();
+  }, [dateRange]);
 
   // --- EXPORT HANDLERS ---
 
@@ -320,6 +312,10 @@ export default function FinancialReportsPage() {
       ],
     });
   };
+
+  if (loading) {
+    return <FinancialReportSkeleton />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 relative font-sans">

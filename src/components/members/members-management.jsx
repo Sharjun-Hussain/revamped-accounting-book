@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { memberService } from "@/services/memberService";
 import { motion } from "framer-motion"; // Added animations
 import { columns } from "@/components/members/columns";
 import { DataTable } from "@/components/general/data-table";
@@ -51,57 +52,7 @@ const itemVariants = {
   visible: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 100 } },
 };
 
-// --- Mock Data ---
-const mockMembers = [
-  {
-    id: "mem_1",
-    member_id: "M-001",
-    name: "Abdul Rahman",
-    email: "abdul@example.com",
-    contact: "0771234567",
-    address: "12 Mosque Road, Kandy",
-    payment_frequency: "Monthly",
-    amount_per_cycle: 1000,
-    status: "active",
-    start_date: "2023-01-01",
-  },
-  {
-    id: "mem_2",
-    member_id: "M-002",
-    name: "Mohamed Fazil",
-    email: "fazil@example.com",
-    contact: "0719876543",
-    address: "45 Main Street, Colombo",
-    payment_frequency: "Quarterly",
-    amount_per_cycle: 3000,
-    status: "active",
-    start_date: "2023-03-15",
-  },
-  {
-    id: "mem_3",
-    member_id: "M-003",
-    name: "Yusuf Khan",
-    email: null,
-    contact: "0755551234",
-    address: "88 Hill Top, Kandy",
-    payment_frequency: "Yearly",
-    amount_per_cycle: 12000,
-    status: "inactive",
-    start_date: "2022-11-20",
-  },
-  {
-    id: "mem_4",
-    member_id: "M-004",
-    name: "Zaid Ahmed",
-    email: "zaid@example.com",
-    contact: "0761112222",
-    address: "Apt 4B, City View",
-    payment_frequency: "Monthly",
-    amount_per_cycle: 1000,
-    status: "deceased",
-    start_date: "2020-08-01",
-  },
-];
+// --- Mock Data Removed ---
 
 const MemberBulkActions = ({ table }) => {
   const numSelected = table.getFilteredSelectedRowModel().rows.length;
@@ -156,9 +107,9 @@ const MemberTableToolbar = ({ table, bulkActionsComponent }) => {
 
         {/* Filter by Payment Frequency */}
         <Select
-          value={table.getColumn("payment_frequency")?.getFilterValue() ?? ""}
+          value={table.getColumn("paymentFrequency")?.getFilterValue() ?? ""}
           onValueChange={(value) => {
-            table.getColumn("payment_frequency")?.setFilterValue(value === "all" ? undefined : value);
+            table.getColumn("paymentFrequency")?.setFilterValue(value === "all" ? undefined : value);
           }}
         >
           <SelectTrigger className="w-[160px] bg-slate-50 border-slate-200 focus:ring-emerald-500">
@@ -196,13 +147,31 @@ const MemberTableToolbar = ({ table, bulkActionsComponent }) => {
   );
 };
 
+import { MemberSkeleton } from "@/components/members/MemberSkeleton";
+
 export default function MembersPage() {
   const [isNavigating, setIsNavigating] = useState(false);
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [rowSelection, setRowSelection] = useState({});
+  const [members, setMembers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const data = mockMembers;
+  useEffect(() => {
+    const fetchMembers = async () => {
+      try {
+        const data = await memberService.getAll();
+        setMembers(data);
+      } catch (error) {
+        console.error("Failed to fetch members:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchMembers();
+  }, []);
+
+  const data = members;
 
   const table = useReactTable({
     data,
@@ -220,6 +189,10 @@ export default function MembersPage() {
       rowSelection,
     },
   });
+
+  if (isLoading) {
+    return <MemberSkeleton />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 relative">

@@ -90,6 +90,10 @@ export function AppSidebar({ ...props }) {
             title: "Income Summary",
             url: "/accounting/income",
           },
+           {
+            title: "Other Income",
+            url: "/accounting/other-income",
+          },
           {
             title: "Bank Accounts", // Optional: If managing bank deposits
             url: "/accounting/bank",

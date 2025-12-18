@@ -14,7 +14,8 @@ import {
   Wallet,
   FileSpreadsheet,
   FileText,
-  X
+  X,
+  Coins
 } from "lucide-react";
 import { 
   BarChart, 
@@ -51,6 +52,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel
 } from "@/components/ui/dropdown-menu";
+import { accountingService } from "@/services/accountingService";
+import { toast } from "sonner";
 import {
   Popover,
   PopoverContent,
@@ -69,32 +72,9 @@ import { cn } from "@/lib/utils";
 
 // Import Shared Utilities
 import { exportToCSV, exportToPDF } from "@/lib/export-utils";
+import { AccountingSkeleton } from "@/components/accounting/AccountingSkeleton";
 
-// --- 1. MOCK DATA ---
-const trendData = [
-  { name: 'Aug', Sanda: 45000, Donations: 20000 },
-  { name: 'Sep', Sanda: 48000, Donations: 25000 },
-  { name: 'Oct', Sanda: 52000, Donations: 18000 },
-  { name: 'Nov', Sanda: 50000, Donations: 45000 }, 
-  { name: 'Dec', Sanda: 55000, Donations: 30000 },
-];
-
-const pieData = [
-  { name: 'Sanda (Fees)', value: 250000, color: '#059669' }, 
-  { name: 'General Donations', value: 120000, color: '#0284c7' }, 
-  { name: 'Zakat Fund', value: 85000, color: '#d97706' }, 
-  { name: 'Jummah Collection', value: 45000, color: '#7c3aed' }, 
-];
-
-const mockLedger = [
-  { id: "INC-9001", date: "2025-12-05", source: "Sanda", reference: "Abdul Rahman (M-001)", amount: 3000, method: "Cash", category: "Monthly Fee" },
-  { id: "INC-9002", date: "2025-12-04", source: "Donation", reference: "Mr. Farook", amount: 15000, method: "Bank Transfer", category: "Building Fund" },
-  { id: "INC-9003", date: "2025-12-04", source: "Sanda", reference: "Mohamed Fazil (M-002)", amount: 2000, method: "Online", category: "Monthly Fee" },
-  { id: "INC-9004", date: "2025-12-03", source: "Donation", reference: "Friday Collection", amount: 12450, method: "Cash", category: "Jummah" },
-  { id: "INC-9005", date: "2025-12-01", source: "Sanda", reference: "Yusuf Khan (M-003)", amount: 1500, method: "Cash", category: "Arrears Payment" },
-  { id: "INC-9006", date: "2025-11-20", source: "Donation", reference: "Anonymous", amount: 5000, method: "Cash", category: "General" },
-  { id: "INC-9007", date: "2025-11-15", source: "Sanda", reference: "Zaid Ahmed", amount: 1000, method: "Cash", category: "Monthly Fee" },
-];
+// --- MOCK DATA REMOVED ---
 
 // --- 2. COLUMNS DEFINITION ---
 const columns = [
@@ -119,13 +99,23 @@ const columns = [
     header: "Income Source",
     cell: ({ row }) => {
       const source = row.getValue("source");
+      let badgeClass = "bg-slate-100 text-slate-700 border-slate-200";
+      let Icon = Wallet;
+
+      if (source === "Sanda") {
+        badgeClass = "bg-emerald-50 text-emerald-700 border-emerald-200";
+        Icon = CreditCard;
+      } else if (source === "Donation") {
+        badgeClass = "bg-blue-50 text-blue-700 border-blue-200";
+        Icon = HandCoins;
+      } else if (source === "Other") {
+        badgeClass = "bg-purple-50 text-purple-700 border-purple-200";
+        Icon = Coins;
+      }
+
       return (
-        <Badge variant="outline" className={
-            source === "Sanda" 
-            ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
-            : "bg-blue-50 text-blue-700 border-blue-200"
-        }>
-            {source === "Sanda" ? <CreditCard className="w-3 h-3 mr-1" /> : <HandCoins className="w-3 h-3 mr-1" />}
+        <Badge variant="outline" className={badgeClass}>
+            <Icon className="w-3 h-3 mr-1" />
             {source}
         </Badge>
       );
@@ -157,9 +147,36 @@ export default function IncomeSummaryPage() {
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [dateRange, setDateRange] = useState(undefined);
+  const [transactions, setTransactions] = useState([]);
+  const [stats, setStats] = useState({ total: 0, sanda: 0, donations: 0, other: 0 });
+  const [chartData, setChartData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchIncomeData = async () => {
+      setLoading(true);
+      try {
+          const params = {};
+          if (dateRange?.from) params.from = dateRange.from.toISOString();
+          if (dateRange?.to) params.to = dateRange.to.toISOString();
+
+          const data = await accountingService.getIncomeSummary(params);
+          setTransactions(data.transactions);
+          setStats(data.stats);
+          setChartData(data.chartData);
+      } catch (error) {
+          console.error("Failed to fetch income data", error);
+          toast.error("Failed to load income summary");
+      } finally {
+          setLoading(false);
+      }
+  };
+
+  useState(() => {
+      fetchIncomeData();
+  }, [dateRange]);
 
   const table = useReactTable({
-    data: mockLedger,
+    data: transactions,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -224,6 +241,10 @@ export default function IncomeSummaryPage() {
   // --- HELPER: CALCULATE TOTAL FOR FILTERED ROWS ---
   const filteredTotal = table.getFilteredRowModel().rows.reduce((sum, row) => sum + row.original.amount, 0);
 
+  if (loading) {
+    return <AccountingSkeleton />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 relative">
       <div className="fixed inset-0 pointer-events-none opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')]"></div>
@@ -261,17 +282,17 @@ export default function IncomeSummaryPage() {
         </div>
 
         {/* STATS OVERVIEW */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
              <Card className="rounded-xl border-slate-200 shadow-sm bg-white">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium text-slate-500">Total Income (Dec)</CardTitle>
+                    <CardTitle className="text-sm font-medium text-slate-500">Total Income</CardTitle>
                     <Wallet className="h-4 w-4 text-emerald-600" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold text-slate-900">Rs. 500,000</div>
+                    <div className="text-2xl font-bold text-slate-900">Rs. {stats.total.toLocaleString()}</div>
                     <div className="flex items-center text-xs text-emerald-600 mt-1 font-medium">
                         <ArrowUpRight className="w-3 h-3 mr-1" />
-                        +12.5% vs Last Month
+                        Combined Revenue
                     </div>
                 </CardContent>
              </Card>
@@ -281,10 +302,9 @@ export default function IncomeSummaryPage() {
                     <CreditCard className="h-4 w-4 text-blue-600" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold text-slate-900">Rs. 250,000</div>
-                    <div className="flex items-center text-xs text-emerald-600 mt-1 font-medium">
-                        <ArrowUpRight className="w-3 h-3 mr-1" />
-                        +5% Growth
+                    <div className="text-2xl font-bold text-slate-900">Rs. {stats.sanda.toLocaleString()}</div>
+                    <div className="flex items-center text-xs text-slate-500 mt-1">
+                         {((stats.sanda / (stats.total || 1)) * 100).toFixed(1)}% of Total
                     </div>
                 </CardContent>
              </Card>
@@ -294,9 +314,21 @@ export default function IncomeSummaryPage() {
                     <HandCoins className="h-4 w-4 text-amber-500" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold text-slate-900">Rs. 250,000</div>
-                    <div className="flex items-center text-xs text-slate-400 mt-1">
-                        Stable vs Last Month
+                    <div className="text-2xl font-bold text-slate-900">Rs. {stats.donations.toLocaleString()}</div>
+                    <div className="flex items-center text-xs text-slate-500 mt-1">
+                        {((stats.donations / (stats.total || 1)) * 100).toFixed(1)}% of Total
+                    </div>
+                </CardContent>
+             </Card>
+             <Card className="rounded-xl border-slate-200 shadow-sm bg-white">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-slate-500">Other Income</CardTitle>
+                    <Coins className="h-4 w-4 text-purple-500" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold text-slate-900">Rs. {stats.other?.toLocaleString() || 0}</div>
+                    <div className="flex items-center text-xs text-slate-500 mt-1">
+                        {((stats.other / (stats.total || 1)) * 100).toFixed(1)}% of Total
                     </div>
                 </CardContent>
              </Card>
@@ -311,7 +343,7 @@ export default function IncomeSummaryPage() {
                 </CardHeader>
                 <CardContent className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                             <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
                             <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
@@ -320,7 +352,8 @@ export default function IncomeSummaryPage() {
                                 itemStyle={{ fontSize: '12px' }}
                             />
                             <Bar dataKey="Sanda" stackId="a" fill="#059669" radius={[0, 0, 4, 4]} barSize={32} />
-                            <Bar dataKey="Donations" stackId="a" fill="#0284c7" radius={[4, 4, 0, 0]} barSize={32} />
+                            <Bar dataKey="Donations" stackId="a" fill="#0284c7" radius={[0, 0, 0, 0]} barSize={32} />
+                            <Bar dataKey="Other" stackId="a" fill="#a855f7" radius={[4, 4, 0, 0]} barSize={32} />
                         </BarChart>
                     </ResponsiveContainer>
                 </CardContent>
@@ -335,7 +368,11 @@ export default function IncomeSummaryPage() {
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                             <Pie
-                                data={pieData}
+                                data={[
+                                    { name: 'Sanda', value: stats.sanda, color: '#059669' },
+                                    { name: 'Donations', value: stats.donations, color: '#0284c7' },
+                                    { name: 'Other', value: stats.other || 0, color: '#a855f7' }
+                                ]}
                                 cx="50%"
                                 cy="50%"
                                 innerRadius={60}
@@ -343,7 +380,11 @@ export default function IncomeSummaryPage() {
                                 paddingAngle={5}
                                 dataKey="value"
                             >
-                                {pieData.map((entry, index) => (
+                                {[
+                                    { name: 'Sanda', value: stats.sanda, color: '#059669' },
+                                    { name: 'Donations', value: stats.donations, color: '#0284c7' },
+                                    { name: 'Other', value: stats.other || 0, color: '#a855f7' }
+                                ].map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
                                 ))}
                             </Pie>
@@ -441,6 +482,7 @@ export default function IncomeSummaryPage() {
                                 <SelectItem value="all">All Sources</SelectItem>
                                 <SelectItem value="Sanda">Sanda</SelectItem>
                                 <SelectItem value="Donation">Donations</SelectItem>
+                                <SelectItem value="Other">Other Income</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>

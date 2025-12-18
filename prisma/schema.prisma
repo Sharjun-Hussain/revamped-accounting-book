@@ -1,0 +1,147 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  password      String?
+  role          String    @default("user")
+  status        String    @default("pending")
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  status      String    @default("active")
+  color       String?   @default("emerald")
+  budgetLimit Float     @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  expenses    Expense[]
+  income      Income[]
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  amount      Float
+  description String?
+  date        DateTime @default(now())
+  categoryId  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  category    Category @relation(fields: [categoryId], references: [id])
+}
+
+model Income {
+  id          String   @id @default(cuid())
+  amount      Float
+  description String?
+  date        DateTime @default(now())
+  categoryId  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  category    Category @relation(fields: [categoryId], references: [id])
+}
+
+model Invoice {
+  id         String    @id @default(cuid())
+  invoiceNo  String    @unique
+  amount     Float
+  status     String    @default("pending")
+  dueDate    DateTime
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  memberId   String
+  paidAmount Float     @default(0)
+  period     String?
+  type       String    @default("Sanda")
+  member     Member    @relation(fields: [memberId], references: [id])
+  payments   Payment[]
+}
+
+model Payment {
+  id            String       @id @default(cuid())
+  invoiceId     String
+  amount        Float
+  date          DateTime     @default(now())
+  method        String
+  bankAccountId String?
+  createdAt     DateTime     @default(now())
+  bankAccount   BankAccount? @relation(fields: [bankAccountId], references: [id])
+  invoice       Invoice      @relation(fields: [invoiceId], references: [id])
+}
+
+model Member {
+  id               String     @id @default(cuid())
+  name             String
+  address          String?
+  email            String?
+  contact          String
+  paymentFrequency String     @default("Monthly")
+  amountPerCycle   Float      @default(0)
+  startDate        DateTime   @default(now())
+  profilePicture   String?
+  status           String     @default("active")
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  donations        Donation[]
+  invoices         Invoice[]
+}
+
+model Donation {
+  id            String   @id @default(cuid())
+  amount        Float
+  date          DateTime @default(now())
+  purpose       String
+  paymentMethod String
+  isAnonymous   Boolean  @default(false)
+  donorType     String
+  donorName     String?
+  memberId      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  member        Member?  @relation(fields: [memberId], references: [id])
+}
+
+model BankAccount {
+  id            String    @id @default(cuid())
+  bankName      String
+  accountName   String
+  accountNumber String
+  branch        String?
+  type          String
+  balance       Float     @default(0)
+  status        String    @default("Active")
+  color         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  transactions  Ledger[]
+  payments      Payment[]
+}
+
+model Ledger {
+  id            String       @id @default(cuid())
+  date          DateTime     @default(now())
+  description   String
+  amount        Float
+  type          String
+  category      String?
+  bankAccountId String?
+  referenceId   String?
+  referenceType String?
+  createdAt     DateTime     @default(now())
+  bankAccount   BankAccount? @relation(fields: [bankAccountId], references: [id])
+}

@@ -62,6 +62,15 @@ const menuVariants = {
   exit: { opacity: 0, y: -10, scale: 0.95, transition: { duration: 0.15 } }
 };
 
+import { accountingService } from "@/services/accountingService";
+import { signOut } from "next-auth/react";
+
+// ... (keep imports)
+
+import { DashboardSkeleton } from "./DashboardSkeleton";
+
+// ... (keep imports)
+
 export default function MosqueDashboard() {
   // State Management
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -74,7 +83,9 @@ export default function MosqueDashboard() {
   // Data States
   const [notifications, setNotifications] = useState(initialNotifications);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activities, setActivities] = useState(initialActivities);
+  const [activities, setActivities] = useState([]);
+  const [dashboardStats, setDashboardStats] = useState([]); // Initialize as empty
+  const [loading, setLoading] = useState(true);
 
   // Refs for click outside
   const notifRef = useRef(null);
@@ -82,6 +93,47 @@ export default function MosqueDashboard() {
   const quickRef = useRef(null);
 
   // --- HANDLERS ---
+
+  // Fetch Dashboard Data
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        const data = await accountingService.getDashboardStats();
+        
+        // Map API stats to UI format
+        // The API returns stats array with correct structure, so we can use it directly or map if needed.
+        // Let's assume API returns matching structure.
+        if (data.stats) {
+            // Need to map icons back because they are strings in API response (if we sent strings)
+            // But wait, I sent iconName in API. I need to map string to component.
+            const iconMap = {
+                Wallet: Wallet,
+                TrendingUp: TrendingUp,
+                Users: Users,
+                FileText: FileText
+            };
+            
+            const mappedStats = data.stats.map(s => ({
+                ...s,
+                icon: iconMap[s.iconName] || Wallet // Fallback
+            }));
+            setDashboardStats(mappedStats);
+        }
+
+        if (data.activities) {
+            setActivities(data.activities);
+        }
+
+      } catch (error) {
+        console.error("Failed to fetch dashboard stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -94,14 +146,12 @@ export default function MosqueDashboard() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Search Logic
-  useEffect(() => {
-    const filtered = initialActivities.filter(act => 
+  // Search Logic (Client-side filtering of fetched activities)
+  // Note: For large datasets, this should be server-side.
+  const filteredActivities = activities.filter(act => 
       act.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       act.amount.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setActivities(filtered);
-  }, [searchTerm]);
+  );
 
   // Notification Logic
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -113,6 +163,10 @@ export default function MosqueDashboard() {
   const clearNotifications = () => {
     setNotifications([]);
   };
+
+  if (loading) {
+    return <DashboardSkeleton />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
@@ -231,9 +285,12 @@ export default function MosqueDashboard() {
                         <Settings className="w-4 h-4" /> Settings
                       </a>
                       <div className="border-t border-slate-100 my-1"></div>
-                      <a href="#" className="flex items-center gap-2 px-4 py-2 text-sm text-rose-600 hover:bg-rose-50">
+                      <button 
+                        onClick={() => signOut({ callbackUrl: '/login' })}
+                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 text-left"
+                      >
                         <LogOut className="w-4 h-4" /> Sign Out
-                      </a>
+                      </button>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -322,7 +379,7 @@ export default function MosqueDashboard() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => (
+          {dashboardStats.map((stat, index) => (
             <motion.div
               key={index}
               initial={{ y: 20, opacity: 0 }}
@@ -361,8 +418,8 @@ export default function MosqueDashboard() {
             </div>
             
             <div className="divide-y divide-slate-50 flex-1">
-              {activities.length > 0 ? (
-                activities.map((activity) => (
+              {filteredActivities.length > 0 ? (
+                filteredActivities.map((activity) => (
                   <div key={activity.id} className="p-5 hover:bg-slate-50 transition-colors flex items-center justify-between group">
                     <div className="flex items-center gap-4">
                       <div className={`h-10 w-10 rounded-full flex items-center justify-center ${

@@ -57,42 +57,11 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 
-// --- 1. MOCK DATA ---
-const mockMembers = [
-  { 
-    id: "M-001", 
-    name: "Abdul Rahman", 
-    phone: "0771234567", 
-    address: "12 Mosque Rd", 
-    monthly_rate: 1000,
-    arrears: 3000,
-    unpaid_months: [
-      { id: 101, month: "August 2024", amount: 1000, balance: 1000 },
-      { id: 102, month: "September 2024", amount: 1000, balance: 1000 },
-      { id: 103, month: "October 2024", amount: 1000, balance: 1000 },
-    ]
-  },
-  { 
-    id: "M-002", 
-    name: "Mohamed Fazil", 
-    phone: "0719876543", 
-    address: "45 Main St", 
-    monthly_rate: 2000, 
-    arrears: 0,
-    unpaid_months: [] // All paid
-  },
-  { 
-    id: "M-003", 
-    name: "Yusuf Khan", 
-    phone: "0755551234", 
-    address: "88 Hill Top", 
-    monthly_rate: 1500, 
-    arrears: 1500,
-    unpaid_months: [
-      { id: 201, month: "October 2024", amount: 1500, balance: 500 }, // Partial
-    ]
-  },
-];
+import { memberService } from "@/services/memberService";
+import { accountingService } from "@/services/accountingService";
+
+// --- 1. MOCK DATA REMOVED ---
+
 
 // --- 2. CONFIG ---
 const MOSQUE_DETAILS = {
@@ -173,6 +142,7 @@ const formSchema = z.object({
   memberId: z.string({ required_error: "Select a member" }),
   amount: z.coerce.number().min(1, "Enter amount"),
   paymentMethod: z.enum(["Cash", "Bank Transfer", "Online"]),
+  bankAccountId: z.string().min(1, "Select target account"),
   autoPrint: z.boolean().default(true),
 });
 
@@ -181,25 +151,52 @@ export default function SandaCollectionPage() {
   const [openSearch, setOpenSearch] = useState(false);
   const [printData, setPrintData] = useState(null);
   
+  // Data State
+  const [members, setMembers] = useState([]);
+  const [bankAccounts, setBankAccounts] = useState([]);
+  const [pendingInvoices, setPendingInvoices] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       memberId: "",
       amount: "",
       paymentMethod: "Cash",
+      bankAccountId: "",
       autoPrint: true,
     },
   });
+
+  // Load Initial Data
+  useState(() => {
+    const loadData = async () => {
+      try {
+        const [membersData, accountsData] = await Promise.all([
+          memberService.getAll(),
+          accountingService.getBankAccounts()
+        ]);
+        setMembers(membersData);
+        setBankAccounts(accountsData);
+      } catch (error) {
+        console.error("Failed to load data", error);
+        toast.error("Failed to load members or accounts");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, []);
 
   const watchAmount = form.watch("amount");
 
   // --- SMART ALLOCATION LOGIC ---
   // Calculates which months get paid based on the entered amount
   const allocationPreview = useMemo(() => {
-    if (!selectedMember || !watchAmount) return [];
+    if (!selectedMember || !watchAmount || !pendingInvoices.length) return [];
     
     let remainingPayment = Number(watchAmount);
-    return selectedMember.unpaid_months.map(bill => {
+    return pendingInvoices.map(bill => {
       let paidForThis = 0;
       let status = "unpaid"; // unpaid, partial, full
 
@@ -217,55 +214,110 @@ export default function SandaCollectionPage() {
 
       return { ...bill, paidForThis, status };
     });
-  }, [selectedMember, watchAmount]);
+  }, [selectedMember, watchAmount, pendingInvoices]);
 
   // Handle Member Selection
-  const handleSelectMember = (id) => {
-    const member = mockMembers.find(m => m.id === id);
-    setSelectedMember(member);
-    form.setValue("memberId", id);
-    form.setValue("amount", ""); // Reset amount
-    setOpenSearch(false);
+  const handleSelectMember = async (id) => {
+    const member = members.find(m => m.id === id);
+    if (!member) return;
+
+    // Fetch Pending Invoices
+    try {
+        const invoices = await accountingService.getPendingInvoices(id);
+        // Transform invoices to match UI expectation
+        const formattedInvoices = invoices.map(inv => ({
+            id: inv.id,
+            month: inv.period || format(new Date(inv.dueDate), "MMMM yyyy"),
+            amount: inv.amount,
+            balance: inv.amount - inv.paidAmount,
+            status: inv.status
+        }));
+        
+        setPendingInvoices(formattedInvoices);
+        
+        // Calculate Arrears
+        const totalArrears = formattedInvoices.reduce((sum, inv) => sum + inv.balance, 0);
+        
+        setSelectedMember({
+            ...member,
+            arrears: totalArrears,
+            monthly_rate: member.amountPerCycle || 0
+        });
+
+        form.setValue("memberId", id);
+        form.setValue("amount", ""); 
+        setOpenSearch(false);
+
+    } catch (error) {
+        console.error("Error fetching invoices", error);
+        toast.error("Could not load member invoices");
+    }
   };
 
   // Quick Pay Actions
   const handleQuickPay = (monthsCount) => {
-    if (!selectedMember) return;
+    if (!selectedMember || !pendingInvoices.length) return;
     let total = 0;
     // Sum up the balance of the first N unpaid months
-    selectedMember.unpaid_months.slice(0, monthsCount).forEach(bill => {
+    pendingInvoices.slice(0, monthsCount).forEach(bill => {
       total += bill.balance;
     });
     form.setValue("amount", total);
   };
 
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
     // 1. Prepare Print Data
     const covered = allocationPreview.filter(a => a.paidForThis > 0).map(a => ({
         month: a.month,
-        paid: a.paidForThis
+        paid: a.paidForThis,
+        invoiceId: a.id
     }));
 
-    const receiptData = {
-        receiptNo: Date.now().toString().slice(-6),
-        memberName: selectedMember.name,
-        memberId: selectedMember.id,
-        totalPaid: data.amount,
-        coveredMonths: covered
-    };
-
-    // 2. Simulate Save
-    toast.success("Payment Recorded", { description: `Rs. ${data.amount} collected.` });
-    
-    // 3. Print
-    if (data.autoPrint) {
-        setPrintData(receiptData);
-        setTimeout(() => window.print(), 100);
+    if (covered.length === 0) {
+        if (pendingInvoices.length === 0) {
+            toast.error("No pending invoices to pay.", { description: "Please generate invoices for this member first." });
+        } else {
+            toast.error("Amount does not cover any invoices.", { description: "Please enter a valid amount." });
+        }
+        return;
     }
 
-    // 4. Reset (In real app, re-fetch member to update arrears)
-    setSelectedMember(null);
-    form.reset({ memberId: "", amount: "", paymentMethod: "Cash", autoPrint: true });
+    // 2. Process Payments
+    try {
+        for (const item of covered) {
+            await accountingService.collectPayment({
+                invoiceId: item.invoiceId,
+                amount: item.paid,
+                method: data.paymentMethod,
+                bankAccountId: data.bankAccountId
+            });
+        }
+
+        const receiptData = {
+            receiptNo: Date.now().toString().slice(-6),
+            memberName: selectedMember.name,
+            memberId: selectedMember.id,
+            totalPaid: data.amount,
+            coveredMonths: covered
+        };
+
+        toast.success("Payment Recorded", { description: `Rs. ${data.amount} collected.` });
+        
+        // 3. Print
+        if (data.autoPrint) {
+            setPrintData(receiptData);
+            setTimeout(() => window.print(), 100);
+        }
+
+        // 4. Reset
+        setSelectedMember(null);
+        setPendingInvoices([]);
+        form.reset({ memberId: "", amount: "", paymentMethod: "Cash", bankAccountId: "", autoPrint: true });
+
+    } catch (error) {
+        console.error("Payment failed", error);
+        toast.error("Failed to record payment.");
+    }
   };
 
   return (
@@ -301,7 +353,7 @@ export default function SandaCollectionPage() {
                     <CommandList>
                         <CommandEmpty>No member found.</CommandEmpty>
                         <CommandGroup heading="Results">
-                        {mockMembers.map((member) => (
+                        {members.map((member) => (
                             <CommandItem key={member.id} value={member.name} onSelect={() => handleSelectMember(member.id)}>
                             <div className="flex items-center gap-2">
                                 <Avatar className="h-6 w-6">
@@ -309,7 +361,7 @@ export default function SandaCollectionPage() {
                                 </Avatar>
                                 <div className="flex flex-col">
                                     <span>{member.name}</span>
-                                    <span className="text-xs text-slate-400">{member.id}</span>
+                                    <span className="text-xs text-slate-400">{member.id.slice(-6).toUpperCase()}</span>
                                 </div>
                             </div>
                             {selectedMember?.id === member.id && <Check className="ml-auto h-4 w-4 opacity-100" />}
@@ -351,8 +403,8 @@ export default function SandaCollectionPage() {
                                     <div>
                                         <h2 className="text-xl font-bold text-slate-900">{selectedMember.name}</h2>
                                         <p className="text-sm text-slate-500 flex items-center gap-2">
-                                            <span className="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono">{selectedMember.id}</span>
-                                            <span>• {selectedMember.phone}</span>
+                                            <span className="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono">{selectedMember.id.slice(-6).toUpperCase()}</span>
+                                            <span>• {selectedMember.contact}</span>
                                         </p>
                                         <div className="mt-3 flex gap-3">
                                             <Badge variant={selectedMember.arrears > 0 ? "destructive" : "default"} className="px-3 py-1 text-sm font-normal">
@@ -431,6 +483,29 @@ export default function SandaCollectionPage() {
                                                     </FormItem>
                                                 )}
                                             />
+                                            
+                                            <FormField
+                                                control={form.control}
+                                                name="bankAccountId"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="text-slate-600">Deposit To</FormLabel>
+                                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                            <FormControl>
+                                                                <SelectTrigger className="h-14 bg-white border-slate-200">
+                                                                    <SelectValue placeholder="Select Account" />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                {bankAccounts.map(acc => (
+                                                                    <SelectItem key={acc.id} value={acc.id}>{acc.bankName} - {acc.accountName} ({acc.type})</SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
                                         </div>
 
                                         <Separator />
@@ -475,6 +550,12 @@ export default function SandaCollectionPage() {
                         <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-50">
                             <Calendar className="w-12 h-12 mb-2" />
                             <p className="text-sm text-center">Select a member to view<br/>outstanding bills</p>
+                        </div>
+                    ) : pendingInvoices.length === 0 ? (
+                        <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-50">
+                            <CheckCircle2 className="w-12 h-12 mb-2 text-emerald-500" />
+                            <p className="text-sm text-center font-medium text-emerald-600">No Pending Invoices</p>
+                            <p className="text-xs text-center">This member has no outstanding dues.</p>
                         </div>
                     ) : (
                         <div className="space-y-3">

@@ -13,7 +13,8 @@ import {
   Heart,
   Wallet,
   Calendar,
-  Filter
+  Filter,
+  Pencil
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -73,44 +74,7 @@ const formatCurrency = (amount) => {
 };
 
 // --- 3. Mock Data ---
-const mockDonations = [
-  {
-    id: "don_1",
-    donor_name: "Anonymous",
-    amount: 50000,
-    date: "2023-10-25",
-    purpose: "Building Fund",
-    method: "Bank Transfer",
-    type: "One-time",
-  },
-  {
-    id: "don_2",
-    donor_name: "Mohamed Nazeer",
-    amount: 2500,
-    date: "2023-10-24",
-    purpose: "General",
-    method: "Cash",
-    type: "Recurring",
-  },
-  {
-    id: "don_3",
-    donor_name: "Fathima R.",
-    amount: 15000,
-    date: "2023-10-24",
-    purpose: "Zakat",
-    method: "Cash",
-    type: "One-time",
-  },
-  {
-    id: "don_4",
-    donor_name: "Friday Collection",
-    amount: 12400,
-    date: "2023-10-20",
-    purpose: "Jummah",
-    method: "Cash",
-    type: "One-time",
-  },
-];
+// Mock Data Removed
 
 // --- 4. Columns Definition ---
 const columns = [
@@ -183,7 +147,7 @@ const columns = [
   },
   {
     id: "actions",
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -196,7 +160,17 @@ const columns = [
             <DropdownMenuItem>View Receipt</DropdownMenuItem>
             <DropdownMenuItem>Print Acknowledgement</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600">Void Transaction</DropdownMenuItem>
+            <Link href={`/donations/${row.original.id}/edit`}>
+                <DropdownMenuItem>
+                    <Pencil className="w-4 h-4 mr-2" /> Edit Details
+                </DropdownMenuItem>
+            </Link>
+            <DropdownMenuItem 
+                className="text-red-600"
+                onClick={() => table.options.meta?.handleDelete(row.original.id)}
+            >
+                Void Transaction
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       );
@@ -204,14 +178,53 @@ const columns = [
   },
 ];
 
+import { donationService } from "@/services/donationService";
+import { toast } from "sonner";
+
+// ... (keep imports)
+
 export default function DonationsPage() {
   const [isNavigating, setIsNavigating] = useState(false);
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [rowSelection, setRowSelection] = useState({});
+  const [donations, setDonations] = useState([]);
+
+  const fetchDonations = async () => {
+      try {
+          const data = await donationService.getAll();
+          // Map API data to table format if needed, or adjust columns
+          const formattedData = data.map(d => ({
+              ...d,
+              donor_name: d.isAnonymous ? "Anonymous" : (d.member ? d.member.name : d.donorName),
+              // Ensure date is string or date object as expected by column formatter
+          }));
+          setDonations(formattedData);
+      } catch (error) {
+          console.error("Failed to fetch donations", error);
+          toast.error("Failed to load donations");
+      }
+  };
+
+  useState(() => {
+      fetchDonations();
+  }, []);
+
+  const handleDelete = async (id) => {
+      if(confirm("Are you sure you want to delete this donation?")) {
+          try {
+              await donationService.delete(id);
+              toast.success("Donation deleted");
+              fetchDonations();
+          } catch (error) {
+              console.error("Failed to delete donation", error);
+              toast.error("Failed to delete donation");
+          }
+      }
+  };
 
   const table = useReactTable({
-    data: mockDonations,
+    data: donations,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -221,6 +234,9 @@ export default function DonationsPage() {
     onColumnFiltersChange: setColumnFilters,
     onRowSelectionChange: setRowSelection,
     state: { sorting, columnFilters, rowSelection },
+    meta: {
+        handleDelete // Pass delete handler to columns
+    }
   });
 
   return (
@@ -273,7 +289,9 @@ export default function DonationsPage() {
               <Wallet className="h-4 w-4 text-emerald-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-slate-900">{formatCurrency(124500)}</div>
+              <div className="text-2xl font-bold text-slate-900">
+                {formatCurrency(donations.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0))}
+              </div>
               <p className="text-xs text-slate-400 mt-1">Lifetime collections</p>
             </CardContent>
           </Card>
@@ -283,8 +301,14 @@ export default function DonationsPage() {
               <Calendar className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-slate-900">{formatCurrency(45000)}</div>
-              <p className="text-xs text-emerald-600 font-medium mt-1">+12% from last month</p>
+              <div className="text-2xl font-bold text-slate-900">
+                {formatCurrency(
+                    donations
+                        .filter(d => new Date(d.date).getMonth() === new Date().getMonth() && new Date(d.date).getFullYear() === new Date().getFullYear())
+                        .reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0)
+                )}
+              </div>
+              <p className="text-xs text-emerald-600 font-medium mt-1">Current month total</p>
             </CardContent>
           </Card>
           <Card className="rounded-xl border-slate-100 shadow-sm">
@@ -293,17 +317,31 @@ export default function DonationsPage() {
               <Heart className="h-4 w-4 text-amber-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-slate-900">{formatCurrency(85000)}</div>
+              <div className="text-2xl font-bold text-slate-900">
+                {formatCurrency(
+                    donations
+                        .filter(d => d.purpose === "Zakat")
+                        .reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0)
+                )}
+              </div>
               <p className="text-xs text-slate-400 mt-1">Restricted funds</p>
             </CardContent>
           </Card>
-           <Card className="rounded-xl border-slate-100 shadow-sm bg-emerald-50 border-emerald-100">
+           <Card className="rounded-xl shadow-sm bg-emerald-50 border-emerald-100">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-emerald-700">Recent Donors</CardTitle>
               <HandCoins className="h-4 w-4 text-emerald-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-emerald-900">12</div>
+              <div className="text-2xl font-bold text-emerald-900">
+                {donations.filter(d => {
+                    const date = new Date(d.date);
+                    const now = new Date();
+                    const diffTime = Math.abs(now - date);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                    return diffDays <= 7;
+                }).length}
+              </div>
               <p className="text-xs text-emerald-600 mt-1">Contributors this week</p>
             </CardContent>
           </Card>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Printer,
@@ -44,6 +44,13 @@ import {
 } from "@tanstack/react-table";
 import { DataTable } from "@/components/general/data-table"; 
 
+import { accountingService } from "@/services/accountingService";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import Link from "next/link";
+
+import { BillingSkeleton } from "@/components/billing/BillingSkeleton";
+
 // --- 1. CONFIGURATION ---
 const MOSQUE_DETAILS = {
   name: "Al-Manar Grand Mosque",
@@ -51,54 +58,7 @@ const MOSQUE_DETAILS = {
   contact: "+94 77 123 4567"
 };
 
-// --- 2. UPDATED MOCK DATA (New Naming Convention) ---
-const mockInvoices = [
-  { 
-    id: "BILL-ABDUL-001", // New Format
-    member_id: "M-001", 
-    name: "Abdul Rahman", 
-    amount: 1000, 
-    arrears: 2000, 
-    status: "Unpaid", 
-    due_date: "2025-12-10" 
-  },
-  { 
-    id: "BILL-FAZIL-002", 
-    member_id: "M-002", 
-    name: "Mohamed Fazil", 
-    amount: 2000, 
-    arrears: 0, 
-    status: "Unpaid", 
-    due_date: "2025-12-10" 
-  },
-  { 
-    id: "BILL-YUSUF-003", 
-    member_id: "M-003", 
-    name: "Yusuf Khan", 
-    amount: 1500, 
-    arrears: 0, 
-    status: "Paid", 
-    due_date: "2025-12-10" 
-  },
-  { 
-    id: "BILL-ZAID-004", 
-    member_id: "M-004", 
-    name: "Zaid Ahmed", 
-    amount: 1000, 
-    arrears: 500, 
-    status: "Overdue", 
-    due_date: "2025-11-10" 
-  },
-  { 
-    id: "BILL-FATHIMA-005", 
-    member_id: "M-005", 
-    name: "Fathima R.", 
-    amount: 1000, 
-    arrears: 0, 
-    status: "Unpaid", 
-    due_date: "2025-12-10" 
-  },
-];
+// --- 2. MOCK DATA REMOVED ---
 
 // --- 3. REUSABLE HEADER COMPONENT ---
 const DataTableColumnHeader = ({ column, title, className }) => {
@@ -166,26 +126,23 @@ const columns = [
   },
   {
     accessorKey: "amount",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Current Fee" className="justify-end w-full" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Fee" className="justify-end w-full" />,
     cell: ({ row }) => <div className="text-right font-medium">Rs. {row.getValue("amount")}</div>,
   },
   {
-    accessorKey: "arrears",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Arrears" className="justify-end w-full" />,
-    cell: ({ row }) => {
-        const amt = parseFloat(row.getValue("arrears"));
-        return <div className={`text-right font-medium ${amt > 0 ? "text-rose-600" : "text-slate-400"}`}>
-            {amt > 0 ? `Rs. ${amt}` : "-"}
-        </div>
-    },
+    accessorKey: "paidAmount",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Paid" className="justify-end w-full" />,
+    cell: ({ row }) => <div className="text-right font-medium text-emerald-600">Rs. {row.getValue("paidAmount")}</div>,
   },
   {
-    id: "total",
-    header: () => <div className="text-right font-semibold text-slate-900">Total Due</div>,
+    accessorKey: "balance",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Balance" className="justify-end w-full" />,
     cell: ({ row }) => {
-        const total = row.original.amount + row.original.arrears;
-        return <div className="text-right font-bold text-slate-900">Rs. {total}</div>
-    }
+        const bal = parseFloat(row.getValue("balance"));
+        return <div className={`text-right font-bold ${bal > 0 ? "text-rose-600" : "text-slate-400"}`}>
+            {bal > 0 ? `Rs. ${bal}` : "-"}
+        </div>
+    },
   },
   {
     accessorKey: "status",
@@ -195,8 +152,9 @@ const columns = [
       return (
         <div className="flex justify-center">
             <Badge variant="outline" className={
-                status === "Paid" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
-                status === "Overdue" ? "bg-rose-50 text-rose-700 border-rose-200" :
+                status === "paid" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                status === "overdue" ? "bg-rose-50 text-rose-700 border-rose-200" :
+                status === "partial" ? "bg-amber-50 text-amber-700 border-amber-200" :
                 "bg-slate-50 text-slate-700 border-slate-200"
             }>
             {status}
@@ -215,7 +173,9 @@ const columns = [
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem>View Invoice</DropdownMenuItem>
+          <Link href={`/billing/invoices/${row.original.id}`}>
+            <DropdownMenuItem>View Invoice</DropdownMenuItem>
+          </Link>
           <DropdownMenuItem>Mark as Paid</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -267,18 +227,16 @@ const BatchPrintTemplate = ({ invoices, month }) => {
                     <span>Fee:</span>
                     <span>{inv.amount.toLocaleString()}</span>
                 </div>
-                {inv.arrears > 0 && (
-                     <div className="flex justify-between mb-1 font-bold">
-                        <span>Arrears:</span>
-                        <span>{inv.arrears.toLocaleString()}</span>
-                    </div>
-                )}
+                <div className="flex justify-between mb-1">
+                    <span>Paid:</span>
+                    <span>{inv.paidAmount.toLocaleString()}</span>
+                </div>
             </div>
 
             <div className="border-t-2 border-black border-b-2 py-2 my-4">
                 <div className="flex justify-between items-center font-bold text-lg">
-                    <span>TOTAL:</span>
-                    <span>Rs. {(inv.amount + inv.arrears).toLocaleString()}</span>
+                    <span>BALANCE DUE:</span>
+                    <span>Rs. {inv.balance.toLocaleString()}</span>
                 </div>
             </div>
 
@@ -299,11 +257,47 @@ export default function MonthlyInvoicesPage() {
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [rowSelection, setRowSelection] = useState({});
-  const [currentMonth, setCurrentMonth] = useState("December 2025");
+  const [currentMonth, setCurrentMonth] = useState(format(new Date(), "yyyy-MM")); // Default to current month
   const [printingInvoices, setPrintingInvoices] = useState([]);
+  const [invoices, setInvoices] = useState([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch Invoices
+  const fetchInvoices = async () => {
+    try {
+        setLoading(true);
+        const data = await accountingService.getInvoices({ period: currentMonth });
+        setInvoices(data);
+    } catch (error) {
+        console.error("Error fetching invoices:", error);
+        toast.error("Failed to load invoices");
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInvoices();
+  }, [currentMonth]);
+
+  // Generate Sanda
+  const handleGenerateSanda = async () => {
+    setIsGenerating(true);
+    try {
+        const result = await accountingService.generateSanda(currentMonth);
+        toast.success(`Generation Complete: ${result.results.generated} created, ${result.results.skipped} skipped.`);
+        fetchInvoices(); // Refresh list
+    } catch (error) {
+        console.error("Error generating sanda:", error);
+        toast.error("Failed to generate invoices");
+    } finally {
+        setIsGenerating(false);
+    }
+  };
 
   const table = useReactTable({
-    data: mockInvoices,
+    data: invoices,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -316,13 +310,17 @@ export default function MonthlyInvoicesPage() {
   });
 
   const selectedRows = table.getFilteredSelectedRowModel().rows;
-  const totalSelectedAmount = selectedRows.reduce((sum, row) => sum + (row.original.amount + row.original.arrears), 0);
+  const totalSelectedAmount = selectedRows.reduce((sum, row) => sum + row.original.balance, 0);
 
   const handlePrint = () => {
     const dataToPrint = selectedRows.map(r => r.original);
     setPrintingInvoices(dataToPrint);
     setTimeout(() => window.print(), 200);
   };
+
+  if (loading) {
+    return <BillingSkeleton />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 relative">
@@ -344,6 +342,15 @@ export default function MonthlyInvoicesPage() {
                     Monthly Invoicing
                 </h1>
                 <p className="text-slate-500">Generate and print bill requests for Sanda collection.</p>
+                <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleGenerateSanda} 
+                    disabled={isGenerating}
+                    className="mt-2 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                >
+                    {isGenerating ? "Generating..." : "Generate Invoices for this Month"}
+                </Button>
             </div>
             
             <div className="flex items-center gap-3 bg-white p-1.5 rounded-lg border border-slate-200 shadow-sm">
@@ -353,9 +360,14 @@ export default function MonthlyInvoicesPage() {
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="December 2025">December 2025</SelectItem>
-                        <SelectItem value="November 2025">November 2025</SelectItem>
-                        <SelectItem value="October 2025">October 2025</SelectItem>
+                        {/* Generate last 12 months dynamically */}
+                        {Array.from({ length: 12 }).map((_, i) => {
+                            const date = new Date();
+                            date.setMonth(date.getMonth() - i);
+                            const value = format(date, "yyyy-MM");
+                            const label = format(date, "MMMM yyyy");
+                            return <SelectItem key={value} value={value}>{label}</SelectItem>;
+                        })}
                     </SelectContent>
                 </Select>
             </div>

@@ -56,14 +56,11 @@ import {
 import { DataTable } from "@/components/general/data-table"; 
 import { Progress } from "@/components/ui/progress";
 
-// --- 1. MOCK DATA ---
-const mockCategories = [
-  { id: "CAT-001", name: "Utilities", description: "Electricity, Water, and Internet bills", color: "amber", budget_limit: 50000, current_spend: 12500, status: "Active" },
-  { id: "CAT-002", name: "Staff Salaries", description: "Monthly payroll for Imam, Muezzin, and cleaning staff", color: "blue", budget_limit: 150000, current_spend: 85000, status: "Active" },
-  { id: "CAT-003", name: "Maintenance", description: "Repairs, plumbing, and building upkeep", color: "slate", budget_limit: 25000, current_spend: 4500, status: "Active" },
-  { id: "CAT-004", name: "Events & Programs", description: "Community gatherings, Friday lunch, Iftar", color: "purple", budget_limit: 100000, current_spend: 15000, status: "Active" },
-  { id: "CAT-005", name: "Charity Outflow", description: "Funds distributed to needy families", color: "emerald", budget_limit: 200000, current_spend: 195000, status: "Active" },
-];
+import { categoryService } from "@/services/categoryService";
+import { toast } from "sonner";
+import { AccountingSkeleton } from "@/components/accounting/AccountingSkeleton";
+
+// --- MOCK DATA REMOVED ---
 
 const colorOptions = [
   { value: "emerald", label: "Emerald Green", bg: "bg-emerald-100", text: "text-emerald-700" },
@@ -99,8 +96,47 @@ const DataTableColumnHeader = ({ column, title, className }) => {
 }
 
 // --- 3. DIALOG COMPONENT ---
-const CategoryDialog = ({ open, onOpenChange, initialData }) => {
+const CategoryDialog = ({ open, onOpenChange, initialData, onSuccess }) => {
   const isEditMode = !!initialData;
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    color: "emerald",
+    budget_limit: "",
+    status: "Active"
+  });
+
+  // Load initial data when editing
+  useState(() => {
+    if (initialData) {
+        setFormData({
+            name: initialData.name,
+            description: initialData.description || "",
+            color: initialData.color || "emerald",
+            budget_limit: initialData.budgetLimit || "",
+            status: initialData.status
+        });
+    } else {
+        setFormData({ name: "", description: "", color: "emerald", budget_limit: "", status: "Active" });
+    }
+  }, [initialData, open]);
+
+  const handleSubmit = async () => {
+    try {
+        if (isEditMode) {
+            await categoryService.update(initialData.id, formData);
+            toast.success("Category updated successfully");
+        } else {
+            await categoryService.create(formData);
+            toast.success("Category created successfully");
+        }
+        onOpenChange(false);
+        if (onSuccess) onSuccess();
+    } catch (error) {
+        console.error("Error saving category:", error);
+        toast.error("Failed to save category");
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -121,12 +157,16 @@ const CategoryDialog = ({ open, onOpenChange, initialData }) => {
             <div className="grid gap-4">
                 <div className="space-y-2">
                     <Label>Category Name</Label>
-                    <Input defaultValue={initialData?.name || ""} placeholder="e.g. Transport" />
+                    <Input 
+                        value={formData.name} 
+                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                        placeholder="e.g. Transport" 
+                    />
                 </div>
 
                 <div className="space-y-2">
                     <Label>Color Code</Label>
-                    <Select defaultValue={initialData?.color || "emerald"}>
+                    <Select value={formData.color} onValueChange={(v) => setFormData({...formData, color: v})}>
                         <SelectTrigger>
                             <SelectValue />
                         </SelectTrigger>
@@ -150,7 +190,8 @@ const CategoryDialog = ({ open, onOpenChange, initialData }) => {
                         <Input 
                             type="number" 
                             className="pl-10 font-bold" 
-                            defaultValue={initialData?.budget_limit || ""} 
+                            value={formData.budget_limit} 
+                            onChange={(e) => setFormData({...formData, budget_limit: e.target.value})}
                             placeholder="0.00" 
                         />
                     </div>
@@ -159,7 +200,8 @@ const CategoryDialog = ({ open, onOpenChange, initialData }) => {
                 <div className="space-y-2">
                     <Label>Description</Label>
                     <Textarea 
-                        defaultValue={initialData?.description || ""} 
+                        value={formData.description} 
+                        onChange={(e) => setFormData({...formData, description: e.target.value})}
                         placeholder="What kind of expenses go here?" 
                         className="resize-none h-20" 
                     />
@@ -170,7 +212,10 @@ const CategoryDialog = ({ open, onOpenChange, initialData }) => {
                         <Label className="text-base">Active Status</Label>
                         <p className="text-xs text-slate-500">Enable this category in forms</p>
                     </div>
-                    <Switch defaultChecked={initialData?.status !== "Inactive"} />
+                    <Switch 
+                        checked={formData.status === "Active"} 
+                        onCheckedChange={(checked) => setFormData({...formData, status: checked ? "Active" : "Inactive"})}
+                    />
                 </div>
             </div>
         </div>
@@ -179,7 +224,7 @@ const CategoryDialog = ({ open, onOpenChange, initialData }) => {
             <div className="hidden sm:block"></div>
             <div className="flex gap-2 w-full sm:w-auto">
                 <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1 sm:flex-none">Cancel</Button>
-                <Button className="bg-emerald-600 hover:bg-emerald-700 flex-1 sm:flex-none" onClick={() => onOpenChange(false)}>
+                <Button className="bg-emerald-600 hover:bg-emerald-700 flex-1 sm:flex-none" onClick={handleSubmit}>
                     {isEditMode ? "Update Category" : "Save Category"}
                 </Button>
             </div>
@@ -197,6 +242,25 @@ export default function ExpenseCategoriesPage() {
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchCategories = async () => {
+    try {
+        setLoading(true);
+        const data = await categoryService.getAll();
+        setCategories(data);
+    } catch (error) {
+        console.error("Error fetching categories:", error);
+        toast.error("Failed to load categories");
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  useState(() => {
+    fetchCategories();
+  }, []);
 
   const handleEdit = (category) => {
     setEditingCategory(category);
@@ -206,6 +270,19 @@ export default function ExpenseCategoriesPage() {
   const handleCreate = () => {
     setEditingCategory(null);
     setIsDialogOpen(true);
+  };
+
+  const handleDelete = async (id) => {
+      if (confirm("Are you sure you want to delete this category?")) {
+          try {
+              await categoryService.delete(id);
+              toast.success("Category deleted");
+              fetchCategories();
+          } catch (error) {
+              console.error("Error deleting category:", error);
+              toast.error("Failed to delete category");
+          }
+      }
   };
 
   const handleDeleteSelected = () => {
@@ -252,12 +329,12 @@ export default function ExpenseCategoriesPage() {
         },
     },
     {
-        accessorKey: "budget_limit",
+        accessorKey: "budgetLimit",
         header: ({ column }) => <DataTableColumnHeader column={column} title="Budget Usage" />,
         cell: ({ row }) => {
-            const limit = row.original.budget_limit;
-            const spent = row.original.current_spend;
-            const percentage = Math.min(100, (spent / limit) * 100);
+            const limit = row.original.budgetLimit || 0;
+            const spent = row.original.current_spend || 0;
+            const percentage = limit > 0 ? Math.min(100, (spent / limit) * 100) : 0;
             
             let progressColor = "bg-emerald-500";
             if(percentage > 75) progressColor = "bg-amber-500";
@@ -300,7 +377,7 @@ export default function ExpenseCategoriesPage() {
                 <Pencil className="w-4 h-4 mr-2" /> Edit Details
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-rose-600">
+            <DropdownMenuItem className="text-rose-600" onClick={() => handleDelete(row.original.id)}>
                 <Trash2 className="w-4 h-4 mr-2" /> Delete Category
             </DropdownMenuItem>
             </DropdownMenuContent>
@@ -310,7 +387,7 @@ export default function ExpenseCategoriesPage() {
   ], []);
 
   const table = useReactTable({
-    data: mockCategories,
+    data: categories,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -324,6 +401,10 @@ export default function ExpenseCategoriesPage() {
 
   const selectedCount = Object.keys(rowSelection).length;
 
+  if (loading) {
+    return <AccountingSkeleton />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 relative">
       <div className="fixed inset-0 pointer-events-none opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')]"></div>
@@ -332,6 +413,7 @@ export default function ExpenseCategoriesPage() {
         open={isDialogOpen} 
         onOpenChange={setIsDialogOpen} 
         initialData={editingCategory} 
+        onSuccess={fetchCategories}
       />
 
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 flex flex-col space-y-6 px-6 pb-6 pt-8 max-w-7xl mx-auto">

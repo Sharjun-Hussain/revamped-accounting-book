@@ -55,82 +55,50 @@ import {
   getSortedRowModel,
 } from "@tanstack/react-table";
 import { DataTable } from "@/components/general/data-table"; 
-import { toast } from "sonner"; // Assuming sonner for copy toast
+import { toast } from "sonner"; 
+import { accountingService } from "@/services/accountingService";
+import { useEffect } from "react";
+import { AccountingSkeleton } from "@/components/accounting/AccountingSkeleton";
 
-// --- 1. MOCK DATA ---
-const mockAccounts = [
-  { 
-    id: "BNK-001", 
-    bank_name: "Amana Bank", 
-    account_name: "Al-Manar Building Fund", 
-    account_number: "012-345-6789", 
-    branch: "Kandy City",
-    type: "Current", 
-    balance: 450000.00, 
-    status: "Active",
-    color: "bg-emerald-600" // For card visual
-  },
-  { 
-    id: "BNK-002", 
-    bank_name: "Bank of Ceylon", 
-    account_name: "Al-Manar General Fund", 
-    account_number: "7788-9900-1122", 
-    branch: "Katugastota",
-    type: "Savings", 
-    balance: 125000.50, 
-    status: "Active",
-    color: "bg-orange-500"
-  },
-  { 
-    id: "BNK-003", 
-    bank_name: "Petty Cash", 
-    account_name: "Office Cash Box", 
-    account_number: "N/A", 
-    branch: "Mosque Office",
-    type: "Cash", 
-    balance: 15400.00, 
-    status: "Active",
-    color: "bg-slate-600"
-  },
-];
+// --- 1. MOCK DATA REMOVED ---
 
 // --- 2. COLUMNS ---
 const columns = [
   {
-    accessorKey: "bank_name",
+    accessorKey: "bankName",
     header: "Bank / Institution",
     cell: ({ row }) => (
       <div className="flex items-center gap-3">
         <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold ${row.original.color}`}>
-            {row.original.bank_name.substring(0, 2).toUpperCase()}
+            {row.original.bankName?.substring(0, 2).toUpperCase()}
         </div>
         <div>
-            <div className="font-medium text-slate-900">{row.original.bank_name}</div>
+            <div className="font-medium text-slate-900">{row.original.bankName}</div>
             <div className="text-xs text-slate-500">{row.original.branch}</div>
         </div>
       </div>
     ),
   },
   {
-    accessorKey: "account_number",
+    accessorKey: "accountNumber",
     header: "Account Number",
     cell: ({ row }) => {
         const copyToClipboard = () => {
-            navigator.clipboard.writeText(row.getValue("account_number"));
+            navigator.clipboard.writeText(row.getValue("accountNumber"));
             toast.success("Account number copied");
         };
         return (
             <div className="flex items-center gap-2 group cursor-pointer" onClick={copyToClipboard}>
-                <span className="font-mono text-slate-600">{row.getValue("account_number")}</span>
+                <span className="font-mono text-slate-600">{row.getValue("accountNumber")}</span>
                 <Copy className="w-3 h-3 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
         )
     },
   },
   {
-    accessorKey: "account_name",
+    accessorKey: "accountName",
     header: "Account Name",
-    cell: ({ row }) => <span className="text-sm text-slate-600">{row.getValue("account_name")}</span>,
+    cell: ({ row }) => <span className="text-sm text-slate-600">{row.getValue("accountName")}</span>,
   },
   {
     accessorKey: "balance",
@@ -181,8 +149,38 @@ const columns = [
 ];
 
 // --- 3. ADD BANK DIALOG ---
-const AddBankDialog = () => {
+const AddBankDialog = ({ onAccountAdded }) => {
   const [open, setOpen] = useState(false);
+  const [accountType, setAccountType] = useState("Savings");
+
+  const handleSubmit = async () => {
+    // Collect form data logic here - for brevity assuming simple state or refs
+    // In real implementation, use a form library or state for inputs
+    // This is a simplified example to show connection
+    const bankNameInput = document.getElementById('bankName');
+    const branchInput = document.getElementById('branch');
+    const accountNumberInput = document.getElementById('accountNumber');
+    
+    const accountData = {
+        bankName: accountType === 'Cash' ? 'Cash Asset' : bankNameInput?.value,
+        type: accountType, 
+        branch: accountType === 'Cash' ? '-' : branchInput?.value,
+        accountName: document.getElementById('accountName').value,
+        accountNumber: accountType === 'Cash' ? 'N/A' : accountNumberInput?.value,
+        balance: document.getElementById('openingBalance').value,
+        color: accountType === 'Cash' ? "bg-amber-600" : "bg-emerald-600" 
+    };
+
+    try {
+        await accountingService.createBankAccount(accountData);
+        toast.success("Account created successfully");
+        setOpen(false);
+        if (onAccountAdded) onAccountAdded();
+    } catch (error) {
+        console.error("Error creating account:", error);
+        toast.error("Failed to create account");
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -193,55 +191,59 @@ const AddBankDialog = () => {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Add Bank Account</DialogTitle>
-          <DialogDescription>Register a new account to track funds.</DialogDescription>
+          <DialogTitle>Add Account</DialogTitle>
+          <DialogDescription>Register a new bank account or cash asset.</DialogDescription>
         </DialogHeader>
         
         <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-                <Label>Bank Name</Label>
-                <Input placeholder="e.g. Amana Bank" />
-            </div>
             
-            <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <Label>Account Type</Label>
-                    <Select defaultValue="Savings">
-                        <SelectTrigger>
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="Savings">Savings</SelectItem>
-                            <SelectItem value="Current">Current</SelectItem>
-                            <SelectItem value="Cash">Cash / Petty Cash</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-2">
-                    <Label>Branch</Label>
-                    <Input placeholder="e.g. Kandy" />
-                </div>
+            <div className="space-y-2">
+                <Label>Account Type</Label>
+                <Select value={accountType} onValueChange={setAccountType}>
+                    <SelectTrigger>
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="Savings">Savings Account</SelectItem>
+                        <SelectItem value="Current">Current Account</SelectItem>
+                        <SelectItem value="Cash">Cash / Petty Cash</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+
+            {accountType !== 'Cash' && (
+                <>
+                    <div className="space-y-2">
+                        <Label htmlFor="bankName">Bank Name</Label>
+                        <Input id="bankName" placeholder="e.g. Amana Bank" />
+                    </div>
+                    
+                    <div className="space-y-2">
+                        <Label htmlFor="branch">Branch</Label>
+                        <Input id="branch" placeholder="e.g. Kandy" />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="accountNumber">Account Number</Label>
+                        <Input id="accountNumber" placeholder="000-000-0000" className="font-mono" />
+                    </div>
+                </>
+            )}
+
+            <div className="space-y-2">
+                <Label htmlFor="accountName">Account Name / Title</Label>
+                <Input id="accountName" placeholder={accountType === 'Cash' ? "e.g. Office Petty Cash" : "e.g. Building Fund A/C"} />
             </div>
 
             <div className="space-y-2">
-                <Label>Account Name / Title</Label>
-                <Input placeholder="e.g. Building Fund A/C" />
-            </div>
-
-            <div className="space-y-2">
-                <Label>Account Number</Label>
-                <Input placeholder="000-000-0000" className="font-mono" />
-            </div>
-
-            <div className="space-y-2">
-                <Label>Opening Balance (LKR)</Label>
-                <Input type="number" placeholder="0.00" />
+                <Label htmlFor="openingBalance">Opening Balance (LKR)</Label>
+                <Input id="openingBalance" type="number" placeholder="0.00" />
             </div>
         </div>
 
         <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => setOpen(false)}>Save Account</Button>
+            <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={handleSubmit}>Save Account</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -250,11 +252,30 @@ const AddBankDialog = () => {
 
 // --- 4. MAIN PAGE ---
 export default function BankAccountsPage() {
+  const [accounts, setAccounts] = useState([]);
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchAccounts = async () => {
+    try {
+        setLoading(true);
+        const data = await accountingService.getBankAccounts();
+        setAccounts(data);
+    } catch (error) {
+        console.error("Error fetching accounts:", error);
+        toast.error("Failed to load accounts");
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAccounts();
+  }, []);
   
   const table = useReactTable({
-    data: mockAccounts,
+    data: accounts,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -265,7 +286,11 @@ export default function BankAccountsPage() {
     state: { sorting, columnFilters },
   });
 
-  const totalLiquidity = mockAccounts.reduce((sum, acc) => sum + acc.balance, 0);
+  const totalLiquidity = accounts.reduce((sum, acc) => sum + acc.balance, 0);
+
+  if (loading) {
+    return <AccountingSkeleton />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 relative">
@@ -283,12 +308,12 @@ export default function BankAccountsPage() {
                 <p className="text-slate-500">Manage mosque liquidity and bank balances.</p>
             </div>
             
-            <AddBankDialog />
+            <AddBankDialog onAccountAdded={fetchAccounts} />
         </div>
 
         {/* BANK CARDS (Visual Overview) */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mockAccounts.map((acc) => (
+            {accounts.map((acc) => (
                 <motion.div 
                     key={acc.id}
                     whileHover={{ y: -5 }}
@@ -302,7 +327,7 @@ export default function BankAccountsPage() {
                     <div className="relative z-10 flex flex-col h-full justify-between min-h-[140px]">
                         <div className="flex justify-between items-start">
                             <div>
-                                <p className="text-sm font-medium opacity-90">{acc.bank_name}</p>
+                                <p className="text-sm font-medium opacity-90">{acc.bankName}</p>
                                 <p className="text-xs opacity-70">{acc.branch}</p>
                             </div>
                             {acc.type === 'Cash' ? <Wallet className="w-6 h-6 opacity-80" /> : <CreditCard className="w-6 h-6 opacity-80" />}
@@ -313,7 +338,7 @@ export default function BankAccountsPage() {
                                 Rs. {acc.balance.toLocaleString()}
                             </p>
                             <p className="text-xs font-mono opacity-80 tracking-wider">
-                                {acc.account_number}
+                                {acc.accountNumber}
                             </p>
                         </div>
                         
@@ -353,8 +378,8 @@ export default function BankAccountsPage() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input
                         placeholder="Search accounts..."
-                        value={(table.getColumn("bank_name")?.getFilterValue()) ?? ""}
-                        onChange={(event) => table.getColumn("bank_name")?.setFilterValue(event.target.value)}
+                        value={(table.getColumn("bankName")?.getFilterValue()) ?? ""}
+                        onChange={(event) => table.getColumn("bankName")?.setFilterValue(event.target.value)}
                         className="pl-10 bg-slate-50 border-slate-200"
                     />
                 </div>

@@ -38,6 +38,9 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { JoinedDatePicker } from "./JoinedDatePicker";
+import { memberService } from "@/services/memberService";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 // --- Animation Variants (Matching Dashboard) ---
 const containerVariants = {
@@ -76,11 +79,28 @@ export default function MemberRegistration() {
     },
   });
 
+  const router = useRouter();
   const profilePicture = form.watch("profilePicture");
   const previewUrl = profilePicture ? URL.createObjectURL(profilePicture) : null;
 
-  function onSubmit(data) {
-    console.log("Submitted:", data);
+  async function onSubmit(data) {
+    try {
+      // In a real app, you'd handle file upload separately and get a URL
+      // For now, we'll just ignore the file object or convert to base64 if needed
+      // const { profilePicture, ...memberData } = data;
+      
+      await memberService.create({
+        ...data,
+        amount_per_cycle: Number(data.amount_per_cycle),
+        // profilePicture: "url_from_upload" 
+      });
+      
+      toast.success("Member registered successfully");
+      router.push("/members"); // Redirect to members list
+    } catch (error) {
+      console.error("Error registering member:", error);
+      toast.error("Failed to register member");
+    }
   }
 
   return (

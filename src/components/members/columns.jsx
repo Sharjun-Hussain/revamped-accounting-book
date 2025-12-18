@@ -88,7 +88,7 @@ export const columns = [
             <div className="font-medium text-gray-900">{member.name}</div>
             <div className="text-xs text-muted-foreground flex items-center gap-1">
               <span className="font-mono bg-gray-100 px-1 rounded">
-                {member.member_id}
+                {member.id.slice(-6).toUpperCase()}
               </span>
             </div>
           </div>
@@ -99,13 +99,13 @@ export const columns = [
 
   // 3. Sanda Configuration (Frequency + Amount)
   {
-    accessorKey: "payment_frequency",
+    accessorKey: "paymentFrequency",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Sanda Plan" />
     ),
     cell: ({ row }) => {
-      const freq = row.original.payment_frequency;
-      const amount = row.original.amount_per_cycle;
+      const freq = row.original.paymentFrequency;
+      const amount = row.original.amountPerCycle;
 
       return (
         <div className="flex flex-col">

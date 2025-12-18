@@ -11,6 +11,7 @@ import {
   FileText,
   Download,
   Receipt,
+  Wallet,
   Lightbulb,
   Wrench,
   Users,
@@ -80,20 +81,11 @@ import { toast } from "sonner"; // Assuming you use sonner for toasts
 // Import Shared PDF Utility
 import { exportToCSV } from "@/lib/export-utils"; 
 
-// --- 1. MOCK DATA & CONFIG ---
-const mockExpenses = [
-  { id: "EXP-001", date: "2025-12-05", category: "Utilities", payee: "CEB (Electricity)", description: "Mosque Main Hall - Nov Bill", amount: 12500, status: "Paid", receipt: true },
-  { id: "EXP-002", date: "2025-12-01", category: "Salaries", payee: "Imam & Staff", description: "Monthly Staff Payroll", amount: 85000, status: "Paid", receipt: true },
-  { id: "EXP-003", date: "2025-12-04", category: "Maintenance", payee: "Hardware Store", description: "Plumbing repairs for Wudu area", amount: 4500, status: "Pending", receipt: false },
-  { id: "EXP-004", date: "2025-12-02", category: "Events", payee: "Catering Service", description: "Friday Community Lunch", amount: 15000, status: "Paid", receipt: true },
-];
+import { accountingService } from "@/services/accountingService";
+import { categoryService } from "@/services/categoryService";
+import { AccountingSkeleton } from "@/components/accounting/AccountingSkeleton";
 
-const categories = [
-  { id: "Utilities", label: "Utilities", icon: Lightbulb, color: "text-amber-600 bg-amber-50 border-amber-200" },
-  { id: "Salaries", label: "Salaries", icon: Users, color: "text-blue-600 bg-blue-50 border-blue-200" },
-  { id: "Maintenance", label: "Maintenance", icon: Wrench, color: "text-slate-600 bg-slate-50 border-slate-200" },
-  { id: "Events", label: "Events", icon: CalendarIcon, color: "text-purple-600 bg-purple-50 border-purple-200" },
-];
+// --- 1. MOCK DATA REMOVED ---
 
 // --- 2. COLUMNS ---
 const columns = [
@@ -110,11 +102,14 @@ const columns = [
     accessorKey: "category",
     header: "Category",
     cell: ({ row }) => {
-      const cat = categories.find(c => c.id === row.getValue("category")) || categories[2];
-      const Icon = cat.icon;
+      const catName = row.original.category?.name || "Uncategorized";
+      const catColor = row.original.category?.color || "slate";
+      // Simple mapping for demo, ideally color comes from DB
+      const colorClass = `text-${catColor}-600 bg-${catColor}-50 border-${catColor}-200`;
+      
       return (
-        <Badge variant="outline" className={`font-normal ${cat.color} gap-1 pr-2`}>
-          <Icon className="w-3 h-3" /> {row.getValue("category")}
+        <Badge variant="outline" className={`font-normal ${colorClass} gap-1 pr-2`}>
+           {catName}
         </Badge>
       );
     },
@@ -124,8 +119,8 @@ const columns = [
     header: "Description",
     cell: ({ row }) => (
       <div>
-        <div className="font-medium text-slate-900">{row.original.payee}</div>
-        <div className="text-xs text-slate-500 truncate max-w-[200px]">{row.getValue("description")}</div>
+        <div className="font-medium text-slate-900">{row.original.description.split(' - ')[0]}</div>
+        <div className="text-xs text-slate-500 truncate max-w-[200px]">{row.original.description.split(' - ')[1] || row.original.description}</div>
       </div>
     ),
   },
@@ -138,10 +133,9 @@ const columns = [
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const s = row.getValue("status");
       return (
-        <Badge variant="secondary" className={s === "Paid" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}>
-          {s}
+        <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
+          Paid
         </Badge>
       );
     },
@@ -181,7 +175,7 @@ const columns = [
 
 
 
-const AddExpenseDialog = () => {
+const AddExpenseDialog = ({ onSuccess, categories, bankAccounts }) => {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -189,9 +183,10 @@ const AddExpenseDialog = () => {
   const [formData, setFormData] = useState({
     amount: "",
     date: new Date().toISOString().split('T')[0],
-    category: "Utilities",
+    category: "",
     payee: "",
-    description: ""
+    description: "",
+    bankAccountId: ""
   });
   
   // --- File State ---
@@ -234,58 +229,30 @@ const AddExpenseDialog = () => {
   // --- API SUBMISSION LOGIC ---
   const handleSave = async () => {
     // 1. Basic Validation
-    if (!formData.amount || !formData.payee) {
-        toast.error("Please fill in Amount and Payee");
+    if (!formData.amount || !formData.payee || !formData.category) {
+        toast.error("Please fill in Amount, Payee and Category");
         return;
     }
 
     setIsSubmitting(true);
 
     try {
-        // 2. Prepare FormData (Required for File Uploads)
-        const dataToSend = new FormData();
-        dataToSend.append("amount", formData.amount);
-        dataToSend.append("date", formData.date);
-        dataToSend.append("category", formData.category);
-        dataToSend.append("payee", formData.payee);
-        dataToSend.append("description", formData.description);
-        
-        // Only append file if one exists
-        if (selectedFile) {
-            dataToSend.append("receipt_file", selectedFile);
-        }
-
-        // 3. --- AXIOS REQUEST SECTION (COMMENTED OUT) ---
-        /*
-        const response = await axios.post('http://your-backend-api.com/api/expenses', dataToSend, {
-            headers: {
-                'Content-Type': 'multipart/form-data', // Important for files
-                'Authorization': `Bearer ${userToken}`, // If using auth
-            },
+        await accountingService.createExpense({
+            amount: formData.amount,
+            date: formData.date,
+            categoryId: formData.category,
+            payee: formData.payee,
+            description: formData.description,
+            bankAccountId: formData.bankAccountId
         });
 
-        if (response.status === 200 || response.status === 201) {
-            toast.success("Expense recorded successfully!");
-            setOpen(false);
-            // Optionally trigger a refresh of the main table here
-            // refreshData(); 
-        }
-        */
-
-        // --- SIMULATED SUCCESS FOR UI DEMO ---
-        console.log("FormData Contents:");
-        for (let pair of dataToSend.entries()) {
-            console.log(pair[0] + ', ' + pair[1]); 
-        }
-        
-        setTimeout(() => {
-            toast.success("Expense Saved (Simulated)");
-            setOpen(false);
-            setIsSubmitting(false);
-            // Reset Form
-            setFormData({ amount: "", date: new Date().toISOString().split('T')[0], category: "Utilities", payee: "", description: "" });
-            setSelectedFile(null);
-        }, 1500);
+        toast.success("Expense Saved");
+        setOpen(false);
+        setIsSubmitting(false);
+        // Reset Form
+        setFormData({ amount: "", date: new Date().toISOString().split('T')[0], category: "", payee: "", description: "", bankAccountId: "" });
+        setSelectedFile(null);
+        if (onSuccess) onSuccess();
 
     } catch (error) {
         console.error("Upload Error:", error);
@@ -365,7 +332,8 @@ const AddExpenseDialog = () => {
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
+
+                                {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
@@ -381,6 +349,26 @@ const AddExpenseDialog = () => {
                             className="h-11 bg-slate-50 border-slate-200" 
                         />
                     </div>
+                </div>
+
+                {/* Row 3: Paid From (Bank/Cash) */}
+                <div className="space-y-2">
+                    <Label className="text-slate-600 flex items-center gap-1.5">
+                        <Wallet className="w-3.5 h-3.5" /> Paid From (Optional)
+                    </Label>
+                    <Select value={formData.bankAccountId} onValueChange={(val) => setFormData(prev => ({ ...prev, bankAccountId: val }))}>
+                        <SelectTrigger className="h-11 bg-slate-50 border-slate-200">
+                            <SelectValue placeholder="Select Account (e.g. Petty Cash)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {bankAccounts.map(acc => (
+                                <SelectItem key={acc.id} value={acc.id}>
+                                    {acc.bankName} - {acc.accountName} ({acc.type}) - Rs. {acc.balance.toLocaleString()}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <p className="text-[10px] text-slate-400">Select an account to automatically deduct this amount.</p>
                 </div>
 
                 {/* Row 3: Description */}
@@ -478,9 +466,36 @@ const AddExpenseDialog = () => {
 export default function ExpensesPage() {
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
+  const [expenses, setExpenses] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [bankAccounts, setBankAccounts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchData = async () => {
+    try {
+        setLoading(true);
+        const [expensesData, categoriesData, accountsData] = await Promise.all([
+            accountingService.getExpenses(),
+            categoryService.getAll(),
+            accountingService.getBankAccounts()
+        ]);
+        setExpenses(expensesData);
+        setCategories(categoriesData);
+        setBankAccounts(accountsData);
+    } catch (error) {
+        console.error("Error fetching data:", error);
+        toast.error("Failed to load expenses");
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  useState(() => {
+    fetchData();
+  }, []);
   
   const table = useReactTable({
-    data: mockExpenses,
+    data: expenses,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -492,15 +507,19 @@ export default function ExpensesPage() {
   });
 
   const handleExport = () => {
-    const csvData = mockExpenses.map(e => ({
+
+    const csvData = expenses.map(e => ({
         "Date": e.date,
-        "Category": e.category,
-        "Payee": e.payee,
+        "Category": e.category?.name,
+        "Description": e.description,
         "Amount": e.amount,
-        "Status": e.status
     }));
     exportToCSV(csvData, "Expenses_Report.csv");
   };
+
+  if (loading) {
+    return <AccountingSkeleton />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 relative">
@@ -522,7 +541,7 @@ export default function ExpensesPage() {
                  <Button variant="outline" className="bg-white border-slate-200 text-slate-700" onClick={handleExport}>
                     <Download className="w-4 h-4 mr-2" /> Export Report
                  </Button>
-                 <AddExpenseDialog />
+                 <AddExpenseDialog onSuccess={fetchData} categories={categories} bankAccounts={bankAccounts} />
             </div>
         </div>
 
@@ -534,8 +553,8 @@ export default function ExpensesPage() {
                     <TrendingDown className="h-4 w-4 text-rose-600" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold text-slate-900">Rs. 117,000</div>
-                    <p className="text-xs text-rose-600 mt-1">+2.5% from last month</p>
+                    <div className="text-2xl font-bold text-slate-900">Rs. {expenses.reduce((sum, e) => sum + e.amount, 0).toLocaleString()}</div>
+                    <p className="text-xs text-rose-600 mt-1">Total Expenses</p>
                 </CardContent>
              </Card>
              <Card className="rounded-xl border-slate-200 shadow-sm">
@@ -544,8 +563,9 @@ export default function ExpensesPage() {
                     <Users className="h-4 w-4 text-blue-500" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold text-slate-900">Salaries</div>
-                    <p className="text-xs text-slate-500 mt-1">Rs. 85,000 (72% of total)</p>
+
+                    <div className="text-2xl font-bold text-slate-900">-</div>
+                    <p className="text-xs text-slate-500 mt-1">Analytics coming soon</p>
                 </CardContent>
              </Card>
              <Card className="rounded-xl border-slate-200 shadow-sm">
@@ -554,8 +574,9 @@ export default function ExpensesPage() {
                     <Receipt className="h-4 w-4 text-amber-500" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold text-slate-900">1 Bill</div>
-                    <p className="text-xs text-slate-500 mt-1">Rs. 4,500 due soon</p>
+
+                    <div className="text-2xl font-bold text-slate-900">{expenses.length}</div>
+                    <p className="text-xs text-slate-500 mt-1">Total Records</p>
                 </CardContent>
              </Card>
         </div>
@@ -581,9 +602,10 @@ export default function ExpensesPage() {
                             <SelectValue placeholder="All Categories" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">All Categories</SelectItem>
-                            {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
-                        </SelectContent>
+
+                                <SelectItem value="all">All Categories</SelectItem>
+                                {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                            </SelectContent>
                     </Select>
                 </div>
             </CardContent>
