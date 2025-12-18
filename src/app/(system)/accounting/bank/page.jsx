@@ -14,7 +14,8 @@ import {
   History,
   Pencil,
   Trash2,
-  Copy
+  Copy,
+  Loader2
 } from "lucide-react";
 
 // UI Imports
@@ -63,136 +64,79 @@ import { AccountingSkeleton } from "@/components/accounting/AccountingSkeleton";
 // --- 1. MOCK DATA REMOVED ---
 
 // --- 2. COLUMNS ---
-const columns = [
-  {
-    accessorKey: "bankName",
-    header: "Bank / Institution",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-3">
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold ${row.original.color}`}>
-            {row.original.bankName?.substring(0, 2).toUpperCase()}
-        </div>
-        <div>
-            <div className="font-medium text-slate-900">{row.original.bankName}</div>
-            <div className="text-xs text-slate-500">{row.original.branch}</div>
-        </div>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "accountNumber",
-    header: "Account Number",
-    cell: ({ row }) => {
-        const copyToClipboard = () => {
-            navigator.clipboard.writeText(row.getValue("accountNumber"));
-            toast.success("Account number copied");
-        };
-        return (
-            <div className="flex items-center gap-2 group cursor-pointer" onClick={copyToClipboard}>
-                <span className="font-mono text-slate-600">{row.getValue("accountNumber")}</span>
-                <Copy className="w-3 h-3 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-        )
-    },
-  },
-  {
-    accessorKey: "accountName",
-    header: "Account Name",
-    cell: ({ row }) => <span className="text-sm text-slate-600">{row.getValue("accountName")}</span>,
-  },
-  {
-    accessorKey: "balance",
-    header: ({ column }) => <div className="text-right">Current Balance</div>,
-    cell: ({ row }) => (
-        <div className="text-right font-bold text-slate-900">
-            Rs. {row.getValue("balance").toLocaleString(undefined, { minimumFractionDigits: 2 })}
-        </div>
-    ),
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => {
-      const s = row.getValue("status");
-      return (
-        <Badge variant="outline" className={s === "Active" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-500"}>
-          {s}
-        </Badge>
-      );
-    },
-  },
-  {
-    id: "actions",
-    cell: ({ row }) => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-8 w-8 p-0">
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuLabel>Manage Account</DropdownMenuLabel>
-          <DropdownMenuItem>
-             <History className="w-4 h-4 mr-2" /> View Transactions
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-             <Pencil className="w-4 h-4 mr-2" /> Edit Details
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-rose-600">
-             <Trash2 className="w-4 h-4 mr-2" /> Archive Account
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
-  },
-];
+// --- 2. COLUMNS REMOVED (Moved inside component) ---
 
-// --- 3. ADD BANK DIALOG ---
-const AddBankDialog = ({ onAccountAdded }) => {
-  const [open, setOpen] = useState(false);
+// --- 3. BANK DIALOG (Create & Edit) ---
+const BankDialog = ({ open, onOpenChange, onAccountSaved, accountToEdit }) => {
   const [accountType, setAccountType] = useState("Savings");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Form States
+  const [bankName, setBankName] = useState("");
+  const [branch, setBranch] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [accountName, setAccountName] = useState("");
+  const [openingBalance, setOpeningBalance] = useState("");
+  const [status, setStatus] = useState("Active");
+
+  useEffect(() => {
+    if (accountToEdit) {
+        setAccountType(accountToEdit.type);
+        setBankName(accountToEdit.bankName);
+        setBranch(accountToEdit.branch);
+        setAccountNumber(accountToEdit.accountNumber);
+        setAccountName(accountToEdit.accountName);
+        setOpeningBalance(accountToEdit.balance);
+        setStatus(accountToEdit.status);
+    } else {
+        // Reset for new
+        setAccountType("Savings");
+        setBankName("");
+        setBranch("");
+        setAccountNumber("");
+        setAccountName("");
+        setOpeningBalance("");
+        setStatus("Active");
+    }
+  }, [accountToEdit, open]);
 
   const handleSubmit = async () => {
-    // Collect form data logic here - for brevity assuming simple state or refs
-    // In real implementation, use a form library or state for inputs
-    // This is a simplified example to show connection
-    const bankNameInput = document.getElementById('bankName');
-    const branchInput = document.getElementById('branch');
-    const accountNumberInput = document.getElementById('accountNumber');
-    
     const accountData = {
-        bankName: accountType === 'Cash' ? 'Cash Asset' : bankNameInput?.value,
+        bankName: accountType === 'Cash' ? 'Cash Asset' : bankName,
         type: accountType, 
-        branch: accountType === 'Cash' ? '-' : branchInput?.value,
-        accountName: document.getElementById('accountName').value,
-        accountNumber: accountType === 'Cash' ? 'N/A' : accountNumberInput?.value,
-        balance: document.getElementById('openingBalance').value,
-        color: accountType === 'Cash' ? "bg-amber-600" : "bg-emerald-600" 
+        branch: accountType === 'Cash' ? '-' : branch,
+        accountName: accountName,
+        accountNumber: accountType === 'Cash' ? 'N/A' : accountNumber,
+        balance: openingBalance,
+        color: accountType === 'Cash' ? "bg-amber-600" : "bg-emerald-600",
+        status: status
     };
 
     try {
-        await accountingService.createBankAccount(accountData);
-        toast.success("Account created successfully");
-        setOpen(false);
-        if (onAccountAdded) onAccountAdded();
+        setIsSubmitting(true);
+        if (accountToEdit) {
+            await accountingService.updateBankAccount({ id: accountToEdit.id, ...accountData });
+            toast.success("Account updated successfully");
+        } else {
+            await accountingService.createBankAccount(accountData);
+            toast.success("Account created successfully");
+        }
+        onOpenChange(false);
+        if (onAccountSaved) onAccountSaved();
     } catch (error) {
-        console.error("Error creating account:", error);
-        toast.error("Failed to create account");
+        console.error("Error saving account:", error);
+        toast.error("Failed to save account");
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-200 gap-2">
-            <PlusCircle className="w-4 h-4" /> Add Account
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Add Account</DialogTitle>
-          <DialogDescription>Register a new bank account or cash asset.</DialogDescription>
+          <DialogTitle>{accountToEdit ? "Edit Account" : "Add Account"}</DialogTitle>
+          <DialogDescription>{accountToEdit ? "Modify account details." : "Register a new bank account or cash asset."}</DialogDescription>
         </DialogHeader>
         
         <div className="grid gap-4 py-4">
@@ -215,47 +159,159 @@ const AddBankDialog = ({ onAccountAdded }) => {
                 <>
                     <div className="space-y-2">
                         <Label htmlFor="bankName">Bank Name</Label>
-                        <Input id="bankName" placeholder="e.g. Amana Bank" />
+                        <Input id="bankName" value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="e.g. Amana Bank" />
                     </div>
                     
                     <div className="space-y-2">
                         <Label htmlFor="branch">Branch</Label>
-                        <Input id="branch" placeholder="e.g. Kandy" />
+                        <Input id="branch" value={branch} onChange={(e) => setBranch(e.target.value)} placeholder="e.g. Kandy" />
                     </div>
 
                     <div className="space-y-2">
                         <Label htmlFor="accountNumber">Account Number</Label>
-                        <Input id="accountNumber" placeholder="000-000-0000" className="font-mono" />
+                        <Input id="accountNumber" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} placeholder="000-000-0000" className="font-mono" />
                     </div>
                 </>
             )}
 
             <div className="space-y-2">
                 <Label htmlFor="accountName">Account Name / Title</Label>
-                <Input id="accountName" placeholder={accountType === 'Cash' ? "e.g. Office Petty Cash" : "e.g. Building Fund A/C"} />
+                <Input id="accountName" value={accountName} onChange={(e) => setAccountName(e.target.value)} placeholder={accountType === 'Cash' ? "e.g. Office Petty Cash" : "e.g. Building Fund A/C"} />
             </div>
 
             <div className="space-y-2">
-                <Label htmlFor="openingBalance">Opening Balance (LKR)</Label>
-                <Input id="openingBalance" type="number" placeholder="0.00" />
+                <Label htmlFor="openingBalance">{accountToEdit ? "Current Balance (LKR)" : "Opening Balance (LKR)"}</Label>
+                <Input id="openingBalance" type="number" value={openingBalance} onChange={(e) => setOpeningBalance(e.target.value)} placeholder="0.00" />
             </div>
+
+            {accountToEdit && (
+                 <div className="space-y-2">
+                    <Label>Status</Label>
+                    <Select value={status} onValueChange={setStatus}>
+                        <SelectTrigger>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="Active">Active</SelectItem>
+                            <SelectItem value="Inactive">Inactive</SelectItem>
+                            <SelectItem value="Archived">Archived</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            )}
         </div>
 
         <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={handleSubmit}>Save Account</Button>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={handleSubmit} disabled={isSubmitting}>
+                {isSubmitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : "Save Account"}
+            </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 };
 
-// --- 4. MAIN PAGE ---
+// --- 4. TRANSACTIONS DIALOG ---
+const BankTransactionsDialog = ({ open, onOpenChange, account }) => {
+    const [transactions, setTransactions] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (open && account) {
+            const fetchTransactions = async () => {
+                setLoading(true);
+                try {
+                    const data = await accountingService.getBankTransactions(account.id);
+                    setTransactions(data);
+                } catch (error) {
+                    console.error("Failed to fetch transactions", error);
+                    toast.error("Failed to load transactions");
+                } finally {
+                    setLoading(false);
+                }
+            };
+            fetchTransactions();
+        }
+    }, [open, account]);
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        <History className="w-5 h-5 text-emerald-600" />
+                        Transaction History
+                    </DialogTitle>
+                    <DialogDescription>
+                        {account?.bankName} - {account?.accountNumber} ({account?.accountName})
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="mt-4">
+                    {loading ? (
+                        <div className="flex justify-center py-8">
+                            <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+                        </div>
+                    ) : transactions.length === 0 ? (
+                        <div className="text-center py-8 text-slate-500">
+                            No transactions found for this account.
+                        </div>
+                    ) : (
+                        <div className="border rounded-lg overflow-hidden">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-slate-50 text-slate-500 font-medium border-b">
+                                    <tr>
+                                        <th className="px-4 py-3">Date</th>
+                                        <th className="px-4 py-3">Description</th>
+                                        <th className="px-4 py-3">Type</th>
+                                        <th className="px-4 py-3 text-right">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                    {transactions.map((tx) => (
+                                        <tr key={tx.id} className="hover:bg-slate-50">
+                                            <td className="px-4 py-3 font-mono text-slate-600">
+                                                {new Date(tx.date).toLocaleDateString()}
+                                            </td>
+                                            <td className="px-4 py-3">{tx.description}</td>
+                                            <td className="px-4 py-3">
+                                                <Badge variant="outline" className={
+                                                    tx.type === 'Income' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 
+                                                    'bg-rose-50 text-rose-700 border-rose-200'
+                                                }>
+                                                    {tx.type}
+                                                </Badge>
+                                            </td>
+                                            <td className={`px-4 py-3 text-right font-bold ${
+                                                tx.type === 'Income' ? 'text-emerald-600' : 'text-rose-600'
+                                            }`}>
+                                                {tx.type === 'Income' ? '+' : '-'} Rs. {tx.amount.toLocaleString()}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
+// --- 5. MAIN PAGE ---
 export default function BankAccountsPage() {
   const [accounts, setAccounts] = useState([]);
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Dialog States
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState(null);
+  const [isTransactionsOpen, setIsTransactionsOpen] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState(null);
 
   const fetchAccounts = async () => {
     try {
@@ -273,7 +329,104 @@ export default function BankAccountsPage() {
   useEffect(() => {
     fetchAccounts();
   }, []);
+
+  const handleEdit = (account) => {
+    setEditingAccount(account);
+    setIsDialogOpen(true);
+  };
+
+  const handleViewTransactions = (account) => {
+    setSelectedAccount(account);
+    setIsTransactionsOpen(true);
+  };
+
+  const handleAddNew = () => {
+    setEditingAccount(null);
+    setIsDialogOpen(true);
+  };
   
+  // Define columns inside component to access handlers
+  const columns = [
+    {
+      accessorKey: "bankName",
+      header: "Bank / Institution",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-3">
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold ${row.original.color}`}>
+              {row.original.bankName?.substring(0, 2).toUpperCase()}
+          </div>
+          <div>
+              <div className="font-medium text-slate-900">{row.original.bankName}</div>
+              <div className="text-xs text-slate-500">{row.original.branch}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "accountNumber",
+      header: "Account Number",
+      cell: ({ row }) => {
+          const copyToClipboard = () => {
+              navigator.clipboard.writeText(row.getValue("accountNumber"));
+              toast.success("Account number copied");
+          };
+          return (
+              <div className="flex items-center gap-2 group cursor-pointer" onClick={copyToClipboard}>
+                  <span className="font-mono text-slate-600">{row.getValue("accountNumber")}</span>
+                  <Copy className="w-3 h-3 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+          )
+      },
+    },
+    {
+      accessorKey: "accountName",
+      header: "Account Name",
+      cell: ({ row }) => <span className="text-sm text-slate-600">{row.getValue("accountName")}</span>,
+    },
+    {
+      accessorKey: "balance",
+      header: ({ column }) => <div className="text-right">Current Balance</div>,
+      cell: ({ row }) => (
+          <div className="text-right font-bold text-slate-900">
+              Rs. {row.getValue("balance").toLocaleString(undefined, { minimumFractionDigits: 2 })}
+          </div>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const s = row.getValue("status");
+        return (
+          <Badge variant="outline" className={s === "Active" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-500"}>
+            {s}
+          </Badge>
+        );
+      },
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Manage Account</DropdownMenuLabel>
+            <DropdownMenuItem onClick={() => handleViewTransactions(row.original)}>
+               <History className="w-4 h-4 mr-2" /> View Transactions
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleEdit(row.original)}>
+               <Pencil className="w-4 h-4 mr-2" /> Edit Details
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ];
+
   const table = useReactTable({
     data: accounts,
     columns,
@@ -308,7 +461,9 @@ export default function BankAccountsPage() {
                 <p className="text-slate-500">Manage mosque liquidity and bank balances.</p>
             </div>
             
-            <AddBankDialog onAccountAdded={fetchAccounts} />
+            <Button onClick={handleAddNew} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-200 gap-2">
+                <PlusCircle className="w-4 h-4" /> Add Account
+            </Button>
         </div>
 
         {/* BANK CARDS (Visual Overview) */}
@@ -317,7 +472,8 @@ export default function BankAccountsPage() {
                 <motion.div 
                     key={acc.id}
                     whileHover={{ y: -5 }}
-                    className={`relative overflow-hidden rounded-xl p-6 text-white shadow-lg ${acc.color}`}
+                    className={`relative overflow-hidden rounded-xl p-6 text-white shadow-lg ${acc.color} cursor-pointer`}
+                    onClick={() => handleViewTransactions(acc)}
                 >
                     {/* Background Pattern */}
                     <div className="absolute right-[-20px] top-[-20px] opacity-10">
@@ -386,6 +542,20 @@ export default function BankAccountsPage() {
              </div>
              <DataTable table={table} columns={columns} />
         </Card>
+
+        {/* DIALOGS */}
+        <BankDialog 
+            open={isDialogOpen} 
+            onOpenChange={setIsDialogOpen} 
+            onAccountSaved={fetchAccounts} 
+            accountToEdit={editingAccount}
+        />
+        
+        <BankTransactionsDialog 
+            open={isTransactionsOpen} 
+            onOpenChange={setIsTransactionsOpen} 
+            account={selectedAccount} 
+        />
 
       </motion.div>
     </div>

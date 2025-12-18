@@ -41,3 +41,32 @@ export async function POST(request) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+export async function PUT(request) {
+    try {
+        const body = await request.json();
+        const { id, bankName, accountName, accountNumber, branch, type, balance, color, status } = body;
+
+        if (!id) {
+            return NextResponse.json({ error: 'Account ID is required' }, { status: 400 });
+        }
+
+        const account = await prisma.bankAccount.update({
+            where: { id },
+            data: {
+                bankName,
+                accountName,
+                accountNumber,
+                branch,
+                type,
+                balance: balance !== undefined ? parseFloat(balance) : undefined,
+                color,
+                status,
+            },
+        });
+
+        return NextResponse.json(account);
+    } catch (error) {
+        console.error('Error updating bank account:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}

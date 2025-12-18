@@ -12,7 +12,8 @@ import {
   ArrowUpDown,
   Filter,
   CheckSquare,
-  Archive
+  Archive,
+  Loader2
 } from "lucide-react";
 
 // UI Imports
@@ -105,6 +106,7 @@ const CategoryDialog = ({ open, onOpenChange, initialData, onSuccess }) => {
     budget_limit: "",
     status: "Active"
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Load initial data when editing
   useState(() => {
@@ -123,6 +125,7 @@ const CategoryDialog = ({ open, onOpenChange, initialData, onSuccess }) => {
 
   const handleSubmit = async () => {
     try {
+        setIsSubmitting(true);
         if (isEditMode) {
             await categoryService.update(initialData.id, formData);
             toast.success("Category updated successfully");
@@ -135,6 +138,8 @@ const CategoryDialog = ({ open, onOpenChange, initialData, onSuccess }) => {
     } catch (error) {
         console.error("Error saving category:", error);
         toast.error("Failed to save category");
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
@@ -224,8 +229,15 @@ const CategoryDialog = ({ open, onOpenChange, initialData, onSuccess }) => {
             <div className="hidden sm:block"></div>
             <div className="flex gap-2 w-full sm:w-auto">
                 <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1 sm:flex-none">Cancel</Button>
-                <Button className="bg-emerald-600 hover:bg-emerald-700 flex-1 sm:flex-none" onClick={handleSubmit}>
-                    {isEditMode ? "Update Category" : "Save Category"}
+                <Button className="bg-emerald-600 hover:bg-emerald-700 flex-1 sm:flex-none" onClick={handleSubmit} disabled={isSubmitting}>
+                    {isSubmitting ? (
+                        <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            {isEditMode ? "Updating..." : "Saving..."}
+                        </>
+                    ) : (
+                        isEditMode ? "Update Category" : "Save Category"
+                    )}
                 </Button>
             </div>
         </DialogFooter>

@@ -12,20 +12,12 @@ import {
   ArrowDownRight,
   Bell,
   Search,
-  Menu,
-  X,
+  Trash2,
   TrendingUp,
   Calendar,
-  ChevronRight,
-  UserPlus,
-  Receipt,
-  HandCoins,
-  LogOut,
-  Settings,
-  User,
-  Check,
-  Trash2
+  ChevronRight
 } from "lucide-react";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 // --- MOCK DATA ---
 const stats = [
@@ -73,8 +65,6 @@ import { DashboardSkeleton } from "./DashboardSkeleton";
 
 export default function MosqueDashboard() {
   // State Management
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
   // Dropdown States
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -299,12 +289,7 @@ export default function MosqueDashboard() {
 
             {/* Mobile Menu Toggle */}
             <div className="md:hidden flex items-center">
-              <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="p-2 rounded-md text-slate-600 hover:bg-slate-100"
-              >
-                {isMobileMenuOpen ? <X /> : <Menu />}
-              </button>
+              <SidebarTrigger />
             </div>
           </div>
         </div>

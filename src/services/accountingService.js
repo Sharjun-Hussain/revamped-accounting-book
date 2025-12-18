@@ -9,6 +9,14 @@ export const accountingService = {
         const response = await api.post('/accounting/bank-accounts', accountData);
         return response.data;
     },
+    updateBankAccount: async (accountData) => {
+        const response = await api.put('/accounting/bank-accounts', accountData);
+        return response.data;
+    },
+    getBankTransactions: async (bankAccountId) => {
+        const response = await api.get(`/accounting/ledger?bankAccountId=${bankAccountId}`);
+        return response.data;
+    },
     getLedger: async () => {
         const response = await api.get('/accounting/ledger');
         return response.data;

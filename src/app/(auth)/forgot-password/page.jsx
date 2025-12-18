@@ -7,3 +7,8 @@ const page = () => {
 };
 
 export default page;
+
+export const metadata = {
+  title: "Forgot Password | Masjidhul Haadhi Accounting System",
+  description: "Developed By : Inzeedo (PVT) Ltd.",
+};

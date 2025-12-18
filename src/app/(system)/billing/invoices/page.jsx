@@ -11,7 +11,8 @@ import {
   MoreHorizontal,
   CalendarDays,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -349,7 +350,7 @@ export default function MonthlyInvoicesPage() {
                     disabled={isGenerating}
                     className="mt-2 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
                 >
-                    {isGenerating ? "Generating..." : "Generate Invoices for this Month"}
+                    {isGenerating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating...</> : "Generate Invoices for this Month"}
                 </Button>
             </div>
             

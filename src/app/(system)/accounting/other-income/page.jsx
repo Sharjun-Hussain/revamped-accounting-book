@@ -56,6 +56,7 @@ export default function OtherIncomePage() {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingIncome, setEditingIncome] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(incomeSchema),
@@ -90,6 +91,7 @@ export default function OtherIncomePage() {
 
   const onSubmit = async (data) => {
     try {
+      setIsSubmitting(true);
       if (editingIncome) {
         await accountingService.updateOtherIncome(editingIncome.id, data);
         toast.success("Income updated successfully");
@@ -104,6 +106,8 @@ export default function OtherIncomePage() {
     } catch (error) {
       console.error("Failed to save income", error);
       toast.error("Failed to save income");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -232,8 +236,15 @@ export default function OtherIncomePage() {
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700">
-                    {editingIncome ? "Update Record" : "Save Record"}
+                  <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                        <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            {editingIncome ? "Updating..." : "Saving..."}
+                        </>
+                    ) : (
+                        editingIncome ? "Update Record" : "Save Record"
+                    )}
                   </Button>
                 </form>
               </Form>

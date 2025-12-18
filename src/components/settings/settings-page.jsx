@@ -13,7 +13,8 @@ import {
   Mail,
   Smartphone,
   ShieldAlert,
-  Download
+  Download,
+  Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -188,7 +189,7 @@ export default function SettingsPage() {
                             </CardContent>
                             <CardFooter className="border-t border-slate-100 px-6 py-4 bg-slate-50 rounded-b-xl flex justify-end">
                                 <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleSave} disabled={isSaving}>
-                                    {isSaving ? "Saving..." : <><Save className="w-4 h-4 mr-2" /> Save Changes</>}
+                                    {isSaving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : <><Save className="w-4 h-4 mr-2" /> Save Changes</>}
                                 </Button>
                             </CardFooter>
                         </Card>

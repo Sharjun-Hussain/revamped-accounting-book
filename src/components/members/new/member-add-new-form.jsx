@@ -14,7 +14,8 @@ import {
   CreditCard,
   MapPin,
   Phone,
-  Mail
+  Mail,
+  Loader2
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -82,9 +83,11 @@ export default function MemberRegistration() {
   const router = useRouter();
   const profilePicture = form.watch("profilePicture");
   const previewUrl = profilePicture ? URL.createObjectURL(profilePicture) : null;
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function onSubmit(data) {
     try {
+      setIsSubmitting(true);
       // In a real app, you'd handle file upload separately and get a URL
       // For now, we'll just ignore the file object or convert to base64 if needed
       // const { profilePicture, ...memberData } = data;
@@ -100,6 +103,7 @@ export default function MemberRegistration() {
     } catch (error) {
       console.error("Error registering member:", error);
       toast.error("Failed to register member");
+      setIsSubmitting(false);
     }
   }
 
@@ -319,8 +323,8 @@ export default function MemberRegistration() {
                     
                     <Separator className="bg-slate-100 my-4" />
 
-                    <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm shadow-emerald-200">
-                        <Save className="w-4 h-4 mr-2" /> Register Member
+                    <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm shadow-emerald-200" disabled={isSubmitting}>
+                        {isSubmitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Registering...</> : <><Save className="w-4 h-4 mr-2" /> Register Member</>}
                     </Button>
                 </div>
               </div>

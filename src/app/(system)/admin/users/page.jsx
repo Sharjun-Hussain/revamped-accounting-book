@@ -23,6 +23,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 export default function AdminUsersPage() {
   const { data: session, status } = useSession();
@@ -31,6 +32,7 @@ export default function AdminUsersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'user' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -58,6 +60,7 @@ export default function AdminUsersPage() {
   const handleCreateUser = async (e) => {
     e.preventDefault();
     try {
+      setIsSubmitting(true);
       await api.post('/admin/users', newUser);
       toast.success('User created successfully');
       setIsDialogOpen(false);
@@ -66,6 +69,8 @@ export default function AdminUsersPage() {
     } catch (error) {
       console.error('Error creating user:', error);
       toast.error(error.response?.data?.error || 'Failed to create user');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -142,7 +147,9 @@ export default function AdminUsersPage() {
                   <option value="superadmin">Superadmin</option>
                 </select>
               </div>
-              <Button type="submit" className="w-full">Create User</Button>
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating User...</> : "Create User"}
+              </Button>
             </form>
           </DialogContent>
         </Dialog>
