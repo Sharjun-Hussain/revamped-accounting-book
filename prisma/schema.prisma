@@ -1,6 +1,8 @@
 generator client {
-  provider   = "prisma-client-js"
-  engineType = "library"
+  provider        = "prisma-client-js"
+  engineType      = "library"
+  // Enable views if you plan to use database views for complex dashboard stats
+  previewFeatures = ["views"] 
 }
 
 datasource db {
@@ -20,6 +22,10 @@ model User {
   password      String?
   role          String    @default("user")
   status        String    @default("pending")
+
+  // Indexes for admin panel filtering
+  @@index([role])
+  @@index([status])
 }
 
 model Category {
@@ -44,6 +50,10 @@ model Expense {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   category    Category @relation(fields: [categoryId], references: [id])
+
+  // Optimization: Foreign Key & Date filtering
+  @@index([categoryId])
+  @@index([date])
 }
 
 model Income {
@@ -55,6 +65,10 @@ model Income {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   category    Category @relation(fields: [categoryId], references: [id])
+
+  // Optimization: Foreign Key & Date filtering
+  @@index([categoryId])
+  @@index([date])
 }
 
 model Invoice {
@@ -71,6 +85,12 @@ model Invoice {
   type       String    @default("Sanda")
   member     Member    @relation(fields: [memberId], references: [id])
   payments   Payment[]
+
+  // Optimization: Critical for dashboard "Pending vs Paid" stats
+  @@index([memberId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([type])
 }
 
 model Payment {
@@ -83,6 +103,11 @@ model Payment {
   createdAt     DateTime     @default(now())
   bankAccount   BankAccount? @relation(fields: [bankAccountId], references: [id])
   invoice       Invoice      @relation(fields: [invoiceId], references: [id])
+
+  // Optimization: Linking payments to banks/invoices
+  @@index([invoiceId])
+  @@index([bankAccountId])
+  @@index([date])
 }
 
 model Member {
@@ -100,6 +125,10 @@ model Member {
   updatedAt        DateTime   @updatedAt
   donations        Donation[]
   invoices         Invoice[]
+
+  // Optimization: Searching members by contact/status
+  @@index([status])
+  @@index([contact])
 }
 
 model Donation {
@@ -115,6 +144,11 @@ model Donation {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   member        Member?  @relation(fields: [memberId], references: [id])
+
+  // Optimization: Reporting on donations
+  @@index([memberId])
+  @@index([date])
+  @@index([donorType])
 }
 
 model BankAccount {
@@ -145,4 +179,11 @@ model Ledger {
   referenceType String?
   createdAt     DateTime     @default(now())
   bankAccount   BankAccount? @relation(fields: [bankAccountId], references: [id])
+
+  // Optimization: General Ledger filtering
+  @@index([bankAccountId])
+  @@index([date])
+  @@index([type])
+  // Composite index: Super fast for finding "Related Transactions" (Polymorphic lookups)
+  @@index([referenceType, referenceId])
 }
