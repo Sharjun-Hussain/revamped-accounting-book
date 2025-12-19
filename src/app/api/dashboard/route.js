@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { startOfMonth, endOfMonth, subMonths, format, startOfDay, endOfDay } from 'date-fns';
+import { startOfMonth, endOfMonth, subMonths, format } from 'date-fns';
 
 export async function GET() {
     try {
@@ -10,106 +10,72 @@ export async function GET() {
         const lastMonthStart = startOfMonth(subMonths(now, 1));
         const lastMonthEnd = endOfMonth(subMonths(now, 1));
 
-        // 1. Calculate Stats
+        // ==========================================
+        // 1. DASHBOARD STATS (Run all in parallel)
+        // ==========================================
+        const [
+            // All Time Income
+            totalDonations,
+            totalPayments,
+            totalOther,
+            // Last Month Income
+            lastMonthDonations,
+            lastMonthPayments,
+            lastMonthOther,
+            // This Month Income
+            thisMonthDonations,
+            thisMonthPayments,
+            thisMonthOther,
+            // Expenses
+            thisMonthExpensesRaw,
+            lastMonthExpensesRaw,
+            // Counts
+            activeMembersCount,
+            pendingInvoicesCount
+        ] = await Promise.all([
+            // All Time
+            prisma.donation.aggregate({ _sum: { amount: true } }),
+            prisma.payment.aggregate({ _sum: { amount: true } }),
+            prisma.income.aggregate({ _sum: { amount: true } }),
+            // Last Month
+            prisma.donation.aggregate({ _sum: { amount: true }, where: { createdAt: { gte: lastMonthStart, lte: lastMonthEnd } } }),
+            prisma.payment.aggregate({ _sum: { amount: true }, where: { date: { gte: lastMonthStart, lte: lastMonthEnd } } }),
+            prisma.income.aggregate({ _sum: { amount: true }, where: { date: { gte: lastMonthStart, lte: lastMonthEnd } } }),
+            // This Month
+            prisma.donation.aggregate({ _sum: { amount: true }, where: { createdAt: { gte: currentMonthStart, lte: currentMonthEnd } } }),
+            prisma.payment.aggregate({ _sum: { amount: true }, where: { date: { gte: currentMonthStart, lte: currentMonthEnd } } }),
+            prisma.income.aggregate({ _sum: { amount: true }, where: { date: { gte: currentMonthStart, lte: currentMonthEnd } } }),
+            // Expenses
+            prisma.expense.aggregate({ _sum: { amount: true }, where: { date: { gte: currentMonthStart, lte: currentMonthEnd } } }),
+            prisma.expense.aggregate({ _sum: { amount: true }, where: { date: { gte: lastMonthStart, lte: lastMonthEnd } } }),
+            // Counts
+            prisma.member.count({ where: { status: 'active' } }),
+            prisma.invoice.count({ where: { status: { in: ['pending', 'partial', 'overdue'] } } })
+        ]);
 
-        // A. Total Income (All Time)
-        // We can also do "This Month" if preferred, but "Total" usually implies all time or YTD. 
-        // Let's do All Time for the "Total" card, and calculate change vs last month? 
-        // Or maybe just "This Month's Income" is more useful for day-to-day?
-        // The mock said "Total Donations". Let's provide "Total Income" (All Time).
-
-        const totalDonations = await prisma.donation.aggregate({ _sum: { amount: true } });
-        const totalPayments = await prisma.payment.aggregate({ _sum: { amount: true } });
-        const totalOther = await prisma.income.aggregate({ _sum: { amount: true } });
-
+        // --- Calculate Stats Values ---
         const totalIncomeValue = (totalDonations._sum.amount || 0) + (totalPayments._sum.amount || 0) + (totalOther._sum.amount || 0);
-
-        // Calculate Last Month Income for comparison (Trend)
-        const lastMonthDonations = await prisma.donation.aggregate({
-            _sum: { amount: true },
-            where: { createdAt: { gte: lastMonthStart, lte: lastMonthEnd } }
-        });
-        const lastMonthPayments = await prisma.payment.aggregate({
-            _sum: { amount: true },
-            where: { date: { gte: lastMonthStart, lte: lastMonthEnd } }
-        });
-        const lastMonthOther = await prisma.income.aggregate({
-            _sum: { amount: true },
-            where: { date: { gte: lastMonthStart, lte: lastMonthEnd } }
-        });
+        
         const lastMonthIncome = (lastMonthDonations._sum.amount || 0) + (lastMonthPayments._sum.amount || 0) + (lastMonthOther._sum.amount || 0);
-
-        // This Month Income
-        const thisMonthDonations = await prisma.donation.aggregate({
-            _sum: { amount: true },
-            where: { createdAt: { gte: currentMonthStart, lte: currentMonthEnd } }
-        });
-        const thisMonthPayments = await prisma.payment.aggregate({
-            _sum: { amount: true },
-            where: { date: { gte: currentMonthStart, lte: currentMonthEnd } }
-        });
-        const thisMonthOther = await prisma.income.aggregate({
-            _sum: { amount: true },
-            where: { date: { gte: currentMonthStart, lte: currentMonthEnd } }
-        });
         const thisMonthIncome = (thisMonthDonations._sum.amount || 0) + (thisMonthPayments._sum.amount || 0) + (thisMonthOther._sum.amount || 0);
-
-        // Income Trend
         const incomeChange = lastMonthIncome === 0 ? 100 : ((thisMonthIncome - lastMonthIncome) / lastMonthIncome) * 100;
 
-
-        // B. Monthly Expenses (This Month)
-        const thisMonthExpenses = await prisma.expense.aggregate({
-            _sum: { amount: true },
-            where: { date: { gte: currentMonthStart, lte: currentMonthEnd } }
-        });
-        const monthlyExpenseValue = thisMonthExpenses._sum.amount || 0;
-
-        // Last Month Expenses for comparison
-        const lastMonthExpenses = await prisma.expense.aggregate({
-            _sum: { amount: true },
-            where: { date: { gte: lastMonthStart, lte: lastMonthEnd } }
-        });
-        const lastMonthExpenseValue = lastMonthExpenses._sum.amount || 0;
-
+        const monthlyExpenseValue = thisMonthExpensesRaw._sum.amount || 0;
+        const lastMonthExpenseValue = lastMonthExpensesRaw._sum.amount || 0;
         const expenseChange = lastMonthExpenseValue === 0 ? 100 : ((monthlyExpenseValue - lastMonthExpenseValue) / lastMonthExpenseValue) * 100;
 
 
-        // C. Active Members
-        const activeMembersCount = await prisma.member.count({
-            where: { status: 'active' }
-        });
-        // We don't track member history easily for trend, so we'll leave trend as 0 or just show count.
+        // ==========================================
+        // 2. RECENT ACTIVITY (Run in parallel)
+        // ==========================================
+        const [recentDonations, recentPayments, recentExpenses, recentOther] = await Promise.all([
+            prisma.donation.findMany({ take: 5, orderBy: { createdAt: 'desc' }, include: { member: true } }),
+            prisma.payment.findMany({ take: 5, orderBy: { date: 'desc' }, include: { invoice: { include: { member: true } } } }),
+            prisma.expense.findMany({ take: 5, orderBy: { date: 'desc' }, include: { category: true } }),
+            prisma.income.findMany({ take: 5, orderBy: { date: 'desc' }, include: { category: true } })
+        ]);
 
-
-        // D. Pending Actions (Pending Invoices)
-        const pendingInvoicesCount = await prisma.invoice.count({
-            where: { status: { in: ['pending', 'partial', 'overdue'] } }
-        });
-
-
-        // 2. Recent Activity (Last 10 mixed)
-        const recentDonations = await prisma.donation.findMany({
-            take: 5,
-            orderBy: { createdAt: 'desc' },
-            include: { member: true }
-        });
-        const recentPayments = await prisma.payment.findMany({
-            take: 5,
-            orderBy: { date: 'desc' },
-            include: { invoice: { include: { member: true } } }
-        });
-        const recentExpenses = await prisma.expense.findMany({
-            take: 5,
-            orderBy: { date: 'desc' },
-            include: { category: true }
-        });
-        const recentOther = await prisma.income.findMany({
-            take: 5,
-            orderBy: { date: 'desc' },
-            include: { category: true }
-        });
-
+        // Merge and sort activities
         const activities = [
             ...recentDonations.map(d => ({
                 id: `don-${d.id}`,
@@ -147,30 +113,40 @@ export async function GET() {
                 status: 'Processed',
                 rawDate: new Date(e.date)
             }))
-        ].sort((a, b) => b.rawDate - a.rawDate).slice(0, 10);
+        ].sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime()).slice(0, 10);
 
 
-        // 3. Chart Data (Last 6 Months)
-        const chartData = [];
-        for (let i = 5; i >= 0; i--) {
+        // ==========================================
+        // 3. CHART DATA (Parallelize the loop)
+        // ==========================================
+        // We generate an array of 6 months, then map over them with Promise.all
+        const last6Months = Array.from({ length: 6 }, (_, i) => i);
+        
+        const chartData = await Promise.all(last6Months.reverse().map(async (i) => {
             const date = subMonths(now, i);
             const monthStart = startOfMonth(date);
             const monthEnd = endOfMonth(date);
             const monthLabel = format(date, 'MMM');
 
-            const mDonations = await prisma.donation.aggregate({ _sum: { amount: true }, where: { createdAt: { gte: monthStart, lte: monthEnd } } });
-            const mPayments = await prisma.payment.aggregate({ _sum: { amount: true }, where: { date: { gte: monthStart, lte: monthEnd } } });
-            const mOther = await prisma.income.aggregate({ _sum: { amount: true }, where: { date: { gte: monthStart, lte: monthEnd } } });
-            const mExpenses = await prisma.expense.aggregate({ _sum: { amount: true }, where: { date: { gte: monthStart, lte: monthEnd } } });
+            // Run these 4 queries in parallel for this specific month
+            const [mDonations, mPayments, mOther, mExpenses] = await Promise.all([
+                prisma.donation.aggregate({ _sum: { amount: true }, where: { createdAt: { gte: monthStart, lte: monthEnd } } }),
+                prisma.payment.aggregate({ _sum: { amount: true }, where: { date: { gte: monthStart, lte: monthEnd } } }),
+                prisma.income.aggregate({ _sum: { amount: true }, where: { date: { gte: monthStart, lte: monthEnd } } }),
+                prisma.expense.aggregate({ _sum: { amount: true }, where: { date: { gte: monthStart, lte: monthEnd } } })
+            ]);
 
-            chartData.push({
+            return {
                 name: monthLabel,
                 Income: (mDonations._sum.amount || 0) + (mPayments._sum.amount || 0) + (mOther._sum.amount || 0),
                 Expense: (mExpenses._sum.amount || 0)
-            });
-        }
+            };
+        }));
 
 
+        // ==========================================
+        // 4. RETURN RESPONSE
+        // ==========================================
         return NextResponse.json({
             stats: [
                 {
@@ -186,8 +162,7 @@ export async function GET() {
                     title: "Monthly Expenses",
                     value: `Rs. ${monthlyExpenseValue.toLocaleString()}`,
                     change: `${expenseChange > 0 ? '+' : ''}${expenseChange.toFixed(1)}%`,
-                    trend: expenseChange <= 0 ? "up" : "down", // For expenses, down is usually "good" (green) but here we just track direction. Let's keep logic simple: up is increase.
-                    // Actually, if expense goes down, it's good. But let's just show direction.
+                    trend: expenseChange <= 0 ? "up" : "down",
                     color: "text-rose-600",
                     bg: "bg-rose-100",
                     iconName: "TrendingUp"

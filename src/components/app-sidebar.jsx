@@ -44,7 +44,7 @@ export function AppSidebar({ ...props }) {
     teams: [
       {
         name: "Masjid Admin",
-        logo: Landmark, 
+        logo: Landmark,
         plan: "Accounting",
       },
     ],
@@ -90,7 +90,7 @@ export function AppSidebar({ ...props }) {
             title: "Income Summary",
             url: "/accounting/income",
           },
-           {
+          {
             title: "Other Income",
             url: "/accounting/other-income",
           },
@@ -123,7 +123,7 @@ export function AppSidebar({ ...props }) {
       {
         name: "Donors",
         url: "/donations/donors",
-        icon: Bot, 
+        icon: Bot,
       },
     ],
     Reports: [
@@ -163,12 +163,10 @@ export function AppSidebar({ ...props }) {
         <TeamSwitcher teams={data.teams} />
       </SidebarHeader>
       <SidebarContent>
-     
         <NavProjects projects={data.Core} label="Overview" />
-        
 
         <NavMain items={data.navMain} />
-        
+
         <NavProjects projects={data.Donations} label="Donations" />
 
         <NavProjects projects={data.Reports} label="Reporting" />
