@@ -187,3 +187,36 @@ model Ledger {
   // Composite index: Super fast for finding "Related Transactions" (Polymorphic lookups)
   @@index([referenceType, referenceId])
 }
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  timestamp  DateTime @default(now())
+  userId     String?
+  userName   String?
+  action     String   // CREATE, UPDATE, DELETE
+  entityType String   // Member, Invoice, Payment, etc.
+  entityId   String
+  entityName String?  // Human-readable identifier
+  changes    Json?    // Before/after values for updates
+  ipAddress  String?
+  userAgent  String?
+
+  // Optimization: Fast filtering and searching
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([timestamp])
+  @@index([action])
+}
+
+model AppSettings {
+  id              String   @id @default(cuid())
+  appName         String   @default("Masjid Accounting System")
+  appVersion      String   @default("1.0.0")
+  footerText      String   @default("Developed By: Inzeedo (PVT) Ltd.")
+  footerCopyright String   @default("© 2025 All Rights Reserved")
+  showFooter      Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("app_settings")
+}

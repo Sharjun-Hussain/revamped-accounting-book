@@ -139,7 +139,7 @@ export function AppSidebar({ ...props }) {
       },
       {
         name: "Audit Logs",
-        url: "/reports/audit-logs",
+        url: "/audit-logs",
         icon: ShieldCheck,
       },
     ],

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { logCreate } from '@/lib/auditLog';
 
 export async function GET(request) {
     const { searchParams } = new URL(request.url);
@@ -91,6 +92,9 @@ export async function POST(request) {
 
             return expense;
         });
+
+        // Log expense creation
+        await logCreate(request, 'Expense', result, 'description');
 
         return NextResponse.json(result, { status: 201 });
     } catch (error) {

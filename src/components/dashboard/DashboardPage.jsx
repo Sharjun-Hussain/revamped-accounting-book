@@ -471,35 +471,7 @@ export default function MosqueDashboard() {
                 View Calendar
               </button>
             </div>
-
-            {/* Zakat Fund Card */}
-            <div className="bg-emerald-900 rounded-xl shadow-lg p-6 text-white relative overflow-hidden">
-              <div className="absolute -bottom-4 -right-4 bg-emerald-800 w-24 h-24 rounded-full opacity-50 blur-xl"></div>
-              <div className="absolute -top-4 -left-4 bg-emerald-500 w-20 h-20 rounded-full opacity-20 blur-xl"></div>
-
-              <h3 className="font-bold text-lg mb-1">Zakat Fund Status</h3>
-              <p className="text-emerald-200 text-sm mb-6">Cycle ending in 12 days</p>
-
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm mb-1">
-                  <span>Target</span>
-                  <span>82%</span>
-                </div>
-                <div className="w-full bg-emerald-800 rounded-full h-2">
-                  <div className="bg-emerald-400 h-2 rounded-full w-[82%]"></div>
-                </div>
-                <div className="flex justify-between items-center mt-4">
-                  <div>
-                    <span className="text-xs text-emerald-300 block">Collected</span>
-                    <span className="font-bold text-lg">Rs. 850,000</span>
-                  </div>
-                  <button className="bg-white text-emerald-900 p-2 rounded-lg hover:bg-emerald-50 transition-colors">
-                    <ChevronRight className="h-5 w-5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-
+        
           </div>
         </div>
       </main>
