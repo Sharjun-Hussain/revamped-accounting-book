@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   TrendingDown,
@@ -70,95 +70,13 @@ import { accountingService } from "@/services/accountingService";
 import { categoryService } from "@/services/categoryService";
 import { AccountingSkeleton } from "@/components/accounting/AccountingSkeleton";
 
-const columns = [
-  {
-    accessorKey: "date",
-    header: ({ column }) => (
-      <Button variant="ghost" size="sm" className="-ml-3" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-        Date <ArrowUpDown className="ml-2 h-3 w-3 opacity-50" />
-      </Button>
-    ),
-    cell: ({ row }) => <span className="text-sm text-slate-600">{format(new Date(row.getValue("date")), "MMM dd, yyyy")}</span>,
-  },
-  {
-    accessorKey: "category",
-    header: "Category",
-    cell: ({ row }) => {
-      const catName = row.original.category?.name || "Uncategorized";
-      const catColor = row.original.category?.color || "slate";
-      // Simple mapping for demo, ideally color comes from DB
-      const colorClass = `text-${catColor}-600 bg-${catColor}-50 border-${catColor}-200`;
-      
-      return (
-        <Badge variant="outline" className={`font-normal ${colorClass} gap-1 pr-2`}>
-           {catName}
-        </Badge>
-      );
-    },
-  },
-  {
-    accessorKey: "description",
-    header: "Description",
-    cell: ({ row }) => (
-      <div>
-        <div className="font-medium text-slate-900">{row.original.description.split(' - ')[0]}</div>
-        <div className="text-xs text-slate-500 truncate max-w-[200px]">{row.original.description.split(' - ')[1] || row.original.description}</div>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "amount",
-    header: ({ column }) => <div className="text-right">Amount</div>,
-    cell: ({ row }) => <div className="text-right font-bold text-slate-900">Rs. {row.getValue("amount").toLocaleString()}</div>,
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => {
-      return (
-        <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
-          Paid
-        </Badge>
-      );
-    },
-  },
-  {
-    accessorKey: "receipt",
-    header: "Receipt",
-    cell: ({ row }) => (
-        row.getValue("receipt") ? (
-            <Button variant="ghost" size="icon" className="h-6 w-6 text-blue-600">
-                <FileText className="w-3 h-3" />
-            </Button>
-        ) : <span className="text-xs text-slate-400 italic">No Doc</span>
-    )
-  },
-  {
-    id: "actions",
-    cell: ({ row }) => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-8 w-8 p-0">
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem>Edit Expense</DropdownMenuItem>
-          <DropdownMenuItem>View Receipt</DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-rose-600">Delete Record</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
-  },
-];
 
 
 
 
 
-const AddExpenseDialog = ({ onSuccess, categories, bankAccounts }) => {
-  const [open, setOpen] = useState(false);
+
+const ExpenseDialog = ({ onSuccess, categories, bankAccounts, expenseToEdit, open, setOpen }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // --- Form State ---
@@ -174,6 +92,24 @@ const AddExpenseDialog = ({ onSuccess, categories, bankAccounts }) => {
   // --- File State ---
   const [selectedFile, setSelectedFile] = useState(null);
   const fileInputRef = useRef(null);
+
+  // Initialize form when editing
+  useEffect(() => {
+      if (expenseToEdit) {
+          setFormData({
+              amount: expenseToEdit.amount,
+              date: new Date(expenseToEdit.date).toISOString().split('T')[0],
+              category: expenseToEdit.categoryId,
+              payee: expenseToEdit.payee || "",
+              description: expenseToEdit.description || "",
+              bankAccountId: "" 
+          });
+      } else {
+          // Reset for add mode
+          setFormData({ amount: "", date: new Date().toISOString().split('T')[0], category: "", payee: "", description: "", bankAccountId: "" });
+      }
+      setSelectedFile(null);
+  }, [expenseToEdit, open]);
 
   // Handle Text Inputs
   const handleInputChange = (e) => {
@@ -219,16 +155,29 @@ const AddExpenseDialog = ({ onSuccess, categories, bankAccounts }) => {
     setIsSubmitting(true);
 
     try {
-        await accountingService.createExpense({
-            amount: formData.amount,
-            date: formData.date,
-            categoryId: formData.category,
-            payee: formData.payee,
-            description: formData.description,
-            bankAccountId: formData.bankAccountId
-        });
+        const data = new FormData();
+        if (expenseToEdit) {
+            data.append('id', expenseToEdit.id);
+        }
+        data.append('amount', formData.amount);
+        data.append('date', formData.date);
+        data.append('categoryId', formData.category);
+        data.append('payee', formData.payee);
+        data.append('description', formData.description);
+        data.append('bankAccountId', formData.bankAccountId);
+        
+        if (selectedFile) {
+            data.append('file', selectedFile);
+        }
 
-        toast.success("Expense Saved");
+        if (expenseToEdit) {
+            await accountingService.updateExpense(data);
+            toast.success("Expense Updated");
+        } else {
+            await accountingService.createExpense(data);
+            toast.success("Expense Saved");
+        }
+
         setOpen(false);
         setIsSubmitting(false);
         // Reset Form
@@ -245,12 +194,6 @@ const AddExpenseDialog = ({ onSuccess, categories, bankAccounts }) => {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-200 gap-2">
-            <PlusCircle className="w-4 h-4" /> Add Expense
-        </Button>
-      </DialogTrigger>
-      
       <DialogContent className="sm:max-w-[600px] p-0 gap-0 overflow-hidden">
         
         {/* Header */}
@@ -259,7 +202,7 @@ const AddExpenseDialog = ({ onSuccess, categories, bankAccounts }) => {
              <div className="p-2 bg-emerald-100 rounded-lg">
                 <Receipt className="w-5 h-5 text-emerald-600" />
              </div>
-             Record New Expense
+             {expenseToEdit ? "Edit Expense" : "Record New Expense"}
           </DialogTitle>
           <DialogDescription>
             Enter the payment details below.
@@ -376,7 +319,7 @@ const AddExpenseDialog = ({ onSuccess, categories, bankAccounts }) => {
                         className="hidden" 
                     />
 
-                    {!selectedFile ? (
+                    {!selectedFile && !expenseToEdit?.receiptUrl ? (
                         <div 
                             onClick={triggerFileInput}
                             className="border-2 border-dashed border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center text-slate-400 hover:bg-slate-50 hover:border-emerald-200 hover:text-emerald-500 transition-all cursor-pointer group"
@@ -395,21 +338,39 @@ const AddExpenseDialog = ({ onSuccess, categories, bankAccounts }) => {
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="text-sm font-medium text-emerald-900 truncate max-w-[200px]">
-                                        {selectedFile.name}
+                                        {selectedFile ? selectedFile.name : "Current Receipt"}
                                     </span>
                                     <span className="text-[10px] text-emerald-600">
-                                        {(selectedFile.size / 1024).toFixed(2)} KB
+                                        {selectedFile ? `${(selectedFile.size / 1024).toFixed(2)} KB` : (
+                                            <a href={expenseToEdit.receiptUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-emerald-800">
+                                                View Existing File
+                                            </a>
+                                        )}
                                     </span>
                                 </div>
                             </div>
-                            <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                onClick={removeFile}
-                                className="text-slate-400 hover:text-rose-500 hover:bg-rose-50"
-                            >
-                                <X className="w-4 h-4" />
-                            </Button>
+                            <div className="flex gap-2">
+                                {!selectedFile && (
+                                     <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        onClick={triggerFileInput}
+                                        className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 h-8 text-xs"
+                                    >
+                                        Replace
+                                    </Button>
+                                )}
+                                {selectedFile && (
+                                    <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        onClick={removeFile}
+                                        className="text-slate-400 hover:text-rose-500 hover:bg-rose-50"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </Button>
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>
@@ -433,7 +394,7 @@ const AddExpenseDialog = ({ onSuccess, categories, bankAccounts }) => {
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...
                         </>
                     ) : (
-                        "Save Expense"
+                        expenseToEdit ? "Update Expense" : "Save Expense"
                     )}
                 </Button>
             </div>
@@ -451,6 +412,20 @@ export default function ExpensesPage() {
   const [categories, setCategories] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Edit State
+  const [editExpense, setEditExpense] = useState(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const handleEdit = (expense) => {
+      setEditExpense(expense);
+      setIsDialogOpen(true);
+  };
+
+  const handleAdd = () => {
+      setEditExpense(null);
+      setIsDialogOpen(true);
+  };
 
   const fetchData = async () => {
     try {
@@ -474,6 +449,90 @@ export default function ExpensesPage() {
   useState(() => {
     fetchData();
   }, []);
+
+  const columns = useMemo(() => [
+    {
+      accessorKey: "date",
+      header: ({ column }) => (
+        <Button variant="ghost" size="sm" className="-ml-3" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+          Date <ArrowUpDown className="ml-2 h-3 w-3 opacity-50" />
+        </Button>
+      ),
+      cell: ({ row }) => <span className="text-sm text-slate-600">{format(new Date(row.getValue("date")), "MMM dd, yyyy")}</span>,
+    },
+    {
+      accessorKey: "category",
+      header: "Category",
+      cell: ({ row }) => {
+        const catName = row.original.category?.name || "Uncategorized";
+        const catColor = row.original.category?.color || "slate";
+        const colorClass = `text-${catColor}-600 bg-${catColor}-50 border-${catColor}-200`;
+        
+        return (
+          <Badge variant="outline" className={`font-normal ${colorClass} gap-1 pr-2`}>
+             {catName}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "description",
+      header: "Description",
+      cell: ({ row }) => (
+        <div>
+          <div className="font-medium text-slate-900">{row.original.payee || row.original.description.split(' - ')[0]}</div>
+          <div className="text-xs text-slate-500 truncate max-w-[200px]">{row.original.payee ? row.original.description : (row.original.description.split(' - ')[1] || row.original.description)}</div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "amount",
+      header: ({ column }) => <div className="text-right">Amount</div>,
+      cell: ({ row }) => <div className="text-right font-bold text-slate-900">Rs. {row.getValue("amount").toLocaleString()}</div>,
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        return (
+          <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
+            Paid
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "receiptUrl",
+      header: "Receipt",
+      cell: ({ row }) => (
+          row.getValue("receiptUrl") ? (
+              <Button variant="ghost" size="icon" className="h-6 w-6 text-blue-600" asChild>
+                  <a href={row.getValue("receiptUrl")} target="_blank" rel="noopener noreferrer">
+                      <FileText className="w-3 h-3" />
+                  </a>
+              </Button>
+          ) : <span className="text-xs text-slate-400 italic">No Doc</span>
+      )
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handleEdit(row.original)}>Edit Expense</DropdownMenuItem>
+            <DropdownMenuItem>View Receipt</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-rose-600">Delete Record</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ], [handleEdit]);
   
   const table = useReactTable({
     data: expenses,
@@ -497,6 +556,20 @@ export default function ExpensesPage() {
     }));
     exportToCSV(csvData, "Expenses_Report.csv");
   };
+
+  // --- HIGHEST CATEGORY LOGIC ---
+  const categoryTotals = expenses.reduce((acc, expense) => {
+      const catName = expense.category?.name || "Uncategorized";
+      acc[catName] = (acc[catName] || 0) + expense.amount;
+      return acc;
+  }, {});
+
+  let highestCategory = { name: "-", amount: 0 };
+  Object.entries(categoryTotals).forEach(([name, amount]) => {
+      if (amount > highestCategory.amount) {
+          highestCategory = { name, amount };
+      }
+  });
 
   if (loading) {
     return <AccountingSkeleton />;
@@ -522,7 +595,17 @@ export default function ExpensesPage() {
                  <Button variant="outline" className="bg-white border-slate-200 text-slate-700" onClick={handleExport}>
                     <Download className="w-4 h-4 mr-2" /> Export Report
                  </Button>
-                 <AddExpenseDialog onSuccess={fetchData} categories={categories} bankAccounts={bankAccounts} />
+                 <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-200 gap-2" onClick={handleAdd}>
+                    <PlusCircle className="w-4 h-4" /> Add Expense
+                 </Button>
+                 <ExpenseDialog 
+                    open={isDialogOpen} 
+                    setOpen={setIsDialogOpen} 
+                    onSuccess={fetchData} 
+                    categories={categories} 
+                    bankAccounts={bankAccounts} 
+                    expenseToEdit={editExpense}
+                 />
             </div>
         </div>
 
@@ -544,14 +627,13 @@ export default function ExpensesPage() {
                     <Users className="h-4 w-4 text-blue-500" />
                 </CardHeader>
                 <CardContent>
-
-                    <div className="text-2xl font-bold text-slate-900">-</div>
-                    <p className="text-xs text-slate-500 mt-1">Analytics coming soon</p>
+                    <div className="text-2xl font-bold text-slate-900">{highestCategory.name}</div>
+                    <p className="text-xs text-slate-500 mt-1">Rs. {highestCategory.amount.toLocaleString()}</p>
                 </CardContent>
              </Card>
              <Card className="rounded-xl border-slate-200 shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium text-slate-500">Pending Bills</CardTitle>
+                    <CardTitle className="text-sm font-medium text-slate-500">Total Transactions</CardTitle>
                     <Receipt className="h-4 w-4 text-amber-500" />
                 </CardHeader>
                 <CardContent>
@@ -600,4 +682,4 @@ export default function ExpensesPage() {
       </motion.div>
     </div>
   );
-}
+} 

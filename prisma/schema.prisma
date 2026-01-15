@@ -49,6 +49,8 @@ model Expense {
   id               String    @id @default(cuid())
   amount           Float
   description      String?
+  payee            String?
+  receiptUrl       String?
   date             DateTime  @default(now())
   categoryId       String
   createdAt        DateTime  @default(now())

@@ -79,7 +79,23 @@ export const accountingService = {
         return response.data;
     },
     createExpense: async (expenseData) => {
-        const response = await api.post('/accounting/expenses', expenseData);
+        // If expenseData is FormData, we need to ensure the Content-Type is correct.
+        // Setting it to 'multipart/form-data' usually lets the browser/axios handle the boundary.
+        // However, to be safe against the default application/json, we explicitly set it.
+        const config = {};
+        if (expenseData instanceof FormData) {
+            config.headers = { 'Content-Type': 'multipart/form-data' };
+        }
+
+        const response = await api.post('/accounting/expenses', expenseData, config);
+        return response.data;
+    },
+    updateExpense: async (expenseData) => {
+        const config = {};
+        if (expenseData instanceof FormData) {
+            config.headers = { 'Content-Type': 'multipart/form-data' };
+        }
+        const response = await api.put('/accounting/expenses', expenseData, config);
         return response.data;
     },
     getCategories: async () => {
