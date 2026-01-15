@@ -11,6 +11,17 @@ import { DashboardLayoutSkeleton } from '../skeletons/Dashboard-skeleton';
 import { SystemBreadcrumb } from '@/components/general/breadcrumb/Breadcrumb';
 import Footer from '@/components/general/Footer';
 
+import { ZoomProvider, useZoom } from "@/context/ZoomContext";
+
+function ZoomWrapper({ children }) {
+  const { zoomLevel } = useZoom();
+  return (
+    <div style={{ zoom: `${zoomLevel}%` }} className="flex flex-col min-h-screen">
+      {children}
+    </div>
+  );
+}
+
 export default function AppLayout({ children }) {
 
   const { status } = useSession();
@@ -24,23 +35,25 @@ export default function AppLayout({ children }) {
   }
 
   return (
-    <SidebarProvider defaultOpen={true}>
-      <div className="flex min-h-screen w-full flex-col">
-        <div className="flex flex-1">
-          <AppSidebar variant="inset" />
-          <div className="flex-1 overflow-x-auto"> {/* Container for scrolling */}
-            <SidebarInset>
-              <div className='flex flex-col min-h-screen'>
-                <div className='flex-1'>
-                  <div className='mt-3 mx-6 rounded-sm'> <SystemBreadcrumb /></div>
-                  {children}
-                </div>
-                <Footer />
-              </div>
-            </SidebarInset>
+    <ZoomProvider>
+      <SidebarProvider defaultOpen={true}>
+        <div className="flex min-h-screen w-full flex-col">
+          <div className="flex flex-1">
+            <AppSidebar variant="inset" />
+            <div className="flex-1 overflow-x-auto"> {/* Container for scrolling */}
+              <SidebarInset>
+                <ZoomWrapper>
+                  <div className='flex-1'>
+                    <div className='mt-3 mx-6 rounded-sm'> <SystemBreadcrumb /></div>
+                    {children}
+                  </div>
+                  <Footer />
+                </ZoomWrapper>
+              </SidebarInset>
+            </div>
           </div>
         </div>
-      </div>
-    </SidebarProvider>
+      </SidebarProvider>
+    </ZoomProvider>
   );
 }

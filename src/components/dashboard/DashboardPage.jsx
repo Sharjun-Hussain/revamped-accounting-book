@@ -19,7 +19,9 @@ import {
   ChevronRight,
   HandCoins,
   UserPlus,
-  Receipt
+  Receipt,
+  Settings,
+  LogOut
 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
@@ -65,6 +67,7 @@ import useSWR from "swr";
 // ... (keep imports)
 
 import { DashboardSkeleton } from "./DashboardSkeleton";
+import { QuickActions } from "@/components/general/QuickActions";
 
 // ... (keep imports)
 
@@ -77,7 +80,6 @@ export default function MosqueDashboard() {
   // Dropdown States
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showQuickActions, setShowQuickActions] = useState(false);
 
   // Data States
   const [notifications, setNotifications] = useState(initialNotifications);
@@ -89,7 +91,6 @@ export default function MosqueDashboard() {
   // Refs for click outside
   const notifRef = useRef(null);
   const userRef = useRef(null);
-  const quickRef = useRef(null);
 
   // --- HANDLERS ---
 
@@ -139,7 +140,6 @@ export default function MosqueDashboard() {
     const handleClickOutside = (event) => {
       if (notifRef.current && !notifRef.current.contains(event.target)) setShowNotifications(false);
       if (userRef.current && !userRef.current.contains(event.target)) setShowUserMenu(false);
-      if (quickRef.current && !quickRef.current.contains(event.target)) setShowQuickActions(false);
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -191,20 +191,11 @@ export default function MosqueDashboard() {
             {/* Desktop Actions */}
             <div className="hidden md:flex items-center gap-4">
               
-              {/* Search Bar */}
-              <div className="relative group">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-emerald-600 transition-colors" />
-                <input
-                  type="text"
-                  placeholder="Search activities..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 bg-slate-100 border-transparent border-2 focus:border-emerald-500 focus:bg-white rounded-full text-sm w-64 transition-all outline-none"
-                />
-              </div>
+              {/* Quick Actions */}
+              <QuickActions />
 
               {/* Notifications Dropdown */}
-              <div className="relative" ref={notifRef}>
+              {/* <div className="relative" ref={notifRef}>
                 <button 
                   onClick={() => setShowNotifications(!showNotifications)}
                   className="p-2 relative hover:bg-slate-100 rounded-full transition-colors outline-none"
@@ -253,7 +244,7 @@ export default function MosqueDashboard() {
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
+              </div> */}
 
               {/* User Profile Dropdown */}
               <div className="relative" ref={userRef}>
@@ -314,60 +305,10 @@ export default function MosqueDashboard() {
             <p className="text-slate-500">Welcome back, {session?.user?.name || "Administrator"}. Here's what's happening.</p>
           </div>
           
-          <div className="flex gap-3 relative" ref={quickRef}>
+          <div className="flex gap-3">
             <button className="hidden sm:flex px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 shadow-sm transition-all">
               Download Report
             </button>
-            
-            <button 
-              onClick={() => setShowQuickActions(!showQuickActions)}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 shadow-sm shadow-emerald-200 transition-all flex items-center gap-2"
-            >
-              <LayoutDashboard className="h-4 w-4" />
-              Quick Action
-            </button>
-
-            {/* Quick Actions Dropdown */}
-            <AnimatePresence>
-              {showQuickActions && (
-                <motion.div 
-                  variants={menuVariants} initial="hidden" animate="visible" exit="exit"
-                  className="absolute right-0 top-12 w-64 bg-white rounded-xl shadow-xl border border-slate-200 z-40 p-2"
-                >
-                  <div className="grid grid-cols-1 gap-1">
-                    <button className="flex items-center gap-3 p-3 rounded-lg hover:bg-emerald-50 text-left group">
-                      <div className="bg-emerald-100 p-2 rounded-md text-emerald-600 group-hover:bg-white group-hover:shadow-sm transition-all">
-                        <HandCoins className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <span className="block text-sm font-semibold text-slate-800">Add Donation</span>
-                        <span className="block text-xs text-slate-500">Record incoming funds</span>
-                      </div>
-                    </button>
-                    
-                    <button className="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-50 text-left group">
-                      <div className="bg-blue-100 p-2 rounded-md text-blue-600 group-hover:bg-white group-hover:shadow-sm transition-all">
-                        <UserPlus className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <span className="block text-sm font-semibold text-slate-800">New Member</span>
-                        <span className="block text-xs text-slate-500">Register Sanda payer</span>
-                      </div>
-                    </button>
-
-                    <button className="flex items-center gap-3 p-3 rounded-lg hover:bg-rose-50 text-left group">
-                      <div className="bg-rose-100 p-2 rounded-md text-rose-600 group-hover:bg-white group-hover:shadow-sm transition-all">
-                        <Receipt className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <span className="block text-sm font-semibold text-slate-800">Record Expense</span>
-                        <span className="block text-xs text-slate-500">Track spending</span>
-                      </div>
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
         </div>
 
