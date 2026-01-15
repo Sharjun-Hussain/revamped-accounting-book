@@ -63,31 +63,13 @@ import { DataTable } from "@/components/general/data-table";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {  useRef } from "react";
-// Make sure to install axios: npm install axios
-import axios from "axios"; 
-
-import { 
-
-
-  
-
-
-
-
-    Loader2 
-} from "lucide-react";
-import { toast } from "sonner"; // Assuming you use sonner for toasts
-
-// Import Shared PDF Utility
+import {  Loader2 } from "lucide-react";
+import { toast } from "sonner"; 
 import { exportToCSV } from "@/lib/export-utils"; 
-
 import { accountingService } from "@/services/accountingService";
 import { categoryService } from "@/services/categoryService";
 import { AccountingSkeleton } from "@/components/accounting/AccountingSkeleton";
 
-// --- 1. MOCK DATA REMOVED ---
-
-// --- 2. COLUMNS ---
 const columns = [
   {
     accessorKey: "date",
@@ -328,11 +310,10 @@ const AddExpenseDialog = ({ onSuccess, categories, bankAccounts }) => {
                             <Tag className="w-3.5 h-3.5" /> Category
                         </Label>
                         <Select value={formData.category} onValueChange={handleCategoryChange}>
-                            <SelectTrigger className="h-11 bg-slate-50 border-slate-200">
-                                <SelectValue />
+                            <SelectTrigger className="h-11 bg-slate-50 border-slate-200 w-full">
+                                <SelectValue placeholder="Select Category" />
                             </SelectTrigger>
                             <SelectContent>
-
                                 {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                             </SelectContent>
                         </Select>

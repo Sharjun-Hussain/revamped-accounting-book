@@ -12,10 +12,21 @@ import {
 } from "@/components/ui/breadcrumb";
 import { usePathname } from "next/navigation";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Plus, Minus, Search, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { useZoom } from "@/context/ZoomContext";
+import { QuickActions } from "@/components/general/QuickActions";
 
 export function SystemBreadcrumb() {
   const pathname = usePathname();
   const [breadcrumbItems, setBreadcrumbItems] = useState([]);
+  const { zoomLevel, zoomIn, zoomOut, resetZoom } = useZoom();
 
   // Format segment names to be more readable
   const formatSegmentName = (segment) => {
@@ -85,6 +96,44 @@ export function SystemBreadcrumb() {
     setBreadcrumbItems(items);
   }, [pathname]);
 
+  // Quick Actions Component - Now imported
+
+
+  // Zoom Controls Component
+  const ZoomControls = () => (
+    <div className="flex items-center gap-1 ml-2 border-l pl-2">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7"
+        onClick={zoomOut}
+        disabled={zoomLevel <= 50}
+        title="Zoom Out"
+      >
+        <Minus className="h-3.5 w-3.5" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-7 px-2 text-xs font-mono min-w-[3rem]"
+        onClick={resetZoom}
+        title="Reset Zoom"
+      >
+        {zoomLevel}%
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7"
+        onClick={zoomIn}
+        disabled={zoomLevel >= 150}
+        title="Zoom In"
+      >
+        <Plus className="h-3.5 w-3.5" />
+      </Button>
+    </div>
+  );
+
   // Don't render anything if no breadcrumb items
   if (breadcrumbItems.length === 0) {
     return null;
@@ -92,10 +141,16 @@ export function SystemBreadcrumb() {
 
   return (
     <Breadcrumb>
-      <div className="flex gap-3 items-center">
-        {" "}
-        <SidebarTrigger />
-        <BreadcrumbList>{breadcrumbItems}</BreadcrumbList>
+      <div className="flex items-center justify-between w-full">
+        <div className="flex gap-3 items-center">
+          <SidebarTrigger />
+          <BreadcrumbList>{breadcrumbItems}</BreadcrumbList>
+        </div>
+        
+        <div className="flex items-center gap-2">
+           <QuickActions className="ml-4" />
+           <ZoomControls />
+        </div>
       </div>
     </Breadcrumb>
   );

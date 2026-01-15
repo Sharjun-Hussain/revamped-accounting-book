@@ -5,6 +5,7 @@ import { useTheme } from "next-themes";
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import useSWR from "swr";
+import { QuickActions } from "@/components/general/QuickActions";
 
 export default function Header() {
   const [notifications] = useState(3);
@@ -31,6 +32,7 @@ export default function Header() {
 
           {/* Right Side Actions */}
           <div className="flex items-center space-x-4">
+            <QuickActions />
             {/* Search */}
 
             {/* Theme Toggle */}
