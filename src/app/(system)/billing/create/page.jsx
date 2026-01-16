@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -179,7 +180,7 @@ export default function SandaCollectionPage() {
   });
 
   // Load Initial Data
-  useState(() => {
+  useEffect(() => {
     const loadData = async () => {
       try {
         const [membersData, accountsData, settingsData] = await Promise.all([
@@ -265,6 +266,19 @@ export default function SandaCollectionPage() {
         toast.error("Could not load member invoices");
     }
   };
+
+  // --- AUTO-SELECT FROM URL ---
+  const searchParams = useSearchParams();
+  const urlMemberId = searchParams.get("memberId");
+
+  useEffect(() => {
+    if (urlMemberId && members.length > 0 && !selectedMember) {
+      const memberExists = members.find(m => m.id === urlMemberId);
+      if (memberExists) {
+        handleSelectMember(urlMemberId);
+      }
+    }
+  }, [members, urlMemberId]);
 
   // Quick Pay Actions
   const handleQuickPay = (monthsCount) => {
@@ -398,8 +412,19 @@ export default function SandaCollectionPage() {
                             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                             className="h-64 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-400 bg-white/50"
                         >
-                            <Search className="w-10 h-10 mb-2 opacity-20" />
-                            <p>Select a member to begin collection</p>
+                            {urlMemberId && isLoading ? (
+                                <>
+                                    <div className="flex flex-col items-center gap-2">
+                                        <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-200 border-t-emerald-600"></div>
+                                        <p className="text-emerald-600 font-medium animate-pulse">Loading Member Details...</p>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <Search className="w-10 h-10 mb-2 opacity-20" />
+                                    <p>Select a member to begin collection</p>
+                                </>
+                            )}
                         </motion.div>
                     ) : (
                         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">

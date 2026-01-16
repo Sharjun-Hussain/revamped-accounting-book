@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   User,
@@ -14,7 +14,8 @@ import {
   ChevronsUpDown,
   Download,
   Phone,
-  MapPin
+  MapPin,
+  Loader2
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -48,46 +49,58 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
-// Import PDF Generator
+// Import PDF Generator and Services
 import { generateFinancialPDF } from "@/lib/report-generator";
+import { memberService } from "@/services/memberService";
 
-// --- 1. MOCK DATA ---
-const mockMembers = [
-  { id: "M-001", name: "Abdul Rahman", phone: "0771234567", address: "12 Mosque Rd, Kandy", status: "Active", joined: "2022-01-01" },
-  { id: "M-002", name: "Mohamed Fazil", phone: "0719876543", address: "45 Main St, Colombo", status: "Active", joined: "2023-05-15" },
-  { id: "M-003", name: "Yusuf Khan", phone: "0755551234", address: "88 Hill Top, Kandy", status: "Arrears", joined: "2021-11-20" },
-];
-
-const memberFinancials = {
-    "M-001": {
-        balance: 2000,
-        monthlyRate: 1000,
-        totalPaid: 45000,
-        lastPayment: "2025-12-05",
-        transactions: [
-            { date: "2025-12-05", type: "Payment", ref: "REC-88502", desc: "Sanda: Oct, Nov", debit: 0, credit: 2000 },
-            { date: "2025-12-01", type: "Bill", ref: "INV-DEC-01", desc: "Monthly Sanda (Dec)", debit: 1000, credit: 0 },
-            { date: "2025-11-01", type: "Bill", ref: "INV-NOV-01", desc: "Monthly Sanda (Nov)", debit: 1000, credit: 0 },
-            { date: "2025-10-01", type: "Bill", ref: "INV-OCT-01", desc: "Monthly Sanda (Oct)", debit: 1000, credit: 0 },
-            { date: "2025-09-15", type: "Payment", ref: "REC-88400", desc: "Sanda: Sep", debit: 0, credit: 1000 },
-        ],
-        outstanding: [
-            { month: "December 2025", amount: 1000 },
-            { month: "January 2026", amount: 1000 }, // Advance bill example or error
-        ]
-    }
-};
+// --- REMOVED MOCK DATA - NOW USING REAL API ---
 
 export default function MemberStatementPage() {
   const [open, setOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [financialData, setFinancialData] = useState(null);
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingStatement, setLoadingStatement] = useState(false);
+  const [error, setError] = useState(null);
+
+  // --- FETCH MEMBERS ON MOUNT ---
+  useEffect(() => {
+    fetchMembers();
+  }, []);
+
+  const fetchMembers = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await memberService.getAll();
+      setMembers(data);
+    } catch (err) {
+      console.error('Error fetching members:', err);
+      setError('Failed to load members. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // --- HANDLER: SELECT MEMBER ---
-  const handleSelect = (member) => {
+  const handleSelect = async (member) => {
     setSelectedMember(member);
-    setFinancialData(memberFinancials["M-001"]); // Simulating fetch. In real app, fetch by member.id
     setOpen(false);
+    
+    // Fetch statement data for selected member
+    try {
+      setLoadingStatement(true);
+      setError(null);
+      const statementData = await memberService.getMemberStatement(member.id);
+      setFinancialData(statementData.financial);
+    } catch (err) {
+      console.error('Error fetching member statement:', err);
+      setError('Failed to load member statement. Please try again.');
+      setFinancialData(null);
+    } finally {
+      setLoadingStatement(false);
+    }
   };
 
   // --- HANDLER: PRINT STATEMENT ---
@@ -121,11 +134,61 @@ export default function MemberStatementPage() {
             }
         ],
         summary: [
-            { label: "Total Billed", value: "Rs. 3,000", isBold: false }, // Mock logic
-            { label: "Total Paid", value: "(Rs. 3,000)", isBold: false },
+            { label: "Total Billed", value: `Rs. ${financialData.totalBilled.toLocaleString()}`, isBold: false },
+            { label: "Total Paid", value: `(Rs. ${financialData.totalPaid.toLocaleString()})`, isBold: false },
             { label: "CLOSING BALANCE", value: `Rs. ${financialData.balance.toLocaleString()}`, isBold: true }
         ]
     });
+  };
+
+  // --- HANDLER: COLLECT SANDA ---
+  const handleCollectSanda = () => {
+    if (!selectedMember) return;
+    // Open billing create page in new tab with member pre-selected
+    window.open(`/billing/create?memberId=${selectedMember.id}`, '_blank');
+  };
+
+  // --- HANDLER: DOWNLOAD CSV ---
+  const handleDownloadCSV = () => {
+    if (!selectedMember || !financialData) return;
+
+    // Prepare CSV data
+    const csvHeaders = ['Date', 'Type', 'Reference', 'Description', 'Debit', 'Credit'];
+    const csvRows = financialData.transactions.map(tx => [
+      tx.date,
+      tx.type,
+      tx.ref,
+      tx.desc,
+      tx.debit || 0,
+      tx.credit || 0
+    ]);
+
+    // Add summary rows
+    csvRows.push([]);
+    csvRows.push(['Summary', '', '', '', '', '']);
+    csvRows.push(['Total Billed', '', '', '', financialData.totalBilled, '']);
+    csvRows.push(['Total Paid', '', '', '', '', financialData.totalPaid]);
+    csvRows.push(['Outstanding Balance', '', '', '', financialData.balance, '']);
+
+    // Convert to CSV string
+    const csvContent = [
+      [`Member Statement - ${selectedMember.name} (${selectedMember.id})`],
+      [`Generated: ${format(new Date(), "MMM dd, yyyy HH:mm")}`],
+      [],
+      csvHeaders,
+      ...csvRows
+    ].map(row => row.join(',')).join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `statement_${selectedMember.id}_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -157,15 +220,21 @@ export default function MemberStatementPage() {
                         <CommandList>
                             <CommandEmpty>No member found.</CommandEmpty>
                             <CommandGroup>
-                                {mockMembers.map((member) => (
-                                    <CommandItem key={member.id} value={member.name} onSelect={() => handleSelect(member)}>
-                                        <Check className={cn("mr-2 h-4 w-4", selectedMember?.id === member.id ? "opacity-100" : "opacity-0")} />
-                                        <div className="flex flex-col">
-                                            <span>{member.name}</span>
-                                            <span className="text-xs text-slate-400">{member.id}</span>
-                                        </div>
-                                    </CommandItem>
-                                ))}
+                                {loading ? (
+                                    <div className="flex items-center justify-center py-6">
+                                        <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                                    </div>
+                                ) : (
+                                    members.map((member) => (
+                                        <CommandItem key={member.id} value={member.name} onSelect={() => handleSelect(member)}>
+                                            <Check className={cn("mr-2 h-4 w-4", selectedMember?.id === member.id ? "opacity-100" : "opacity-0")} />
+                                            <div className="flex flex-col">
+                                                <span>{member.name}</span>
+                                                <span className="text-xs text-slate-400">{member.id.substring(0, 8)}</span>
+                                            </div>
+                                        </CommandItem>
+                                    ))
+                                )}
                             </CommandGroup>
                         </CommandList>
                     </Command>
@@ -180,7 +249,12 @@ export default function MemberStatementPage() {
                     <Search className="h-12 w-12 text-slate-300 mb-2" />
                     <p className="text-slate-500 font-medium">Select a member to view their statement</p>
                 </motion.div>
-            ) : (
+            ) : loadingStatement ? (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-96 flex flex-col items-center justify-center">
+                    <Loader2 className="h-12 w-12 text-emerald-600 animate-spin mb-2" />
+                    <p className="text-slate-500 font-medium">Loading statement...</p>
+                </motion.div>
+            ) : financialData ? (
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
                     
                     {/* 1. MEMBER PROFILE CARD */}
@@ -199,11 +273,11 @@ export default function MemberStatementPage() {
                                         <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">{selectedMember.status}</Badge>
                                     </div>
                                     <p className="text-sm text-slate-500 flex items-center gap-2">
-                                        <Badge variant="outline" className="font-mono text-xs">{selectedMember.id}</Badge>
-                                        <span className="flex items-center"><Phone className="w-3 h-3 mr-1" /> {selectedMember.phone}</span>
+                                        <Badge variant="outline" className="font-mono text-xs">{selectedMember.id.substring(0, 12)}</Badge>
+                                        <span className="flex items-center"><Phone className="w-3 h-3 mr-1" /> {selectedMember.contact}</span>
                                     </p>
                                     <p className="text-sm text-slate-500 flex items-center gap-1">
-                                        <MapPin className="w-3 h-3" /> {selectedMember.address}
+                                        <MapPin className="w-3 h-3" /> {selectedMember.address || 'N/A'}
                                     </p>
                                 </div>
                             </div>
@@ -219,7 +293,7 @@ export default function MemberStatementPage() {
                                 <Separator />
                                 <div className="flex justify-between items-center text-sm">
                                     <span className="text-slate-500">Monthly Sanda</span>
-                                    <span className="font-medium">Rs. {financialData.monthlyRate}</span>
+                                    <span className="font-medium">Rs. {financialData.monthlyRate.toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-sm">
                                     <span className="text-slate-500">Last Payment</span>
@@ -259,19 +333,27 @@ export default function MemberStatementPage() {
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {financialData.transactions.map((tx, i) => (
-                                                    <TableRow key={i}>
-                                                        <TableCell className="text-xs text-slate-500">{tx.date}</TableCell>
-                                                        <TableCell className="font-medium text-slate-700">{tx.desc}</TableCell>
-                                                        <TableCell className="text-xs font-mono text-slate-400">{tx.ref}</TableCell>
-                                                        <TableCell className="text-right font-medium text-emerald-600">
-                                                            {tx.credit > 0 ? `+${tx.credit.toLocaleString()}` : "-"}
-                                                        </TableCell>
-                                                        <TableCell className="text-right font-medium text-rose-600">
-                                                            {tx.debit > 0 ? tx.debit.toLocaleString() : "-"}
+                                                {financialData.transactions && financialData.transactions.length > 0 ? (
+                                                    financialData.transactions.map((tx, i) => (
+                                                        <TableRow key={i}>
+                                                            <TableCell className="text-xs text-slate-500">{tx.date}</TableCell>
+                                                            <TableCell className="font-medium text-slate-700">{tx.desc}</TableCell>
+                                                            <TableCell className="text-xs font-mono text-slate-400">{tx.ref}</TableCell>
+                                                            <TableCell className="text-right font-medium text-emerald-600">
+                                                                {tx.credit > 0 ? `+${tx.credit.toLocaleString()}` : "-"}
+                                                            </TableCell>
+                                                            <TableCell className="text-right font-medium text-rose-600">
+                                                                {tx.debit > 0 ? tx.debit.toLocaleString() : "-"}
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))
+                                                ) : (
+                                                    <TableRow>
+                                                        <TableCell colSpan={5} className="text-center text-slate-400 py-8">
+                                                            No transactions found
                                                         </TableCell>
                                                     </TableRow>
-                                                ))}
+                                                )}
                                             </TableBody>
                                         </Table>
                                     </Card>
@@ -292,12 +374,20 @@ export default function MemberStatementPage() {
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {financialData.outstanding.map((item, i) => (
-                                                    <TableRow key={i}>
-                                                        <TableCell className="font-medium text-slate-700">{item.month}</TableCell>
-                                                        <TableCell className="text-right text-rose-600 font-bold">{item.amount.toLocaleString()}</TableCell>
+                                                {financialData.outstanding && financialData.outstanding.length > 0 ? (
+                                                    financialData.outstanding.map((item, i) => (
+                                                        <TableRow key={i}>
+                                                            <TableCell className="font-medium text-slate-700">{item.month}</TableCell>
+                                                            <TableCell className="text-right text-rose-600 font-bold">Rs. {item.amount.toLocaleString()}</TableCell>
+                                                        </TableRow>
+                                                    ))
+                                                ) : (
+                                                    <TableRow>
+                                                        <TableCell colSpan={2} className="text-center text-slate-400 py-8">
+                                                            No outstanding arrears
+                                                        </TableCell>
                                                     </TableRow>
-                                                ))}
+                                                )}
                                             </TableBody>
                                         </Table>
                                     </Card>
@@ -312,10 +402,10 @@ export default function MemberStatementPage() {
                                     <CardTitle className="text-sm font-bold text-emerald-800 uppercase">Quick Actions</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-3">
-                                    <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-200 justify-start">
+                                    <Button onClick={handleCollectSanda} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-200 justify-start">
                                         <CreditCard className="w-4 h-4 mr-2" /> Collect Sanda
                                     </Button>
-                                    <Button variant="outline" className="w-full justify-start bg-white border-emerald-200 text-emerald-700 hover:bg-emerald-100">
+                                    <Button onClick={handleDownloadCSV} variant="outline" className="w-full justify-start bg-white border-emerald-200 text-emerald-700 hover:bg-emerald-100">
                                         <Download className="w-4 h-4 mr-2" /> Download History (CSV)
                                     </Button>
                                 </CardContent>
@@ -326,15 +416,21 @@ export default function MemberStatementPage() {
                                     <CardTitle className="text-sm font-bold text-slate-700 uppercase">Contact Info</CardTitle>
                                 </CardHeader>
                                 <CardContent className="text-sm text-slate-600 space-y-2">
-                                    <p><strong>Phone:</strong> {selectedMember.phone}</p>
-                                    <p><strong>Address:</strong> {selectedMember.address}</p>
+                                    <p><strong>Phone:</strong> {selectedMember.contact}</p>
+                                    <p><strong>Address:</strong> {selectedMember.address || 'N/A'}</p>
                                     <Separator className="my-2" />
-                                    <p className="text-xs text-slate-400">Joined: {format(new Date(selectedMember.joined), "MMM dd, yyyy")}</p>
+                                    <p className="text-xs text-slate-400">Joined: {format(new Date(selectedMember.startDate), "MMM dd, yyyy")}</p>
                                 </CardContent>
                             </Card>
                         </div>
 
                     </div>
+                </motion.div>
+            ) : (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-96 flex flex-col items-center justify-center border-2 border-dashed border-rose-200 rounded-xl bg-rose-50/50">
+                    <AlertCircle className="h-12 w-12 text-rose-300 mb-2" />
+                    <p className="text-rose-500 font-medium">Failed to load statement</p>
+                    {error && <p className="text-sm text-rose-400 mt-1">{error}</p>}
                 </motion.div>
             )}
         </AnimatePresence>

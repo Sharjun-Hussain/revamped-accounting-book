@@ -106,4 +106,8 @@ export const accountingService = {
         const response = await api.get('/dashboard');
         return response.data;
     },
+    getMemberStatement: async (memberId) => {
+        const response = await api.get(`/members/${memberId}/statement`);
+        return response.data;
+    },
 };
