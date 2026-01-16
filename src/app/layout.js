@@ -1,12 +1,9 @@
 // app/layout.jsx
-"use client"
-// import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import Providers from "./providers";
-
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import { Ubuntu } from 'next/font/google'
-import { useEffect } from "react";
 
 const ubuntu = Ubuntu({
   subsets: ['latin'],
@@ -14,29 +11,22 @@ const ubuntu = Ubuntu({
   variable: '--font-ubuntu',
 })
 
-// const inter = Inter({ subsets: ["latin"] });
-
-// export const metadata = {
-//   title: "POS Application",
-//   description: "Point of Sale Application",
-
-// };
+export const metadata = {
+  title: "Masjid Accounting System",
+  description: "Comprehensive accounting and management system",
+  icons: {
+    icon: '/icon.png',
+  },
+};
 
 export default function RootLayout({ children }) {
-  useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('/service-worker.js')
-        .then((registration) => console.log('scope is: ', registration.scope));
-    }
-  }, []);
-
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={ubuntu.variable}>
         <Providers>
-        {children}
-        <Toaster position="top-right" richColors /> {/* Add the Toaster here */}
+          <ServiceWorkerRegister />
+          {children}
+          <Toaster position="top-right" richColors />
         </Providers>
       </body>
     </html>
