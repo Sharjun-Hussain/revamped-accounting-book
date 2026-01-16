@@ -141,6 +141,56 @@ export default function MemberStatementPage() {
     });
   };
 
+  // --- HANDLER: COLLECT SANDA ---
+  const handleCollectSanda = () => {
+    if (!selectedMember) return;
+    // Open billing create page in new tab with member pre-selected
+    window.open(`/billing/create?memberId=${selectedMember.id}`, '_blank');
+  };
+
+  // --- HANDLER: DOWNLOAD CSV ---
+  const handleDownloadCSV = () => {
+    if (!selectedMember || !financialData) return;
+
+    // Prepare CSV data
+    const csvHeaders = ['Date', 'Type', 'Reference', 'Description', 'Debit', 'Credit'];
+    const csvRows = financialData.transactions.map(tx => [
+      tx.date,
+      tx.type,
+      tx.ref,
+      tx.desc,
+      tx.debit || 0,
+      tx.credit || 0
+    ]);
+
+    // Add summary rows
+    csvRows.push([]);
+    csvRows.push(['Summary', '', '', '', '', '']);
+    csvRows.push(['Total Billed', '', '', '', financialData.totalBilled, '']);
+    csvRows.push(['Total Paid', '', '', '', '', financialData.totalPaid]);
+    csvRows.push(['Outstanding Balance', '', '', '', financialData.balance, '']);
+
+    // Convert to CSV string
+    const csvContent = [
+      [`Member Statement - ${selectedMember.name} (${selectedMember.id})`],
+      [`Generated: ${format(new Date(), "MMM dd, yyyy HH:mm")}`],
+      [],
+      csvHeaders,
+      ...csvRows
+    ].map(row => row.join(',')).join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `statement_${selectedMember.id}_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 relative">
       <div className="fixed inset-0 pointer-events-none opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')]"></div>
@@ -352,10 +402,10 @@ export default function MemberStatementPage() {
                                     <CardTitle className="text-sm font-bold text-emerald-800 uppercase">Quick Actions</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-3">
-                                    <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-200 justify-start">
+                                    <Button onClick={handleCollectSanda} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-200 justify-start">
                                         <CreditCard className="w-4 h-4 mr-2" /> Collect Sanda
                                     </Button>
-                                    <Button variant="outline" className="w-full justify-start bg-white border-emerald-200 text-emerald-700 hover:bg-emerald-100">
+                                    <Button onClick={handleDownloadCSV} variant="outline" className="w-full justify-start bg-white border-emerald-200 text-emerald-700 hover:bg-emerald-100">
                                         <Download className="w-4 h-4 mr-2" /> Download History (CSV)
                                     </Button>
                                 </CardContent>
