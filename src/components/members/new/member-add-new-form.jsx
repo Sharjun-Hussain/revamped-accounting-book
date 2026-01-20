@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,7 +15,8 @@ import {
   MapPin,
   Phone,
   Mail,
-  Loader2
+  Loader2,
+  ArrowLeft
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -54,8 +55,11 @@ const itemVariants = {
   visible: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 100 } },
 };
 
+import useSWR from 'swr';
+
 // --- Zod Schema ---
 const formSchema = z.object({
+  memberNo: z.string().optional(), // Optional because it might be auto-generated
   name: z.string().min(2, "Name is required"),
   address: z.string().min(5, "Address is required"),
   email: z.string().email().optional().or(z.literal("")),
@@ -66,10 +70,20 @@ const formSchema = z.object({
   profilePicture: z.any().optional(),
 });
 
-export default function MemberRegistration() {
+export default function MemberRegistration({ memberId }) {
+  const fetcher = (url) => fetch(url).then((res) => res.json());
+  const { data: settings } = useSWR('/api/settings/app', fetcher);
+  
+  // Fetch member data if in edit mode
+  const { data: memberData, isLoading: isLoadingMember } = useSWR(
+    memberId ? `/api/members/${memberId}` : null,
+    fetcher
+  );
+
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      memberNo: "",
       name: "",
       address: "",
       email: "",
@@ -77,34 +91,79 @@ export default function MemberRegistration() {
       payment_frequency: "Monthly",
       amount_per_cycle: 1000,
       start_date: new Date(),
+      profilePicture: null,
     },
   });
 
-  const router = useRouter();
-  const profilePicture = form.watch("profilePicture");
-  const previewUrl = profilePicture ? URL.createObjectURL(profilePicture) : null;
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // Pre-fill form when member data is loaded
+  useEffect(() => {
+    if (memberData) {
+        form.reset({
+            memberNo: memberData.memberNo || "",
+            name: memberData.name || "",
+            address: memberData.address || "",
+            email: memberData.email || "",
+            contact: memberData.contact || "",
+            payment_frequency: memberData.paymentFrequency || "Monthly",
+            amount_per_cycle: memberData.amountPerCycle || 1000,
+            start_date: memberData.startDate ? new Date(memberData.startDate) : new Date(),
+            profilePicture: memberData.profilePicture,
+        });
+        setPreviewUrl(memberData.profilePicture);
+    }
+  }, [memberData, form]);
 
-  async function onSubmit(data) {
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
+
+  async function onSubmit(values) {
+    setIsSubmitting(true);
     try {
-      setIsSubmitting(true);
-      // In a real app, you'd handle file upload separately and get a URL
-      // For now, we'll just ignore the file object or convert to base64 if needed
-      // const { profilePicture, ...memberData } = data;
-      
-      await memberService.create({
-        ...data,
-        amount_per_cycle: Number(data.amount_per_cycle),
-        // profilePicture: "url_from_upload" 
+      // Convert image to base64 if it's a File object
+      let profilePicture = values.profilePicture;
+      if (values.profilePicture instanceof File) {
+        profilePicture = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(values.profilePicture);
+        });
+      }
+
+      const payload = {
+        ...values,
+        profilePicture,
+        // Ensure date is ISO string
+        start_date: values.start_date.toISOString(),
+      };
+
+      const url = memberId ? `/api/members/${memberId}` : '/api/members';
+      const method = memberId ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method: method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
-      
-      toast.success("Member registered successfully");
-      router.push("/members"); // Redirect to members list
+
+      if (response.ok) {
+        toast.success(memberId ? "Member updated successfully" : "Member registered successfully");
+        router.push("/members");
+        router.refresh();
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || "Failed to save member");
+      }
     } catch (error) {
-      console.error("Error registering member:", error);
-      toast.error("Failed to register member");
+      console.error("Error saving member:", error);
+      toast.error("An error occurred. Please try again.");
+    } finally {
       setIsSubmitting(false);
     }
+  }
+
+  if (memberId && isLoadingMember) {
+      return <div className="flex justify-center items-center h-screen"><Loader2 className="w-8 h-8 animate-spin text-emerald-600" /></div>;
   }
 
   return (
@@ -116,9 +175,14 @@ export default function MemberRegistration() {
     >
       {/* Header */}
       <motion.div variants={itemVariants} className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Register New Member</h2>
-          <p className="text-slate-500 text-sm">Create a new profile for Sanda collection and records.</p>
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">{memberId ? 'Edit Member Details' : 'Register New Member'}</h1>
+            <p className="text-slate-500">{memberId ? 'Update member information and subscription plan.' : 'Add a new member to the system and set up their Sanda plan.'}</p>
+          </div>
         </div>
         <Button variant="outline" className="border-slate-300 text-slate-600 hover:bg-slate-50 hover:text-slate-900">
             <X className="w-4 h-4 mr-2" /> Cancel
@@ -183,6 +247,30 @@ export default function MemberRegistration() {
 
                   {/* Text Fields */}
                   <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {/* Member ID Field */}
+                    <div className="md:col-span-2">
+                        <FormLabel className="text-slate-700">Member ID</FormLabel>
+                        {settings?.memberIdFormat === 'Manual' ? (
+                            <FormField
+                                control={form.control}
+                                name="memberNo"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormControl>
+                                            <Input placeholder="Enter Custom ID" className="bg-slate-50 border-slate-200 focus:ring-emerald-500 focus:border-emerald-500" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        ) : (
+                            <div className="h-10 px-3 py-2 rounded-md border border-slate-200 bg-slate-100 text-slate-500 text-sm flex items-center">
+                                {settings ? `${settings.memberIdPrefix || 'MEM'}-${String(settings.nextMemberId || 1).padStart(3, '0')}` : 'Loading...'} 
+                                <span className="ml-2 text-xs bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">Auto-Generated</span>
+                            </div>
+                        )}
+                    </div>
+
                     <FormField
                       control={form.control}
                       name="name"
@@ -323,9 +411,15 @@ export default function MemberRegistration() {
                     
                     <Separator className="bg-slate-100 my-4" />
 
-                    <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm shadow-emerald-200" disabled={isSubmitting}>
-                        {isSubmitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Registering...</> : <><Save className="w-4 h-4 mr-2" /> Register Member</>}
-                    </Button>
+                    <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 w-full md:w-auto" disabled={isSubmitting}>
+                {isSubmitting ? (
+                    <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" /> {memberId ? 'Updating...' : 'Registering...'}
+                    </>
+                ) : (
+                    memberId ? 'Update Member' : 'Register Member'
+                )}
+              </Button>
                 </div>
               </div>
             </motion.div>

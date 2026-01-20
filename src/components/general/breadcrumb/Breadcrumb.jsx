@@ -141,7 +141,7 @@ export function SystemBreadcrumb() {
 
   return (
     <Breadcrumb>
-      <div className="flex items-center justify-between w-full">
+      <div className="flex pb-4 pt-2 items-center justify-between w-full">
         <div className="flex gap-3 items-center">
           <SidebarTrigger />
           <BreadcrumbList>{breadcrumbItems}</BreadcrumbList>

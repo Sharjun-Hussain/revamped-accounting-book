@@ -430,6 +430,60 @@ export default function SettingsPage() {
                                     </div>
                                 </CardContent>
                             </Card>
+
+                            {/* Member ID Configuration */}
+                            <Card className="border-slate-200 shadow-sm bg-white">
+                                <CardHeader className="pb-4">
+                                    <CardTitle className="text-base flex items-center gap-2">
+                                        <Users className="w-4 h-4 text-emerald-600" />
+                                        Member ID Configuration
+                                    </CardTitle>
+                                    <CardDescription>Configure how Member IDs are generated.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="grid md:grid-cols-3 gap-6">
+                                    <div className="space-y-2">
+                                        <Label>Generation Mode</Label>
+                                        <Select 
+                                            value={settings.memberIdFormat || "Auto"} 
+                                            onValueChange={(v) => handleSelectChange('memberIdFormat', v)}
+                                        >
+                                            <SelectTrigger className="h-10 w-full"><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="Auto">Auto-Generate (Prefix + Sequence)</SelectItem>
+                                                <SelectItem value="Manual">Manual Entry</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    
+                                    {settings.memberIdFormat !== 'Manual' && (
+                                        <>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="memberIdPrefix">ID Prefix</Label>
+                                                <Input 
+                                                    id="memberIdPrefix" 
+                                                    value={settings.memberIdPrefix || 'MEM'} 
+                                                    onChange={handleChange} 
+                                                    placeholder="e.g. MEM"
+                                                    className="h-10" 
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="nextMemberId">Next Sequence No.</Label>
+                                                <Input 
+                                                    id="nextMemberId" 
+                                                    type="number"
+                                                    value={settings.nextMemberId || 1} 
+                                                    onChange={handleChange} 
+                                                    className="h-10" 
+                                                />
+                                                <p className="text-xs text-slate-500">
+                                                    Next ID: <strong>{settings.memberIdPrefix || 'MEM'}-{String(settings.nextMemberId || 1).padStart(3, '0')}</strong>
+                                                </p>
+                                            </div>
+                                        </>
+                                    )}
+                                </CardContent>
+                            </Card>
                         </TabsContent>
 
                         {/* TAB 2: FINANCIAL */}
