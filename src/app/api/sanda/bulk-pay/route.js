@@ -89,9 +89,10 @@ export async function POST(request) {
 
                 // 5. Create Ledger Entry
                 const member = await tx.member.findUnique({ where: { id: p.memberId } });
+                const paymentPeriod = p.period || period;
                 await tx.ledger.create({
                     data: {
-                        description: `Sanda Payment (Bulk): ${member.name} (${period})`,
+                        description: `Sanda Payment (Bulk): ${member.name} (${paymentPeriod})`,
                         amount: payment.amount,
                         type: 'Credit',
                         category: 'Sanda Collection',
@@ -105,7 +106,7 @@ export async function POST(request) {
                     memberId: p.memberId,
                     memberName: member.name,
                     amount: payment.amount,
-                    period: period, // or p.period
+                    period: paymentPeriod,
                     receiptNo: payment.id,
                     date: new Date().toISOString(),
                     status: 'success'
