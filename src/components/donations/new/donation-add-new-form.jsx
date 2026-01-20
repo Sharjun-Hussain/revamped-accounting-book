@@ -15,6 +15,9 @@ import {
   Search,
   Users,
   UserPlus,
+  PenTool,
+  Loader2,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -64,6 +67,7 @@ const fundTypes = [
   { id: "Zakat", name: "Zakat Fund", icon: Users, color: "bg-amber-100 text-amber-700 border-amber-200" },
   { id: "Building", name: "Building Fund", icon: HandCoins, color: "bg-blue-100 text-blue-700 border-blue-200" },
   { id: "Jummah", name: "Friday Collection", icon: Users, color: "bg-purple-100 text-purple-700 border-purple-200" },
+  { id: "Custom", name: "Custom", icon: PenTool, color: "bg-slate-100 text-slate-700 border-slate-200" },
 ];
 
 // ... (keep other imports)
@@ -158,9 +162,13 @@ const formSchema = z.object({
   amount: z.coerce.number().min(1, "Enter amount"),
   date: z.date(),
   purpose: z.string(),
+  customPurpose: z.string().optional(),
   paymentMethod: z.enum(["Cash", "Bank Transfer", "Cheque"]),
   isAnonymous: z.boolean().default(false),
   autoPrint: z.boolean().default(false),
+}).refine(data => data.purpose !== "Custom" || (data.purpose === "Custom" && data.customPurpose && data.customPurpose.trim() !== ""), {
+    message: "Please enter a purpose for custom donation",
+    path: ["customPurpose"],
 });
 
 export default function DonationEntryWithPrint({ initialData }) {
@@ -177,6 +185,35 @@ export default function DonationEntryWithPrint({ initialData }) {
   
   const guestInputRef = useRef(null); 
   const isEditMode = !!initialData;
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedDonors, setSelectedDonors] = useState([]);
+
+  // Initialize selectedDonors if in edit mode (though edit usually implies single entry, we can support converting to multi or just show one)
+  useEffect(() => {
+      if (initialData) {
+          setSelectedDonors([{
+              id: initialData.memberId || initialData.donorId || 'guest',
+              name: initialData.donorName || (initialData.member ? initialData.member.name : 'Guest'),
+              type: initialData.donorType,
+              memberId: initialData.memberId,
+              donorId: initialData.donorId
+          }]);
+      }
+  }, [initialData]);
+
+  const addDonor = (donor) => {
+      if (selectedDonors.some(d => d.id === donor.id && d.type === donor.type)) {
+          toast.error("Donor already added");
+          return;
+      }
+      setSelectedDonors([...selectedDonors, donor]);
+  };
+
+  const removeDonor = (index) => {
+      const newDonors = [...selectedDonors];
+      newDonors.splice(index, 1);
+      setSelectedDonors(newDonors);
+  };
 
   // Fetch data on mount
   useEffect(() => {
@@ -206,6 +243,7 @@ export default function DonationEntryWithPrint({ initialData }) {
       amount: initialData?.amount || "",
       date: initialData?.date ? new Date(initialData.date) : new Date(),
       purpose: initialData?.purpose || "General",
+      customPurpose: "",
       paymentMethod: initialData?.paymentMethod || "Cash",
       isAnonymous: initialData?.isAnonymous || false,
       autoPrint: false, 
@@ -217,9 +255,15 @@ export default function DonationEntryWithPrint({ initialData }) {
   const autoPrint = form.watch("autoPrint");
 
   const handleDonorSelect = (donor) => {
-    form.setValue("donorName", donor.name);
-    form.setValue("donorId", donor.id);
+    addDonor({
+        id: donor.id,
+        name: donor.name,
+        type: 'guest', // or 'donor' if we want to distinguish
+        donorId: donor.id,
+        contact: donor.contact
+    });
     setOpenDonorSearch(false);
+    form.setValue("donorName", ""); // Clear input
   };
 
   const triggerPrint = (entry) => {
@@ -230,68 +274,77 @@ export default function DonationEntryWithPrint({ initialData }) {
   };
 
   async function onSubmit(data) {
-    let displayName = "Anonymous";
-    if (!data.isAnonymous) {
-        if (data.donorType === "member") {
-            const member = members.find(m => m.id === data.memberId);
-            displayName = member ? member.name : "Unknown Member";
-        } else {
-            displayName = data.donorName || "Guest";
-        }
+    if (selectedDonors.length === 0) {
+        toast.error("Please select at least one donor");
+        return;
     }
 
+    setIsSubmitting(true);
+    const finalPurpose = data.purpose === "Custom" ? data.customPurpose : data.purpose;
+
     try {
-        let newEntry;
-        if (isEditMode) {
-            newEntry = await donationService.update(initialData.id, {
+        let lastEntry;
+        let successCount = 0;
+
+        for (const donor of selectedDonors) {
+            let newEntry;
+            const entryData = {
                 amount: data.amount,
                 date: data.date,
-                purpose: data.purpose,
+                purpose: finalPurpose,
                 paymentMethod: data.paymentMethod,
                 isAnonymous: data.isAnonymous,
-                donorType: data.donorType,
-                donorName: data.donorName,
-                memberId: data.memberId,
-            });
-            toast.success("Donation Updated Successfully");
-        } else {
-            newEntry = await donationService.create({
-                amount: data.amount,
-                date: data.date,
-                purpose: data.purpose,
-                paymentMethod: data.paymentMethod,
-                isAnonymous: data.isAnonymous,
-                donorType: data.donorType,
-                donorName: data.donorName,
-                memberId: data.memberId,
-                donorId: data.donorId,
-                // bankAccountId: selectedBankAccountId // TODO: Add bank account selector if needed
-            });
-            toast.success("Saved Successfully");
+                donorType: donor.type,
+                donorName: donor.name,
+                memberId: donor.memberId,
+                donorId: donor.donorId,
+            };
+
+            if (isEditMode && selectedDonors.length === 1) {
+                // Single update if editing
+                 newEntry = await donationService.update(initialData.id, entryData);
+            } else {
+                // Create new for each
+                newEntry = await donationService.create(entryData);
+            }
+            
+            lastEntry = newEntry;
+            successCount++;
+            
+            // Add to recent entries for UI
+             const entryForUI = {
+                ...newEntry,
+                name: donor.name,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                type: donor.type
+            };
+            setRecentEntries(prev => [entryForUI, ...prev]);
         }
 
-        // Add display fields for UI
-        const entryForUI = {
-            ...newEntry,
-            name: displayName,
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            type: data.donorType
-        };
+        toast.success(`Successfully saved ${successCount} donation(s)`);
 
-        setRecentEntries([entryForUI, ...recentEntries]);
-        toast.success("Saved Successfully");
-
-        if (data.autoPrint) {
-            triggerPrint(entryForUI);
+        if (data.autoPrint && lastEntry) {
+            // Print the last one, or maybe we should print all? 
+            // For now, let's print the last one as a confirmation or maybe loop print?
+            // Looping print might be too fast for browser. 
+            triggerPrint({
+                ...lastEntry,
+                name: lastEntry.donorName || (lastEntry.member ? lastEntry.member.name : "Guest"), // Ensure name is present
+                 type: lastEntry.donorType
+            });
         }
 
-        form.reset({
-            ...data,
-            amount: "",
-            memberId: "",
-            donorName: "",
-            isAnonymous: false,
-        });
+        if (!isEditMode) {
+            form.reset({
+                ...data,
+                amount: "",
+                memberId: "",
+                donorName: "",
+                isAnonymous: false,
+                customPurpose: "",
+            });
+            setSelectedDonors([]);
+        }
 
         if (data.donorType === "guest") {
             setTimeout(() => guestInputRef.current?.focus(), 100);
@@ -299,6 +352,8 @@ export default function DonationEntryWithPrint({ initialData }) {
     } catch (error) {
         console.error("Error saving donation:", error);
         toast.error("Failed to save donation");
+    } finally {
+        setIsSubmitting(false);
     }
   }
 
@@ -344,7 +399,7 @@ export default function DonationEntryWithPrint({ initialData }) {
               {/* Main Card */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 {/* Fund Selector */}
-                <div className="p-4 bg-slate-50 border-b border-slate-100 grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div className="p-4 bg-slate-50 border-b border-slate-100 grid grid-cols-2 md:grid-cols-5 gap-2">
                     {fundTypes.map((type) => (
                         <button
                             key={type.id}
@@ -362,6 +417,28 @@ export default function DonationEntryWithPrint({ initialData }) {
                 </div>
 
                 <div className="p-6 space-y-6">
+                    {/* Custom Purpose Input */}
+                    {currentPurpose === "Custom" && (
+                        <FormField
+                            control={form.control}
+                            name="customPurpose"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-slate-700 font-semibold">Custom Purpose</FormLabel>
+                                    <FormControl>
+                                        <Input 
+                                            placeholder="Enter donation purpose..." 
+                                            className="bg-slate-50 border-slate-200 focus:ring-emerald-500 focus:bg-white transition-all" 
+                                            {...field} 
+                                            autoFocus
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    )}
+
                     {/* Amount & Date */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                          <FormField
@@ -377,7 +454,6 @@ export default function DonationEntryWithPrint({ initialData }) {
                                             type="number" 
                                             placeholder="0.00" 
                                             className="pl-12 h-16 text-3xl font-bold text-slate-900 bg-slate-50 border-slate-200 focus:ring-emerald-500 focus:bg-white transition-all" 
-                                            autoFocus
                                             {...field} 
                                         />
                                     </div>
@@ -413,6 +489,29 @@ export default function DonationEntryWithPrint({ initialData }) {
 
                     <div className="h-px bg-slate-100" />
 
+                    {/* Selected Donors List (Chips) */}
+                    <div className="space-y-2">
+                        <FormLabel className="text-slate-700 font-semibold">Donors ({selectedDonors.length})</FormLabel>
+                        <div className="flex flex-wrap gap-2 min-h-[40px] p-2 bg-slate-50 rounded-lg border border-slate-100">
+                            {selectedDonors.length === 0 && (
+                                <span className="text-sm text-slate-400 italic p-1">No donors selected</span>
+                            )}
+                            {selectedDonors.map((donor, index) => (
+                                <Badge key={index} variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1 bg-white border border-slate-200 text-slate-700 shadow-sm">
+                                    <span className="text-xs font-bold uppercase text-slate-400 mr-1">{donor.type === 'member' ? 'M' : 'G'}</span>
+                                    {donor.name}
+                                    <button 
+                                        type="button"
+                                        onClick={() => removeDonor(index)}
+                                        className="ml-1 p-0.5 hover:bg-red-100 hover:text-red-600 rounded-full transition-colors"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                </Badge>
+                            ))}
+                        </div>
+                    </div>
+
                     {/* Donor Type Tabs */}
                     <Tabs value={donorType} onValueChange={(v) => form.setValue("donorType", v)} className="w-full">
                         <TabsList className="grid w-full grid-cols-2 mb-4">
@@ -431,8 +530,8 @@ export default function DonationEntryWithPrint({ initialData }) {
                                         <Popover open={openMemberSearch} onOpenChange={setOpenMemberSearch}>
                                         <PopoverTrigger asChild>
                                             <FormControl>
-                                            <Button variant="outline" role="combobox" className={cn("w-full justify-between h-12 text-base bg-white", !field.value && "text-muted-foreground")}>
-                                                {field.value ? members.find((m) => m.id === field.value)?.name : "Select member..."}
+                                            <Button variant="outline" role="combobox" className={cn("w-full justify-between h-12 text-base bg-white", "text-muted-foreground")}>
+                                                Select member to add...
                                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                             </Button>
                                             </FormControl>
@@ -447,9 +546,18 @@ export default function DonationEntryWithPrint({ initialData }) {
                                                     <CommandItem 
                                                         value={`${member.name} ${member.contact || member.phone || ''}`} 
                                                         key={member.id} 
-                                                        onSelect={() => { form.setValue("memberId", member.id); setOpenMemberSearch(false); }}
+                                                        onSelect={() => { 
+                                                            addDonor({
+                                                                id: member.id,
+                                                                name: member.name,
+                                                                type: 'member',
+                                                                memberId: member.id,
+                                                                contact: member.contact
+                                                            });
+                                                            setOpenMemberSearch(false); 
+                                                        }}
                                                     >
-                                                    <Check className={cn("mr-2 h-4 w-4", member.id === field.value ? "opacity-100" : "opacity-0")} />
+                                                    <Check className={cn("mr-2 h-4 w-4", selectedDonors.some(d => d.id === member.id) ? "opacity-100" : "opacity-0")} />
                                                     <div className="flex flex-col">
                                                         <span>{member.name}</span>
                                                         <span className="text-xs text-muted-foreground">{member.contact || member.phone}</span>
@@ -478,10 +586,23 @@ export default function DonationEntryWithPrint({ initialData }) {
                                         <div className="relative">
                                             <FormControl>
                                                 <Input 
-                                                    placeholder="Guest Name" 
+                                                    placeholder="Guest Name (Press Enter to Add)" 
                                                     className="bg-white h-11" 
                                                     {...field} 
                                                     ref={guestInputRef} 
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            e.preventDefault();
+                                                            if (field.value?.trim()) {
+                                                                addDonor({
+                                                                    id: `guest-${Date.now()}`,
+                                                                    name: field.value.trim(),
+                                                                    type: 'guest'
+                                                                });
+                                                                field.onChange(""); // Clear input
+                                                            }
+                                                        }
+                                                    }}
                                                     onChange={(e) => {
                                                         field.onChange(e);
                                                         setOpenDonorSearch(true);
@@ -546,9 +667,18 @@ export default function DonationEntryWithPrint({ initialData }) {
                         </div>
                     </Tabs>
 
-                    <Button type="submit" size="lg" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg shadow-md shadow-emerald-100 h-14">
-                        <Save className="w-5 h-5 mr-2" /> 
-                        {isEditMode ? 'Update Donation' : (autoPrint ? 'Save & Print' : 'Save & Next')}
+                    <Button type="submit" size="lg" disabled={isSubmitting} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg shadow-md shadow-emerald-100 h-14">
+                        {isSubmitting ? (
+                            <>
+                                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                                Saving...
+                            </>
+                        ) : (
+                            <>
+                                <Save className="w-5 h-5 mr-2" /> 
+                                {isEditMode ? 'Update Donation' : (autoPrint ? 'Save & Print' : 'Save & Next')}
+                            </>
+                        )}
                     </Button>
                 </div>
               </div>

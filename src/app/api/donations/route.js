@@ -26,7 +26,8 @@ export async function POST(request) {
             donorType,
             donorName,
             memberId,
-            bankAccountId // Optional: if provided, update this account
+            donorId, // Extract donorId
+            bankAccountId
         } = body;
 
         if (!amount || !purpose) {
@@ -34,7 +35,28 @@ export async function POST(request) {
         }
 
         const result = await prisma.$transaction(async (tx) => {
-            // 1. Create Donation Record
+            // 1. Handle Donor Linking for Guests
+            let finalDonorId = donorId;
+
+            if (donorType === 'guest' && !isAnonymous && donorName) {
+                // If no ID provided, try to find by name or create
+                if (!finalDonorId) {
+                    const existingDonor = await tx.donor.findFirst({
+                        where: { name: { equals: donorName, mode: 'insensitive' } }
+                    });
+
+                    if (existingDonor) {
+                        finalDonorId = existingDonor.id;
+                    } else {
+                        const newDonor = await tx.donor.create({
+                            data: { name: donorName }
+                        });
+                        finalDonorId = newDonor.id;
+                    }
+                }
+            }
+
+            // 2. Create Donation Record
             const donation = await tx.donation.create({
                 data: {
                     amount: parseFloat(amount),
@@ -45,6 +67,7 @@ export async function POST(request) {
                     donorType: donorType || 'guest',
                     donorName: isAnonymous ? 'Anonymous' : (donorType === 'member' ? undefined : donorName),
                     memberId: donorType === 'member' ? memberId : undefined,
+                    donorId: finalDonorId, // Link to Donor
                 },
             });
 
