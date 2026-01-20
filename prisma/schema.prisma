@@ -126,6 +126,7 @@ model Payment {
 
 model Member {
   id               String     @id @default(cuid())
+  memberNo         String?    @unique // User-friendly ID (e.g. MEM-001)
   name             String
   address          String?
   email            String?
@@ -260,6 +261,11 @@ model AppSettings {
   phone           String?  @default("+94 77 123 4567")
   address         String?  @default("123 Mosque Road, Kandy, Sri Lanka")
   
+  // Member ID Config
+  memberIdFormat   String   @default("Auto") // "Auto" or "Manual"
+  memberIdPrefix   String   @default("MEM")
+  nextMemberId     Int      @default(1)
+
   // Financial Config
   currency        String   @default("LKR")
   fiscalYearStart String   @default("January")

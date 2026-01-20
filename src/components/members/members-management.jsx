@@ -18,6 +18,7 @@ import {
   LoaderIcon,
   Filter,
   Users,
+  Upload,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -147,10 +148,12 @@ const MemberTableToolbar = ({ table, bulkActionsComponent }) => {
   );
 };
 
-import { MemberSkeleton } from "@/components/members/MemberSkeleton";
+import { BulkUploadModal } from "@/components/members/bulk-upload-modal";
+import { MemberSkeleton } from "./MemberSkeleton";
 
 export default function MembersPage() {
   const [isNavigating, setIsNavigating] = useState(false);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [rowSelection, setRowSelection] = useState({});
@@ -226,6 +229,14 @@ export default function MembersPage() {
               <Download className="h-4 w-4" />
               Export List
             </Button>
+            <Button 
+                variant="outline" 
+                className="gap-2 bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-emerald-700 transition-colors"
+                onClick={() => setIsUploadModalOpen(true)}
+            >
+              <Upload className="h-4 w-4" />
+              Import Members
+            </Button>
             <Link href="/members/new" passHref>
               <Button
                 onClick={() => setIsNavigating(true)}
@@ -242,6 +253,23 @@ export default function MembersPage() {
             </Link>
           </div>
         </motion.div>
+
+        <BulkUploadModal 
+            open={isUploadModalOpen} 
+            onOpenChange={setIsUploadModalOpen} 
+            onSuccess={() => {
+                // Refresh members list
+                const fetchMembers = async () => {
+                    try {
+                        const data = await memberService.getAll();
+                        setMembers(data);
+                    } catch (error) {
+                        console.error("Failed to fetch members:", error);
+                    }
+                };
+                fetchMembers();
+            }}
+        />
 
         {/* Main Table Card */}
         <motion.div variants={itemVariants}>
