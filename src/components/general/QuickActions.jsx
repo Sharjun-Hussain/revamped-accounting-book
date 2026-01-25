@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
@@ -18,6 +18,11 @@ export function QuickActions({ className }) {
   const [isSandhaLoading, setIsSandhaLoading] = useState(false);
 
   const isSandhaPage = pathname === "/billing/bulk-collection";
+
+  // Reset loading state when pathname changes
+  useEffect(() => {
+    setIsSandhaLoading(false);
+  }, [pathname]);
 
   const handleSandhaClick = () => {
     if (isSandhaPage) return;

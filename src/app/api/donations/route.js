@@ -27,19 +27,37 @@ export async function POST(request) {
             donorName,
             memberId,
             donorId, // Extract donorId
-            bankAccountId
+            bankAccountId,
+            remarks
         } = body;
 
-        if (!amount || !purpose) {
-            return NextResponse.json({ error: 'Amount and purpose are required' }, { status: 400 });
+        if (!amount || !purpose || String(purpose).trim() === "") {
+            return NextResponse.json({ error: 'Amount and a valid purpose are required' }, { status: 400 });
+        }
+
+        const finalAmount = parseFloat(amount);
+        if (isNaN(finalAmount)) {
+            return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
         }
 
         const result = await prisma.$transaction(async (tx) => {
             // 1. Handle Donor Linking for Guests
             let finalDonorId = donorId;
 
+            // If it's a member donation, we don't link to Donor table
+            if (donorType === 'member') {
+                finalDonorId = undefined;
+            }
+            // If it's a guest/other, validate the provided donorId if it exists
+            else if (finalDonorId) {
+                const existing = await tx.donor.findUnique({ where: { id: finalDonorId } });
+                if (!existing) {
+                    finalDonorId = null; // Invalid ID, reset it so we can try to find/create by name
+                }
+            }
+
             if (donorType === 'guest' && !isAnonymous && donorName) {
-                // If no ID provided, try to find by name or create
+                // If no ID provided (or invalid one was reset), try to find by name or create
                 if (!finalDonorId) {
                     const existingDonor = await tx.donor.findFirst({
                         where: { name: { equals: donorName, mode: 'insensitive' } }
@@ -59,15 +77,16 @@ export async function POST(request) {
             // 2. Create Donation Record
             const donation = await tx.donation.create({
                 data: {
-                    amount: parseFloat(amount),
+                    amount: finalAmount,
                     date: date ? new Date(date) : new Date(),
-                    purpose,
+                    purpose: String(purpose),
                     paymentMethod: paymentMethod || 'Cash',
                     isAnonymous: isAnonymous || false,
                     donorType: donorType || 'guest',
                     donorName: isAnonymous ? 'Anonymous' : (donorType === 'member' ? undefined : donorName),
                     memberId: donorType === 'member' ? memberId : undefined,
-                    donorId: finalDonorId, // Link to Donor
+                    donor: finalDonorId ? { connect: { id: finalDonorId } } : undefined,
+                    remarks: remarks || undefined,
                 },
             });
 

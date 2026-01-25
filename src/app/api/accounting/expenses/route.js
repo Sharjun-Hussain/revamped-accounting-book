@@ -180,3 +180,85 @@ export async function PUT(request) {
         return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
     }
 }
+export async function DELETE(request) {
+    console.log("--- DELETE /api/accounting/expenses ---");
+    try {
+        const { ids } = await request.json();
+
+        if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            return NextResponse.json({ error: 'IDs array is required' }, { status: 400 });
+        }
+
+        console.log(`Attempting to delete ${ids.length} expenses:`, ids);
+
+        const result = await prisma.$transaction(async (tx) => {
+            let deletedCount = 0;
+
+            for (const id of ids) {
+                // 1. Get the expense to check for bank transactions
+                const expense = await tx.expense.findUnique({
+                    where: { id },
+                });
+
+                if (!expense) {
+                    console.warn(`Expense ${id} not found, skipping.`);
+                    continue;
+                }
+
+                // 2. If it has a ledger entry (paid from bank), reverse it
+                // We find the ledger entry linked to this expense
+                const ledgerEntry = await tx.ledger.findFirst({
+                    where: {
+                        referenceId: id,
+                        referenceType: 'Expense',
+                    },
+                });
+
+                if (ledgerEntry) {
+                    console.log(`Reversing ledger entry for expense ${id}...`);
+                    // Credit the amount back to the bank account
+                    await tx.bankAccount.update({
+                        where: { id: ledgerEntry.bankAccountId },
+                        data: {
+                            balance: {
+                                increment: ledgerEntry.amount,
+                            },
+                        },
+                    });
+
+                    // Delete the ledger entry
+                    await tx.ledger.delete({
+                        where: { id: ledgerEntry.id },
+                    });
+                    console.log("Ledger entry reversed and deleted.");
+                }
+
+                // 3. Delete the expense record
+                await tx.expense.delete({
+                    where: { id },
+                });
+
+                // 4. Delete the file from storage if it exists
+                if (expense.receiptUrl) {
+                    // Note: We are not awaiting this to avoid blocking the transaction if storage is slow
+                    // Ideally, this should be a background job.
+                    // storage.delete(expense.receiptUrl).catch(err => console.error("Failed to delete file:", err));
+                }
+
+                deletedCount++;
+            }
+
+            return { count: deletedCount };
+        });
+
+        // Log bulk delete
+        // await logCreate(request, 'Expense', { ids }, 'ids', 'BULK_DELETE');
+
+        console.log(`Successfully deleted ${result.count} expenses.`);
+        return NextResponse.json({ message: `Deleted ${result.count} expenses`, count: result.count });
+
+    } catch (error) {
+        console.error('Error deleting expenses:', error);
+        return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    }
+}

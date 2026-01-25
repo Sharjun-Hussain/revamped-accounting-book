@@ -155,6 +155,31 @@ export async function GET(request, context) {
                 lastPayment: lastPaymentDate ? new Date(lastPaymentDate).toISOString().split('T')[0] : 'N/A',
                 transactions: formattedTransactions,
                 outstanding: outstanding,
+                monthlyStatus: (() => {
+                    const months = [];
+                    const now = new Date();
+                    for (let i = 11; i >= 0; i--) {
+                        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                        const monthName = d.toLocaleString('default', { month: 'short' });
+                        const month = String(d.getMonth() + 1).padStart(2, '0');
+                        const year = d.getFullYear();
+                        const periodKey = `${year}-${month}`;
+
+                        // Find invoice for this month
+                        const invoice = invoices.find(inv => inv.period === periodKey);
+
+                        let status = 'no-invoice';
+                        if (invoice) {
+                            const paid = invoice.payments.reduce((sum, p) => sum + p.amount, 0);
+                            if (paid >= invoice.amount) status = 'paid';
+                            else if (paid > 0) status = 'partial';
+                            else status = 'unpaid';
+                        }
+
+                        months.push({ month: monthName, year, status });
+                    }
+                    return months;
+                })(),
             },
         };
 

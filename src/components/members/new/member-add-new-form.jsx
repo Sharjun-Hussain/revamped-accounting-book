@@ -358,7 +358,7 @@ export default function MemberRegistration({ memberId }) {
                         <FormLabel className="text-slate-700">Billing Cycle</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
-                            <SelectTrigger className="bg-slate-50 border-slate-200 focus:ring-emerald-500">
+                            <SelectTrigger className="bg-slate-50 border-slate-200 focus:ring-emerald-500 w-full">
                                 <SelectValue placeholder="Select Frequency" />
                             </SelectTrigger>
                             </FormControl>
