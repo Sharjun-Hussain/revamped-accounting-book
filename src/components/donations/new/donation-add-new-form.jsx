@@ -166,6 +166,8 @@ const formSchema = z.object({
   paymentMethod: z.enum(["Cash", "Bank Transfer", "Cheque"]),
   isAnonymous: z.boolean().default(false),
   autoPrint: z.boolean().default(false),
+  remarks: z.string().optional(),
+  bankAccountId: z.string().optional(),
 }).refine(data => data.purpose !== "Custom" || (data.purpose === "Custom" && data.customPurpose && data.customPurpose.trim() !== ""), {
     message: "Please enter a purpose for custom donation",
     path: ["customPurpose"],
@@ -177,6 +179,7 @@ export default function DonationEntryWithPrint({ initialData }) {
   const [openMemberSearch, setOpenMemberSearch] = useState(false);
   const [members, setMembers] = useState([]); // Real members state
   const [appSettings, setAppSettings] = useState(null);
+  const [bankAccounts, setBankAccounts] = useState([]);
   
   // Donor Selection State
   const [donors, setDonors] = useState([]);
@@ -219,14 +222,16 @@ export default function DonationEntryWithPrint({ initialData }) {
   useEffect(() => {
       const fetchData = async () => {
           try {
-              const [membersData, settingsData, donorsData] = await Promise.all([
+              const [membersData, settingsData, donorsData, accountsData] = await Promise.all([
                   memberService.getAll(),
                   fetch('/api/settings/app').then(res => res.json()),
-                  donorService.getAll()
+                  donorService.getAll(),
+                  fetch('/api/accounting/bank-accounts').then(res => res.json())
               ]);
               setMembers(membersData);
               setAppSettings(settingsData);
               setDonors(donorsData);
+              setBankAccounts(accountsData);
           } catch (error) {
               console.error("Failed to fetch data", error);
           }
@@ -247,6 +252,8 @@ export default function DonationEntryWithPrint({ initialData }) {
       paymentMethod: initialData?.paymentMethod || "Cash",
       isAnonymous: initialData?.isAnonymous || false,
       autoPrint: false, 
+      remarks: initialData?.remarks || "",
+      bankAccountId: initialData?.bankAccountId || "",
     },
   });
 
@@ -298,6 +305,8 @@ export default function DonationEntryWithPrint({ initialData }) {
                 donorName: donor.name,
                 memberId: donor.memberId,
                 donorId: donor.donorId,
+                remarks: data.remarks,
+                bankAccountId: data.bankAccountId,
             };
 
             if (isEditMode && selectedDonors.length === 1) {
@@ -342,6 +351,7 @@ export default function DonationEntryWithPrint({ initialData }) {
                 donorName: "",
                 isAnonymous: false,
                 customPurpose: "",
+                remarks: "",
             });
             setSelectedDonors([]);
         }
@@ -485,7 +495,48 @@ export default function DonationEntryWithPrint({ initialData }) {
                                 )}
                             />
                         </div>
+                        <div className="grid grid-cols-1 gap-4">
+                             <FormField
+                                control={form.control}
+                                name="bankAccountId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel className="text-slate-600">Deposit To</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                        <SelectTrigger className="bg-white border-slate-200 h-10 w-full">
+                                            <SelectValue placeholder="Select Account" />
+                                        </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {bankAccounts.map(acc => (
+                                                <SelectItem key={acc.id} value={acc.id}>{acc.bankName} - {acc.accountName} ({acc.type})</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
                     </div>
+
+                    <FormField
+                        control={form.control}
+                        name="remarks"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="text-slate-700 font-semibold">Remarks / Notes</FormLabel>
+                                <FormControl>
+                                    <Input 
+                                        placeholder="Add any additional notes here..." 
+                                        className="bg-slate-50 border-slate-200 focus:ring-emerald-500 focus:bg-white transition-all" 
+                                        {...field} 
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
 
                     <div className="h-px bg-slate-100" />
 

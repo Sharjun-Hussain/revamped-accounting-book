@@ -98,6 +98,10 @@ export const accountingService = {
         const response = await api.put('/accounting/expenses', expenseData, config);
         return response.data;
     },
+    deleteExpenses: async (ids) => {
+        const response = await api.delete('/accounting/expenses', { data: { ids } });
+        return response.data;
+    },
     getCategories: async () => {
         const response = await api.get('/accounting/categories');
         return response.data;

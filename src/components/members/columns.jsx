@@ -68,7 +68,7 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Member Name" />
     ),
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
       const member = row.original;
       return (
         <div className="flex items-center gap-3">
@@ -84,8 +84,11 @@ export const columns = [
                 .toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <div>
-            <div className="font-medium text-gray-900">{member.name}</div>
+          <div 
+            className="flex flex-col cursor-pointer group"
+            onClick={() => table.options.meta?.onMemberClick(member)}
+          >
+            <div className="font-medium text-gray-900 group-hover:text-emerald-600 transition-colors">{member.name}</div>
             <div className="text-xs text-muted-foreground flex items-center gap-1">
               <span className="font-mono bg-gray-100 px-1 rounded">
                 {member.id.slice(-6).toUpperCase()}

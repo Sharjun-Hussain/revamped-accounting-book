@@ -32,20 +32,36 @@ export async function PUT(request, { params }) {
             isAnonymous,
             donorType,
             donorName,
-            memberId
+            memberId,
+            remarks
         } = body;
+
+        if (!amount || !purpose || String(purpose).trim() === "") {
+            return NextResponse.json({ error: 'Amount and a valid purpose are required' }, { status: 400 });
+        }
+
+        const finalAmount = parseFloat(amount);
+        if (isNaN(finalAmount)) {
+            return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
+        }
+
+        const finalDate = date ? new Date(date) : new Date();
+        if (isNaN(finalDate.getTime())) {
+            return NextResponse.json({ error: 'Invalid date' }, { status: 400 });
+        }
 
         const donation = await prisma.donation.update({
             where: { id },
             data: {
-                amount: parseFloat(amount),
-                date: new Date(date),
-                purpose,
+                amount: finalAmount,
+                date: finalDate,
+                purpose: String(purpose),
                 paymentMethod,
                 isAnonymous,
                 donorType,
                 donorName: isAnonymous ? 'Anonymous' : (donorType === 'member' ? undefined : donorName),
                 memberId: donorType === 'member' ? memberId : undefined,
+                remarks: remarks || undefined,
             },
         });
 

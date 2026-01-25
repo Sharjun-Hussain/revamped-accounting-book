@@ -52,6 +52,7 @@ import {
 } from "@tanstack/react-table";
 import { DataTable } from "@/components/general/data-table"; // Assuming you have this generic component
 import Link from "next/link";
+import { exportToCSV } from "@/lib/export-utils";
 
 // --- 1. Animation Variants ---
 const containerVariants = {
@@ -239,6 +240,29 @@ export default function DonationsPage() {
     }
   });
 
+  const handleExport = () => {
+    if (donations.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
+
+    const dataToExport = table.getFilteredRowModel().rows.map(row => {
+      const d = row.original;
+      return {
+        "Donor Name": d.donor_name,
+        "Fund / Purpose": d.purpose,
+        "Amount": d.amount,
+        "Date": format(new Date(d.date), "yyyy-MM-dd"),
+        "Payment Method": d.paymentMethod || "N/A",
+        "Anonymous": d.isAnonymous ? "Yes" : "No",
+        "Remarks": d.remarks || ""
+      };
+    });
+
+    exportToCSV(dataToExport, `donations-export-${format(new Date(), "yyyy-MM-dd")}.csv`);
+    toast.success("Exporting CSV...");
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 relative">
       {/* Background Pattern */}
@@ -265,7 +289,11 @@ export default function DonationsPage() {
             <p className="text-slate-500">Track incoming funds, Zakat, and other contributions.</p>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" className="gap-2 bg-white border-slate-200 text-slate-700 hover:bg-slate-50">
+            <Button 
+              variant="outline" 
+              className="gap-2 bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+              onClick={handleExport}
+            >
               <Download className="h-4 w-4" /> Export
             </Button>
             <Link href="/donations/new">
