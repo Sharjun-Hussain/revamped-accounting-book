@@ -1,36 +1,169 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Masjidh Accounting Solution
+
+Developed By: **Inzeedo (PVT) Ltd.**
+
+## Overview
+
+The **Masjidh Accounting Solution** is a specialized, comprehensive management and accounting system designed specifically for Mosques (Masjids). It streamlines the administration of members, financial transactions, donations, and reporting, providing a modern and secure platform for mosque management committees.
+
+Built with **Next.js 15+**, **Prisma**, and **Tailwind CSS**, the system offers a high-performance, responsive, and user-friendly experience, including Progressive Web App (PWA) support for mobile and offline accessibility.
+
+---
+
+## Key Features
+
+### 👥 Member Management
+- Complete member profiling and tracking.
+- Unique Member ID generation (Auto/Manual).
+- Track "Sanda" (monthly membership) commitments.
+- Membership status management (Active/Inactive).
+
+### 🧾 Billing & Invoices
+- Automated and manual invoice generation for membership fees.
+- Payment tracking (Paid, Pending, Overdue).
+- Multi-method payment support (Cash, Bank Transfer).
+- Digital receipt generation.
+
+### 💰 Accounting & Finance
+- **General Ledger:** Detailed record of all financial movements.
+- **Income & Expense Tracking:** Categorized financial tracking with budget limits.
+- **Bank Account Management:** Track multiple bank accounts and their balances.
+- **Ledger Entries:** Automatic ledger creation for all payments and donations.
+
+### 🎁 Donation Management
+- Purpose-based donations (e.g., Mosque Construction, Zakat, Sadaqah).
+- Anonymous donation support.
+- Donor tracking (Regular vs. Occasional).
+- Integration with the general ledger.
+
+### 📊 Reporting & Analytics
+- Comprehensive financial reports (Income vs. Expense).
+- Member payment status reports.
+- Export capabilities to **PDF** and **Excel (XLSX)**.
+- Real-time dashboard with financial visualizations (Recharts).
+
+### 🛡️ Admin & Security
+- **Role-Based Access Control:** Secure authentication via NextAuth.js.
+- **Audit Logs:** Full traceability of all system actions (Create, Update, Delete).
+- **System Settings:** Customizable mosque profile, currency, and fiscal year.
+- **Data Safety:** "Soft-delete" mechanism with a 7-day recovery period for critical data.
+
+---
+
+## Technology Stack
+
+- **Frontend:** [Next.js 15+](https://nextjs.org/) (App Router, Turbopack)
+- **Styling:** [Tailwind CSS 4](https://tailwindcss.com/), [shadcn/ui](https://ui.shadcn.com/)
+- **Animations:** [Framer Motion](https://www.framer.com/motion/)
+- **State Management:** [Zustand](https://github.com/pmndrs/zustand)
+- **Data Fetching:** [SWR](https://swr.vercel.app/)
+- **Database/ORM:** [Prisma](https://www.prisma.io/) with **PostgreSQL**
+- **Authentication:** [NextAuth.js](https://next-auth.js.org/)
+- **Forms:** [React Hook Form](https://react-hook-form.com/) & [Zod](https://zod.dev/)
+- **Tables:** [TanStack Table v8](https://tanstack.com/table)
+- **Utilities:** [Biome](https://biomejs.dev/) (Linting/Formatting), [date-fns](https://date-fns.org/)
+- **PWA:** [@ducanh2912/next-pwa](https://github.com/ducanh2912/next-pwa)
+- **Storage:** Flexible provider (Local, AWS S3, Cloudflare R2)
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+- Node.js 18.x or higher
+- PostgreSQL Database
+- NPM or PNPM
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd masjid-accounting-solution
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Configure Environment Variables:
+   Create a `.env` file in the root directory and add the following:
+   ```env
+   # Database
+   DATABASE_URL="postgresql://user:password@localhost:5432/masjid_db?schema=public"
+   DIRECT_URL="postgresql://user:password@localhost:5432/masjid_db?schema=public"
+
+   # Authentication
+   NEXTAUTH_SECRET="your-secret-key"
+   NEXTAUTH_URL="http://localhost:3000"
+
+   # Storage (Optional - defaults to 'local')
+   STORAGE_PROVIDER="local" # Options: local, s3, r2
+   # If using S3/R2:
+   # AWS_ACCESS_KEY_ID=""
+   # AWS_SECRET_ACCESS_KEY=""
+   # AWS_REGION=""
+   # AWS_BUCKET_NAME=""
+   # AWS_ENDPOINT=""
+   ```
+
+4. Database Setup:
+   ```bash
+   # Generate Prisma client
+   npx prisma generate
+
+   # Push schema to database
+   npx prisma db push
+
+   # (Optional) Seed the database with initial data
+   npm run seed
+   ```
+
+### Running the Project
 
 ```bash
+# Development mode
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Production build
+npm run build
+
+# Start production server
+npm run start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## System Architecture
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The project follows the Next.js App Router architecture:
 
-## Learn More
+- `src/app`: Routes, pages, and API handlers.
+- `src/components`: Reusable UI components (Radix UI based).
+- `src/lib`: Utility functions, Prisma client, and shared logic.
+- `src/hooks`: Custom React hooks (SWR, Zustand).
+- `src/services`: Business logic and data access layer.
+- `prisma/`: Database schema and migrations.
+- `public/`: Static assets and PWA icons.
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Maintenance
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The project uses **Biome** for lightning-fast linting and formatting.
 
-## Deploy on Vercel
+```bash
+# Check for linting errors
+npm run lint
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Automatically format code
+npm run format
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## License
+
+Developed By [Inzeedo (PVT) Ltd.](https://inzeedo.com)
+All Rights Reserved © 2025
