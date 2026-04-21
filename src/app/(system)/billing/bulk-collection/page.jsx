@@ -490,7 +490,7 @@ export default function BulkCollectionPage() {
                                     })()}
                                 </div>
                             </div>
-                            <DialogFooter className="gap-2 sm:gap-0">
+                            <DialogFooter className="gap-3 sm:gap-3">
                                 <Button variant="outline" onClick={() => setIsConfirmOpen(false)} className="border-slate-200 text-slate-600">Cancel</Button>
                                 <Button onClick={handleSave} disabled={isSubmitting} className="bg-emerald-600 hover:bg-emerald-700 text-white">
                                     {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
