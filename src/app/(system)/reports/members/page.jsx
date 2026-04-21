@@ -53,10 +53,14 @@ import { cn } from "@/lib/utils";
 
 // Import PDF Generator and Services
 import { memberService } from "@/services/memberService";
+import { generateFinancialPDF } from "@/lib/report-generator";
 
 // --- REMOVED MOCK DATA - NOW USING REAL API ---
 
 export default function MemberStatementPage() {
+  const [selectedMember, setSelectedMember] = useState(null);
+  const [open, setOpen] = useState(false);
+
   // Data Fetching with SWR
   const { data: members = [], isLoading: loading } = useSWR('/members', apiFetcher);
   
