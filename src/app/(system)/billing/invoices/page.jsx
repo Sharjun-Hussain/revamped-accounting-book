@@ -372,11 +372,11 @@ export default function MonthlyInvoicesPage() {
             <Button
               variant="outline"
               onClick={handleGenerateSanda}
-              disabled={isGenerating}
-              className="h-10 text-emerald-700 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800 transition-all font-medium"
+              disabled={isGenerating || (!loading && invoices.length > 0)}
+              className="h-10 text-emerald-700 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800 transition-all font-medium disabled:opacity-50"
             >
               {isGenerating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileText className="w-4 h-4 mr-2" />}
-              Generate Invoices
+              {invoices.length > 0 ? "Generated for this Month" : "Generate Invoices"}
             </Button>
 
             <Button 
