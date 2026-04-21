@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { logCreate, logUpdate } from '@/lib/auditLog';
 
 export async function GET() {
     try {
@@ -35,6 +36,9 @@ export async function POST(request) {
             },
         });
 
+        // Log account creation
+        await logCreate(request, 'BankAccount', account, 'bankName');
+
         return NextResponse.json(account, { status: 201 });
     } catch (error) {
         console.error('Error creating bank account:', error);
@@ -50,6 +54,8 @@ export async function PUT(request) {
             return NextResponse.json({ error: 'Account ID is required' }, { status: 400 });
         }
 
+        const oldAccount = await prisma.bankAccount.findUnique({ where: { id } });
+
         const account = await prisma.bankAccount.update({
             where: { id },
             data: {
@@ -63,6 +69,11 @@ export async function PUT(request) {
                 status,
             },
         });
+
+        // Log account update
+        if (oldAccount) {
+            await logUpdate(request, 'BankAccount', oldAccount, account, 'bankName');
+        }
 
         return NextResponse.json(account);
     } catch (error) {

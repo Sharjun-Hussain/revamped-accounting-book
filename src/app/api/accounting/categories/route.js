@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { logCreate } from '@/lib/auditLog';
 
 export async function GET() {
     try {
@@ -56,6 +57,9 @@ export async function POST(request) {
                 status: status || 'Active',
             },
         });
+
+        // Log category creation
+        await logCreate(request, 'Category', category);
 
         return NextResponse.json(category, { status: 201 });
     } catch (error) {

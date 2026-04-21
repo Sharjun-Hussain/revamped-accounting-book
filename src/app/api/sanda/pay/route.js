@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { logCreate } from '@/lib/auditLog';
 
 export async function POST(request) {
     try {
@@ -74,6 +75,9 @@ export async function POST(request) {
 
             return payment;
         });
+
+        // Log payment creation
+        await logCreate(request, 'Payment', result, 'amount');
 
         return NextResponse.json(result, { status: 201 });
     } catch (error) {

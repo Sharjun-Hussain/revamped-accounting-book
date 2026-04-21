@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { logCreate, logUpdate, logDelete } from '@/lib/auditLog';
 
 export async function GET(request) {
     try {
@@ -54,6 +55,9 @@ export async function POST(request) {
             }
         });
 
+        // Log income creation
+        await logCreate(request, 'OtherIncome', income, 'description');
+
         return NextResponse.json(income);
     } catch (error) {
         console.error('Error creating other income:', error);
@@ -69,6 +73,8 @@ export async function PUT(request) {
         if (!id) {
             return NextResponse.json({ error: 'ID is required' }, { status: 400 });
         }
+
+        const oldIncome = await prisma.income.findUnique({ where: { id } });
 
         const income = await prisma.income.update({
             where: { id },
@@ -94,6 +100,11 @@ export async function PUT(request) {
             }
         });
 
+        // Log income update
+        if (oldIncome) {
+            await logUpdate(request, 'OtherIncome', oldIncome, income, 'description');
+        }
+
         return NextResponse.json(income);
     } catch (error) {
         console.error('Error updating other income:', error);
@@ -110,6 +121,11 @@ export async function DELETE(request) {
             return NextResponse.json({ error: 'ID is required' }, { status: 400 });
         }
 
+        const currentIncome = await prisma.income.findUnique({ where: { id } });
+        if (!currentIncome) {
+            return NextResponse.json({ error: 'Income not found' }, { status: 404 });
+        }
+
         // Delete Ledger Entry first
         await prisma.ledger.deleteMany({
             where: { referenceId: id, referenceType: 'Income' }
@@ -118,6 +134,9 @@ export async function DELETE(request) {
         await prisma.income.delete({
             where: { id }
         });
+
+        // Log deletion
+        await logDelete(request, 'OtherIncome', currentIncome, 'description');
 
         return NextResponse.json({ success: true });
     } catch (error) {

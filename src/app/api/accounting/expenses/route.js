@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { logCreate } from '@/lib/auditLog';
+import { logCreate, logUpdate, logDelete } from '@/lib/auditLog';
 
 export async function GET(request) {
     const { searchParams } = new URL(request.url);
@@ -166,13 +166,17 @@ export async function PUT(request) {
             dataToUpdate.receiptUrl = receiptUrl;
         }
 
+        const oldExpense = await prisma.expense.findUnique({ where: { id } });
+        
         const expense = await prisma.expense.update({
             where: { id },
             data: dataToUpdate,
         });
 
         // Log expense update
-        await logCreate(request, 'Expense', expense, 'description', 'UPDATE');
+        if (oldExpense) {
+            await logUpdate(request, 'Expense', oldExpense, expense, 'description');
+        }
 
         return NextResponse.json(expense);
     } catch (error) {
@@ -238,7 +242,10 @@ export async function DELETE(request) {
                     where: { id },
                 });
 
-                // 4. Delete the file from storage if it exists
+                // 4. Log the deletion
+                await logDelete(request, 'Expense', expense, 'description');
+
+                // 5. Delete the file from storage if it exists
                 if (expense.receiptUrl) {
                     // Note: We are not awaiting this to avoid blocking the transaction if storage is slow
                     // Ideally, this should be a background job.
