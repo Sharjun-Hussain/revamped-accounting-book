@@ -187,69 +187,220 @@ const columns = [
   },
 ];
 
-// --- 5. THERMAL PRINT TEMPLATE (Using Bill-Name Format) ---
+// --- 5. PREMIUM HIGH-FIDELITY PRINT TEMPLATE ---
 const BatchPrintTemplate = ({ invoices, month }) => {
   if (!invoices || invoices.length === 0) return null;
 
   return (
-    <div id="batch-print-container" className="hidden print:block text-black font-mono text-sm leading-tight">
+    <div id="batch-print-container" className="hidden print:block font-ubuntu antialiased">
       <style jsx global>{`
         @media print {
-          @page { margin: 0mm; size: auto; }
-          body { margin: 0mm; }
-          body * { visibility: hidden; }
-          #batch-print-container, #batch-print-container * { visibility: visible; }
-          #batch-print-container { 
-            position: absolute; left: 0; top: 0; width: 80mm;
+          @page { 
+            margin: 0mm; 
+            size: auto; 
           }
-          .invoice-page { 
-            page-break-after: always; padding: 15px; min-height: 100px; border-bottom: 1px dashed #ccc;
+          /* CRITICAL: Un-lock the height of the entire layout chain for printing */
+          html, body, #__next, 
+          div[class*="min-h-screen"], 
+          [data-sidebar-provider], 
+          [data-sidebar-inset],
+          .flex-1 {
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow: visible !important;
+            position: static !important;
+            zoom: 100% !important;
+          }
+          body { 
+            margin: 0mm;
+            padding: 0mm;
+            background: white !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          .no-print { 
+            display: none !important; 
+          }
+          #batch-print-container { 
+            display: block !important;
+            width: 100%;
+          }
+          .receipt-page { 
+            page-break-after: always;
+            break-after: page;
+            padding: 40px;
+            background: white;
+            color: #0f172a;
+            max-width: 100mm;
+            margin: 0 auto;
+          }
+          .receipt-header {
+            text-align: center;
+            border-bottom: 2px solid #10b981;
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+          }
+          .mosque-name {
+            font-size: 20px;
+            font-weight: 800;
+            color: #065f46;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          .receipt-title {
+            font-size: 11px;
+            color: #64748b;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 5px;
+          }
+          .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 12px;
+          }
+          .info-label {
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 10px;
+          }
+          .info-value {
+            font-weight: 700;
+            color: #1e293b;
+          }
+          .charges-table {
+            width: 100%;
+            margin: 25px 0;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 15px;
+          }
+          .charge-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 13px;
+          }
+          .charge-label {
+            color: #475569;
+          }
+          .charge-amount {
+            font-weight: 600;
+          }
+          .paid-amount {
+            color: #10b981;
+            font-weight: 700;
+          }
+          .balance-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+          }
+          .balance-label {
+            display: flex;
+            flex-direction: column;
+          }
+          .total-txt {
+            font-size: 10px;
+            font-weight: 800;
+            color: #64748b;
+            text-transform: uppercase;
+          }
+          .due-txt {
+            font-size: 14px;
+            font-weight: 600;
+          }
+          .balance-amount {
+            font-size: 24px;
+            font-weight: 800;
+            color: #0f172a;
+          }
+          .receipt-footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 10px;
+            color: #94a3b8;
+          }
+          .barcode-stub {
+            margin-top: 15px;
+            height: 1px;
+            border-bottom: 1px dashed #cbd5e1;
+            width: 100%;
           }
         }
       `}</style>
 
       {invoices.map((inv) => (
-        <div key={inv.id} className="invoice-page">
-          <div className="text-center mb-4">
-            <h1 className="font-bold text-lg uppercase">{MOSQUE_DETAILS.name}</h1>
-            <p className="text-[10px] uppercase">Monthly Subscription</p>
-            <div className="font-bold text-md mt-1">{month}</div>
+        <div key={inv.id} className="receipt-page">
+          <div className="receipt-header">
+            <div className="flex justify-center mb-4">
+               <div className="w-12 h-12 bg-emerald-600 rounded-full flex items-center justify-center text-white shadow-lg">
+                  <FileText className="w-6 h-6" />
+               </div>
+            </div>
+            <div className="mosque-name">{MOSQUE_DETAILS.name}</div>
+            <div className="receipt-title">Official Billing Statement</div>
           </div>
 
-          <div className="my-4 border-b border-dashed border-black pb-2">
-            <div className="flex justify-between items-baseline mb-1">
-              <span className="font-bold text-md">{inv.name}</span>
+          <div className="space-y-4">
+            <div className="info-row">
+              <span className="info-label">Member Details</span>
+              <div className="text-right">
+                <div className="info-value text-base">{inv.name}</div>
+                <div className="text-[10px] font-bold text-emerald-600">{inv.member_id}</div>
+              </div>
             </div>
-            <div className="flex justify-between text-xs">
-              <span>Ref:</span>
-              <span className="font-bold">{inv.id}</span>
-            </div>
-          </div>
-
-          <div className="my-2">
-            <div className="flex justify-between mb-1">
-              <span>Fee:</span>
-              <span>{inv.amount.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between mb-1">
-              <span>Paid:</span>
-              <span>{inv.paidAmount.toLocaleString()}</span>
-            </div>
-          </div>
-
-          <div className="border-t-2 border-black border-b-2 py-2 my-4">
-            <div className="flex justify-between items-center font-bold text-lg">
-              <span>BALANCE DUE:</span>
-              <span>Rs. {inv.balance.toLocaleString()}</span>
+            
+            <div className="flex gap-8">
+                <div className="flex-1">
+                    <span className="info-label">Billing Period</span>
+                    <div className="info-value">{month}</div>
+                </div>
+                <div className="flex-1 text-right">
+                    <span className="info-label">Invoice Ref</span>
+                    <div className="info-value">{inv.id}</div>
+                </div>
             </div>
           </div>
 
-          <div className="text-center text-[10px] mt-6">
-            <p>Please pay using Ref: <span className="font-bold">{inv.id}</span></p>
+          <div className="charges-table">
+            <div className="charge-item">
+              <span className="charge-label">Subscription Fee (Monthly)</span>
+              <span className="charge-amount">Rs. {inv.amount.toLocaleString()}</span>
+            </div>
+            <div className="charge-item">
+              <span className="charge-label">Total Amount Paid</span>
+              <span className="paid-amount text-emerald-600">- Rs. {inv.paidAmount.toLocaleString()}</span>
+            </div>
           </div>
 
-          <div className="text-center text-[8px] mt-4 opacity-50">
-            - - - - - cut here - - - - -
+          <div className="balance-box">
+            <div className="balance-label">
+              <span className="total-txt">Balance Remaining</span>
+              <span className="due-txt">Sub Total</span>
+            </div>
+            <div className="balance-amount">
+                Rs. {inv.balance.toLocaleString()}
+            </div>
+          </div>
+
+          <div className="receipt-footer">
+            <p className="font-bold text-slate-500 mb-2 underline decoration-emerald-200 decoration-2 underline-offset-4">
+                Thank you for your sincere contribution
+            </p>
+            <p>This is a computer-generated receipt. No signature required.</p>
+            <div className="barcode-stub my-4" />
+            <p className="tracking-widest uppercase font-bold text-[8px] opacity-60">
+                Processed via IVTC Campus Dashboard
+            </p>
           </div>
         </div>
       ))}
@@ -281,12 +432,12 @@ export default function MonthlyInvoicesPage() {
 
   // Data Fetching with SWR
   const { data: invoices = [], isLoading: loading, isValidating } = useSWR(
-    `/billing/invoices?period=${currentMonth}`, 
+    `/billing/invoices?period=${currentMonth}`,
     apiFetcher,
-    { 
-        keepPreviousData: true,
-        revalidateOnFocus: false,
-        revalidateOnReconnect: false
+    {
+      keepPreviousData: true,
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false
     }
   );
 
@@ -329,18 +480,19 @@ export default function MonthlyInvoicesPage() {
   const handlePrint = () => {
     const dataToPrint = selectedRows.map(r => r.original);
     setPrintingInvoices(dataToPrint);
-    setTimeout(() => window.print(), 200);
+    // Increase timeout to 300ms for high-precision rendering
+    setTimeout(() => window.print(), 300);
   };
 
   // (No early return for loading to keep selector mounted)
 
   return (
     <div className="min-h-screen bg-slate-50 relative">
-      <div className="fixed inset-0 pointer-events-none opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')]"></div>
+      <div className="no-print fixed inset-0 pointer-events-none opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')]"></div>
 
       <BatchPrintTemplate invoices={printingInvoices} month={currentMonth} />
 
-      <div className="flex flex-col space-y-6 px-6 pb-6 pt-8 max-w-7xl mx-auto">
+      <div className="no-print flex flex-col space-y-6 px-6 pb-6 pt-8 max-w-7xl mx-auto">
 
         {/* HEADER */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -353,7 +505,7 @@ export default function MonthlyInvoicesPage() {
             </h1>
             <p className="text-slate-500">Manage monthly sanda requests and batch printing.</p>
           </div>
-          
+
           <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
             <Select value={currentMonth} onValueChange={setCurrentMonth}>
               <SelectTrigger className="w-[180px] h-10 border-slate-200 focus:ring-emerald-500 bg-slate-50 shadow-none">
@@ -379,85 +531,85 @@ export default function MonthlyInvoicesPage() {
               {invoices.length > 0 ? "Generated for this Month" : "Generate Invoices"}
             </Button>
 
-            <Button 
-                onClick={handlePrint}
-                disabled={selectedRows.length === 0}
-                className="h-10 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-200 gap-2 font-medium"
+            <Button
+              onClick={handlePrint}
+              disabled={selectedRows.length === 0}
+              className="h-10 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-200 gap-2 font-medium"
             >
-                <Printer className="w-4 h-4" />
-                {selectedRows.length > 0 ? `Print (${selectedRows.length})` : "Print Selected"}
+              <Printer className="w-4 h-4" />
+              {selectedRows.length > 0 ? `Print (${selectedRows.length})` : "Print Selected"}
             </Button>
           </div>
         </div>
 
         {/* TOOLBAR & DATA TABLE */}
         <div className={cn("space-y-6 transition-opacity duration-200", isValidating && invoices.length > 0 ? "opacity-70 pointer-events-none" : "opacity-100")}>
-            {loading && invoices.length === 0 ? (
-                <div className="space-y-6">
-                    <Card className="rounded-xl border-slate-200 shadow-sm bg-white p-4">
-                        <div className="flex justify-between items-center gap-4">
-                            <Skeleton className="h-10 w-64" />
-                            <Skeleton className="h-10 w-32" />
-                        </div>
-                    </Card>
-                    <Card className="rounded-xl border-slate-200 shadow-sm bg-white overflow-hidden p-0">
-                        <div className="p-4 space-y-4">
-                            <Skeleton className="h-10 w-full" />
-                            <Skeleton className="h-10 w-full" />
-                            <Skeleton className="h-10 w-full" />
-                            <Skeleton className="h-10 w-full" />
-                        </div>
-                    </Card>
+          {loading && invoices.length === 0 ? (
+            <div className="space-y-6">
+              <Card className="rounded-xl border-slate-200 shadow-sm bg-white p-4">
+                <div className="flex justify-between items-center gap-4">
+                  <Skeleton className="h-10 w-64" />
+                  <Skeleton className="h-10 w-32" />
                 </div>
-            ) : (
-                <>
-                    <Card className="rounded-xl border-slate-200 shadow-sm bg-white">
-                        <CardContent className="p-4">
-                            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                                <div className="flex flex-1 items-center gap-3 w-full">
-                                    <div className="relative w-full max-w-xs">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                        <Input
-                                            placeholder="Search by name..."
-                                            value={table.getColumn("name")?.getFilterValue() ?? ""}
-                                            onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)}
-                                            className="pl-10 h-10 bg-slate-50 border-slate-200 focus-visible:ring-emerald-500"
-                                        />
-                                    </div>
-                                    <Select
-                                        value={table.getColumn("status")?.getFilterValue() ?? ""}
-                                        onValueChange={(value) => table.getColumn("status")?.setFilterValue(value === "all" ? undefined : value)}
-                                    >
-                                        <SelectTrigger className="w-[150px] h-10 bg-slate-50 border-slate-200 focus:ring-emerald-500">
-                                            <Filter className="w-3 h-3 mr-2 text-slate-500" />
-                                            <SelectValue placeholder="Status" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">All Status</SelectItem>
-                                            <SelectItem value="Unpaid">Unpaid</SelectItem>
-                                            <SelectItem value="Paid">Paid</SelectItem>
-                                            <SelectItem value="Overdue">Overdue</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+              </Card>
+              <Card className="rounded-xl border-slate-200 shadow-sm bg-white overflow-hidden p-0">
+                <div className="p-4 space-y-4">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              </Card>
+            </div>
+          ) : (
+            <>
+              <Card className="rounded-xl border-slate-200 shadow-sm bg-white">
+                <CardContent className="p-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div className="flex flex-1 items-center gap-3 w-full">
+                      <div className="relative w-full max-w-xs">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Input
+                          placeholder="Search by name..."
+                          value={table.getColumn("name")?.getFilterValue() ?? ""}
+                          onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)}
+                          className="pl-10 h-10 bg-slate-50 border-slate-200 focus-visible:ring-emerald-500"
+                        />
+                      </div>
+                      <Select
+                        value={table.getColumn("status")?.getFilterValue() ?? ""}
+                        onValueChange={(value) => table.getColumn("status")?.setFilterValue(value === "all" ? undefined : value)}
+                      >
+                        <SelectTrigger className="w-[150px] h-10 bg-slate-50 border-slate-200 focus:ring-emerald-500">
+                          <Filter className="w-3 h-3 mr-2 text-slate-500" />
+                          <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Status</SelectItem>
+                          <SelectItem value="Unpaid">Unpaid</SelectItem>
+                          <SelectItem value="Paid">Paid</SelectItem>
+                          <SelectItem value="Overdue">Overdue</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                                {selectedRows.length > 0 && (
-                                    <div className="flex items-center gap-3 bg-emerald-50 px-4 py-2 rounded-lg border border-emerald-100 animate-in fade-in slide-in-from-right-2">
-                                        <div className="flex flex-col items-start leading-none">
-                                            <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Total Expected</span>
-                                            <span className="font-bold text-emerald-900 text-lg">Rs. {totalSelectedAmount.toLocaleString()}</span>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
+                    {selectedRows.length > 0 && (
+                      <div className="flex items-center gap-3 bg-emerald-50 px-4 py-2 rounded-lg border border-emerald-100 animate-in fade-in slide-in-from-right-2">
+                        <div className="flex flex-col items-start leading-none">
+                          <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Total Expected</span>
+                          <span className="font-bold text-emerald-900 text-lg">Rs. {totalSelectedAmount.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
 
-                    <Card className="rounded-xl border-slate-200 shadow-sm bg-white overflow-hidden">
-                        <DataTable table={table} columns={columns} />
-                    </Card>
-                </>
-            )}
+              <Card className="rounded-xl border-slate-200 shadow-sm bg-white overflow-hidden">
+                <DataTable table={table} columns={columns} />
+              </Card>
+            </>
+          )}
         </div>
 
       </div>

@@ -39,17 +39,21 @@ export default function AppLayout({ children }) {
       <SidebarProvider defaultOpen={true}>
         <div className="flex min-h-screen w-full flex-col">
           <div className="flex flex-1">
-            <AppSidebar variant="inset" />
+            <div className="no-print">
+              <AppSidebar variant="inset" />
+            </div>
             <div className="flex-1 overflow-x-auto"> {/* Container for scrolling */}
               <SidebarInset>
-                <div className='fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 md:left-(--sidebar-width) md:peer-data-[state=collapsed]:left-0'>
+                <div className='no-print fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 md:left-(--sidebar-width) md:peer-data-[state=collapsed]:left-0'>
                   <SystemBreadcrumb />
                 </div>
                 <ZoomWrapper>
                   <div className='flex-1 pt-14'>
                     {children}
                   </div>
-                  <Footer />
+                  <div className='no-print'>
+                    <Footer />
+                  </div>
                 </ZoomWrapper>
               </SidebarInset>
             </div>
