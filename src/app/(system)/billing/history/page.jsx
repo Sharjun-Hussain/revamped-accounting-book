@@ -140,6 +140,11 @@ const columns = [
 ];
 
 export default function PaymentHistoryPage() {
+  // --- STATES ---
+  const [dateRange, setDateRange] = useState(undefined);
+  const [sorting, setSorting] = useState([]);
+  const [columnFilters, setColumnFilters] = useState([]);
+
   // Data Fetching with SWR (Key includes date range for caching)
   const swrKey = useMemo(() => {
     const params = new URLSearchParams();
@@ -150,12 +155,6 @@ export default function PaymentHistoryPage() {
 
   const { data: payments = [], isLoading: loading } = useSWR(swrKey, apiFetcher);
   
-  // Sorting & Filtering State
-  const [sorting, setSorting] = useState([]);
-  const [columnFilters, setColumnFilters] = useState([]);
-  // DATE RANGE STATE
-  const [dateRange, setDateRange] = useState(undefined);
-
 
   const table = useReactTable({
     data: payments,
