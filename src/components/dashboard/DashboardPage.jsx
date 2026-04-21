@@ -60,9 +60,11 @@ const menuVariants = {
   exit: { opacity: 0, y: -10, scale: 0.95, transition: { duration: 0.15 } }
 };
 
-import { accountingService } from "@/services/accountingService";
 import { signOut, useSession } from "next-auth/react";
 import useSWR from "swr";
+import api from "@/lib/api";
+
+const apiFetcher = (url) => api.get(url).then((res) => res.data);
 
 // ... (keep imports)
 
@@ -81,12 +83,28 @@ export default function MosqueDashboard() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
-  // Data States
+  // UI States
   const [notifications, setNotifications] = useState(initialNotifications);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activities, setActivities] = useState([]);
-  const [dashboardStats, setDashboardStats] = useState([]); // Initialize as empty
-  const [loading, setLoading] = useState(true);
+
+  // Data Fetching with SWR
+  const { data: dashboardData, isLoading: swrLoading } = useSWR("/dashboard", apiFetcher);
+
+  // Stats Icon Mapping
+  const iconMap = {
+    Wallet: Wallet,
+    TrendingUp: TrendingUp,
+    Users: Users,
+    FileText: FileText
+  };
+
+  const dashboardStats = dashboardData?.stats?.map(s => ({
+    ...s,
+    icon: iconMap[s.iconName] || Wallet
+  })) || [];
+
+  const activities = dashboardData?.activities || [];
+  const loading = swrLoading;
 
   // Refs for click outside
   const notifRef = useRef(null);
@@ -94,46 +112,7 @@ export default function MosqueDashboard() {
 
   // --- HANDLERS ---
 
-  // Fetch Dashboard Data
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        const data = await accountingService.getDashboardStats();
-        
-        // Map API stats to UI format
-        // The API returns stats array with correct structure, so we can use it directly or map if needed.
-        // Let's assume API returns matching structure.
-        if (data.stats) {
-            // Need to map icons back because they are strings in API response (if we sent strings)
-            // But wait, I sent iconName in API. I need to map string to component.
-            const iconMap = {
-                Wallet: Wallet,
-                TrendingUp: TrendingUp,
-                Users: Users,
-                FileText: FileText
-            };
-            
-            const mappedStats = data.stats.map(s => ({
-                ...s,
-                icon: iconMap[s.iconName] || Wallet // Fallback
-            }));
-            setDashboardStats(mappedStats);
-        }
 
-        if (data.activities) {
-            setActivities(data.activities);
-        }
-
-      } catch (error) {
-        console.error("Failed to fetch dashboard stats:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDashboardData();
-  }, []);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
