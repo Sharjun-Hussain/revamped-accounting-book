@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { memberService } from "@/services/memberService";
+import { useState } from "react";
+import useSWR from "swr";
+import api from "@/lib/api";
 import { motion } from "framer-motion"; // Added animations
 import { columns } from "@/components/members/columns";
 import { DataTable } from "@/components/general/data-table";
@@ -64,6 +65,12 @@ import {
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { BulkUploadModal } from "@/components/members/bulk-upload-modal";
+import { MemberSkeleton } from "@/components/members/MemberSkeleton";
+import { Badge } from "@/components/ui/badge";
+
+// SWR fetcher that goes through the axios instance (interceptors, base URL, etc.)
+const apiFetcher = (url) => api.get(url).then((res) => res.data);
 
 // --- Animation Variants ---
 const containerVariants = {
@@ -171,9 +178,6 @@ const MemberTableToolbar = ({ table, bulkActionsComponent }) => {
   );
 };
 
-import { BulkUploadModal } from "@/components/members/bulk-upload-modal";
-import { MemberSkeleton } from "./MemberSkeleton";
-import { Badge } from "../ui/badge";
 
 export default function MembersPage() {
   const [isNavigating, setIsNavigating] = useState(false);
@@ -181,48 +185,22 @@ export default function MembersPage() {
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [rowSelection, setRowSelection] = useState({});
-  const [members, setMembers] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  
+  // useSWR caches the member list in memory — navigating away and back
+  // will show cached data immediately without a network round-trip.
+  const { data: members = [], isLoading, mutate: mutateMembers } = useSWR(
+    "/members",
+    apiFetcher
+  );
+
   // Sheet State
   const [selectedMember, setSelectedMember] = useState(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [statementData, setStatementData] = useState(null);
-  const [isStatementLoading, setIsStatementLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchMembers = async () => {
-      try {
-        const data = await memberService.getAll();
-        setMembers(data);
-      } catch (error) {
-        console.error("Failed to fetch members:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchMembers();
-  }, []);
-
-  useEffect(() => {
-    if (selectedMember && isSheetOpen) {
-        const fetchStatement = async () => {
-            setIsStatementLoading(true);
-            try {
-                const data = await memberService.getMemberStatement(selectedMember.id);
-                setStatementData(data);
-            } catch (error) {
-                console.error("Failed to fetch member statement:", error);
-                toast.error("Failed to load member history");
-            } finally {
-                setIsStatementLoading(false);
-            }
-        };
-        fetchStatement();
-    } else {
-        setStatementData(null);
-    }
-  }, [selectedMember, isSheetOpen]);
+  // Fetch statement only when a member sheet is open; SWR also caches per-member data.
+  const { data: statementData = null, isLoading: isStatementLoading } = useSWR(
+    selectedMember && isSheetOpen ? `/members/${selectedMember.id}/statement` : null,
+    apiFetcher
+  );
 
   const handleMemberClick = (member) => {
     setSelectedMember(member);
@@ -345,16 +323,8 @@ export default function MembersPage() {
             open={isUploadModalOpen} 
             onOpenChange={setIsUploadModalOpen} 
             onSuccess={() => {
-                // Refresh members list
-                const fetchMembers = async () => {
-                    try {
-                        const data = await memberService.getAll();
-                        setMembers(data);
-                    } catch (error) {
-                        console.error("Failed to fetch members:", error);
-                    }
-                };
-                fetchMembers();
+                // Invalidate the SWR cache so the list re-fetches after a bulk import
+                mutateMembers();
             }}
         />
 

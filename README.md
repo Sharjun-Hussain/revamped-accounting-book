@@ -73,6 +73,7 @@ Built with **Next.js 15+**, **Prisma**, and **Tailwind CSS**, the system offers 
 - Node.js 18.x or higher
 - PostgreSQL Database
 - NPM or PNPM
+- DB : sharjoonibnuhussain99@gmail.com
 
 ### Installation
 
