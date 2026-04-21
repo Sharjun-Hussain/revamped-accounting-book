@@ -343,26 +343,20 @@ export default function MonthlyInvoicesPage() {
       <div className="flex flex-col space-y-6 px-6 pb-6 pt-8 max-w-7xl mx-auto">
 
         {/* HEADER */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-1">
             <h1 className="text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-              <FileText className="h-8 w-8 text-emerald-600" />
+              <div className="bg-emerald-100 p-2 rounded-xl">
+                <FileText className="h-7 w-7 text-emerald-700" />
+              </div>
               Monthly Invoicing
             </h1>
-            <p className="text-slate-500">Generate and print bill requests for Sanda collection.</p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleGenerateSanda}
-              disabled={isGenerating}
-              className="mt-2 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-            >
-              {isGenerating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating...</> : "Generate Invoices for this Month"}
-            </Button>
+            <p className="text-slate-500">Manage monthly sanda requests and batch printing.</p>
           </div>
-          <div className="flex items-center gap-3 bg-white p-1.5 rounded-lg border border-slate-200 shadow-sm">
+          
+          <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
             <Select value={currentMonth} onValueChange={setCurrentMonth}>
-              <SelectTrigger className="w-[180px] border-none shadow-none focus:ring-0">
+              <SelectTrigger className="w-[180px] h-10 border-slate-200 focus:ring-emerald-500 bg-slate-50 shadow-none">
                 <CalendarDays className="w-4 h-4 mr-2 text-emerald-600" />
                 <SelectValue />
               </SelectTrigger>
@@ -372,6 +366,27 @@ export default function MonthlyInvoicesPage() {
                 ))}
               </SelectContent>
             </Select>
+
+            <div className="h-6 w-px bg-slate-200 hidden sm:block" />
+
+            <Button
+              variant="outline"
+              onClick={handleGenerateSanda}
+              disabled={isGenerating}
+              className="h-10 text-emerald-700 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800 transition-all font-medium"
+            >
+              {isGenerating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileText className="w-4 h-4 mr-2" />}
+              Generate Invoices
+            </Button>
+
+            <Button 
+                onClick={handlePrint}
+                disabled={selectedRows.length === 0}
+                className="h-10 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-200 gap-2 font-medium"
+            >
+                <Printer className="w-4 h-4" />
+                {selectedRows.length > 0 ? `Print (${selectedRows.length})` : "Print Selected"}
+            </Button>
           </div>
         </div>
 
@@ -406,14 +421,14 @@ export default function MonthlyInvoicesPage() {
                                             placeholder="Search by name..."
                                             value={table.getColumn("name")?.getFilterValue() ?? ""}
                                             onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)}
-                                            className="pl-10 bg-slate-50 border-slate-200"
+                                            className="pl-10 h-10 bg-slate-50 border-slate-200 focus-visible:ring-emerald-500"
                                         />
                                     </div>
                                     <Select
                                         value={table.getColumn("status")?.getFilterValue() ?? ""}
                                         onValueChange={(value) => table.getColumn("status")?.setFilterValue(value === "all" ? undefined : value)}
                                     >
-                                        <SelectTrigger className="w-[150px] bg-slate-50 border-slate-200">
+                                        <SelectTrigger className="w-[150px] h-10 bg-slate-50 border-slate-200 focus:ring-emerald-500">
                                             <Filter className="w-3 h-3 mr-2 text-slate-500" />
                                             <SelectValue placeholder="Status" />
                                         </SelectTrigger>
@@ -426,23 +441,14 @@ export default function MonthlyInvoicesPage() {
                                     </Select>
                                 </div>
 
-                                <div className="flex items-center gap-4 w-full sm:w-auto">
-                                    {selectedRows.length > 0 && (
-                                        <div className="flex flex-col items-end mr-2">
-                                            <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Expected</span>
-                                            <span className="font-bold text-slate-900">Rs. {totalSelectedAmount.toLocaleString()}</span>
+                                {selectedRows.length > 0 && (
+                                    <div className="flex items-center gap-3 bg-emerald-50 px-4 py-2 rounded-lg border border-emerald-100 animate-in fade-in slide-in-from-right-2">
+                                        <div className="flex flex-col items-start leading-none">
+                                            <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Total Expected</span>
+                                            <span className="font-bold text-emerald-900 text-lg">Rs. {totalSelectedAmount.toLocaleString()}</span>
                                         </div>
-                                    )}
-                                    
-                                    <Button 
-                                        onClick={handlePrint}
-                                        disabled={selectedRows.length === 0}
-                                        className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-200 gap-2 min-w-[140px]"
-                                    >
-                                        <Printer className="w-4 h-4" />
-                                        {selectedRows.length > 0 ? `Print (${selectedRows.length})` : "Print Selected"}
-                                    </Button>
-                                </div>
+                                    </div>
+                                )}
                             </div>
                         </CardContent>
                     </Card>
