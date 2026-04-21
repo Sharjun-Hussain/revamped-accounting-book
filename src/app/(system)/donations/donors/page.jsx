@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -75,6 +76,37 @@ const formatCurrency = (amount) => {
     minimumFractionDigits: 0,
   }).format(amount);
 };
+
+// --- 3. Skeleton Loader ---
+const DonorSkeleton = () => (
+  <div className="space-y-4">
+    <div className="flex items-center justify-between gap-4 mb-6">
+      <Skeleton className="h-10 w-64" />
+    </div>
+    <div className="rounded-md border border-slate-100 overflow-hidden">
+      <div className="bg-slate-50/50 h-10 border-b border-slate-100 px-4 flex items-center justify-between">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <Skeleton key={i} className="h-4 w-24" />
+        ))}
+      </div>
+      {[1, 2, 3, 4, 5].map((row) => (
+        <div key={row} className="p-4 border-b border-slate-50 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          </div>
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-8 w-8 rounded-md" />
+        </div>
+      ))}
+    </div>
+  </div>
+);
 
 export default function DonorsPage() {
   const [data, setData] = useState([]);
@@ -299,26 +331,31 @@ export default function DonorsPage() {
         <motion.div variants={itemVariants}>
           <Card className="rounded-xl border-slate-100 shadow-sm overflow-hidden bg-white">
             <CardContent className="pt-6">
-                
-              {/* Toolbar */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
-                <div className="flex flex-1 items-center gap-3 w-full sm:w-auto">
-                    <div className="relative w-full max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                        placeholder="Search by name..."
-                        value={table.getColumn("name")?.getFilterValue() ?? ""}
-                        onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)}
-                        className="pl-10 bg-slate-50 border-slate-200 focus:ring-emerald-500 focus:border-emerald-500"
-                    />
+              {isLoading ? (
+                <DonorSkeleton />
+              ) : (
+                <>
+                  {/* Toolbar */}
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+                    <div className="flex flex-1 items-center gap-3 w-full sm:w-auto">
+                        <div className="relative w-full max-w-sm">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Input
+                            placeholder="Search by name..."
+                            value={table.getColumn("name")?.getFilterValue() ?? ""}
+                            onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)}
+                            className="pl-10 bg-slate-50 border-slate-200 focus:ring-emerald-500 focus:border-emerald-500"
+                        />
+                        </div>
                     </div>
-                </div>
-              </div>
+                  </div>
 
-              {/* Table */}
-              <div className="rounded-md border border-slate-100">
-                <DataTable table={table} columns={columns} />
-              </div>
+                  {/* Table */}
+                  <div className="rounded-md border border-slate-100">
+                    <DataTable table={table} columns={columns} />
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </motion.div>

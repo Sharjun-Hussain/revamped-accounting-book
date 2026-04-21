@@ -112,7 +112,8 @@ export async function GET(request) {
         let allDonors = [...donorsWithStats, ...membersWithStats];
 
         if (!search) {
-            allDonors = allDonors.filter(d => d.donation_count > 0);
+            // Keep all Guest Donors, but filter out Members who haven't donated yet
+            allDonors = allDonors.filter(d => d.type === 'guest' || (d.type === 'member' && d.donation_count > 0));
         }
 
         // Sort by last donation date (most recent first)
