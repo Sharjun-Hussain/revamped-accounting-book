@@ -18,10 +18,16 @@ export async function POST(request) {
 
             for (const p of payments) {
                 let invoiceId = p.invoiceId;
+                const amt = parseFloat(p.amount);
+                
+                // DATA VALIDATION
+                if (isNaN(amt)) {
+                    console.error(`Invalid amount for member ${p.memberId}:`, p.amount);
+                    throw new Error(`Invalid payment amount for member ${p.memberId}`);
+                }
 
                 // 1. Create Invoice if not exists
                 if (!invoiceId) {
-                    // Check again inside transaction to be safe
                     const paymentPeriod = p.period || period;
                     let invoice = await tx.invoice.findFirst({
                         where: {
@@ -32,13 +38,16 @@ export async function POST(request) {
                     });
 
                     if (!invoice) {
-                        // Create new invoice
+                        // Create unique invoiceNo using memberId and a random suffix to avoid collisions
+                        const randomSuffix = Math.random().toString(36).substring(2, 6);
+                        const invNo = `INV-${paymentPeriod}-${p.memberId.slice(-4)}-${randomSuffix}`;
+                        
                         invoice = await tx.invoice.create({
                             data: {
-                                invoiceNo: `INV-${paymentPeriod}-${p.memberId.slice(-4)}`,
+                                invoiceNo: invNo,
                                 memberId: p.memberId,
-                                amount: parseFloat(p.amount), // Assuming full payment for now, or use member default
-                                dueDate: new Date(`${paymentPeriod}-28`),
+                                amount: amt,
+                                dueDate: new Date(`${paymentPeriod}-10`), // Default due date to 10th
                                 period: paymentPeriod,
                                 type: 'Sanda',
                                 status: 'pending',
@@ -52,7 +61,7 @@ export async function POST(request) {
                 const payment = await tx.payment.create({
                     data: {
                         invoiceId,
-                        amount: parseFloat(p.amount),
+                        amount: amt,
                         method: p.method || 'Cash',
                         bankAccountId: p.bankAccountId,
                     },
@@ -60,7 +69,7 @@ export async function POST(request) {
 
                 // 3. Update Invoice Status
                 const invoice = await tx.invoice.findUnique({ where: { id: invoiceId } });
-                const newPaidAmount = invoice.paidAmount + payment.amount;
+                const newPaidAmount = (invoice.paidAmount || 0) + payment.amount;
                 let newStatus = invoice.status;
 
                 if (newPaidAmount >= invoice.amount) {
@@ -89,6 +98,10 @@ export async function POST(request) {
 
                 // 5. Create Ledger Entry
                 const member = await tx.member.findUnique({ where: { id: p.memberId } });
+                if (!member) {
+                    throw new Error(`Member not found: ${p.memberId}`);
+                }
+                
                 const paymentPeriod = p.period || period;
                 await tx.ledger.create({
                     data: {
@@ -113,11 +126,16 @@ export async function POST(request) {
                 });
             }
             return processed;
+        }, {
+            timeout: 15000 // Increase timeout for bulk transactions
         });
 
         return NextResponse.json({ message: 'Bulk payment processed', results });
     } catch (error) {
-        console.error('Error processing bulk payment:', error);
-        return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+        console.error('CRITICAL: Bulk Payment API Failed:', error);
+        return NextResponse.json({ 
+            error: error.message || 'Internal Server Error',
+            details: error.code // Prisma error codes
+        }, { status: 500 });
     }
 }

@@ -246,6 +246,7 @@ export default function BulkCollectionPage() {
                 };
             });
 
+            console.log("Processing bulk payments:", payments);
             const res = await fetch('/api/sanda/bulk-pay', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
