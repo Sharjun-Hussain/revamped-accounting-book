@@ -301,64 +301,82 @@ export default function ArrearsPage() {
     {
       accessorKey: "arrears",
       header: ({ column }) => (
-        <Button variant="ghost" size="sm" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} className="-ml-3">
-          Arrears Amount <ArrowUpDown className="ml-2 h-3 w-3" />
-        </Button>
+        <div className="text-right">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} 
+            className="-mr-3 h-8 font-bold"
+          >
+            Arrears Amount <ArrowUpDown className="ml-2 h-3 w-3" />
+          </Button>
+        </div>
       ),
       cell: ({ row }) => (
-        <div className="font-bold text-rose-600 font-mono tracking-tight text-right pr-4">Rs. {row.getValue("arrears").toLocaleString()}</div>
+        <div className="font-bold text-rose-600 font-mono tracking-tight text-right">
+          Rs. {row.getValue("arrears").toLocaleString()}
+        </div>
       ),
     },
     {
       accessorKey: "months_due",
-      header: "Pending Duration",
+      header: ({ column }) => <div className="text-center">Pending Duration</div>,
       cell: ({ row }) => {
         const count = row.getValue("months_due");
         const details = row.original.details || [];
 
         return (
-          <Popover>
-            <PopoverTrigger asChild>
-              <Badge variant="outline" className={`cursor-pointer h-7 px-2 text-[11px] font-bold uppercase transition-all hover:scale-105 active:scale-95 ${count >= 6 ? "bg-rose-50 text-rose-700 border-rose-200" :
-                count >= 3 ? "bg-amber-50 text-amber-700 border-amber-200" :
-                  "bg-slate-50 text-slate-700 border-slate-200"
-                }`}>
-                {count} Months
-              </Badge>
-            </PopoverTrigger>
-            <PopoverContent className="w-64 p-3 shadow-xl border-slate-200">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 border-b pb-2 mb-2">
-                  <FileText className="w-4 h-4 text-emerald-600" />
-                  <h4 className="font-bold text-xs text-slate-900 uppercase tracking-widest">Outstanding Breakdown</h4>
-                </div>
-                {details.length > 0 ? (
-                  <div className="max-h-[200px] overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
-                    {details.map((inv, i) => (
-                      <div key={i} className="flex justify-between items-center text-[10px] p-2 bg-slate-50 rounded border border-slate-100">
-                        <span className="font-bold text-slate-600">{inv.period}</span>
-                        <span className="font-mono font-black text-rose-600">Rs. {inv.balance.toLocaleString()}</span>
-                      </div>
-                    ))}
+          <div className="flex justify-center">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Badge variant="outline" className={`cursor-pointer h-7 px-2 text-[11px] font-bold uppercase transition-all hover:scale-105 active:scale-95 ${count >= 6 ? "bg-rose-50 text-rose-700 border-rose-200" :
+                  count >= 3 ? "bg-amber-50 text-amber-700 border-amber-200" :
+                    "bg-slate-50 text-slate-700 border-slate-200"
+                  }`}>
+                  {count} Months
+                </Badge>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-3 shadow-xl border-slate-200">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 border-b pb-2 mb-2">
+                    <FileText className="w-4 h-4 text-emerald-600" />
+                    <h4 className="font-bold text-xs text-slate-900 uppercase tracking-widest">Outstanding Breakdown</h4>
                   </div>
-                ) : (
-                  <p className="text-xs text-slate-500 py-4 text-center italic">No monthly breakdown available</p>
-                )}
-              </div>
-            </PopoverContent>
-          </Popover>
+                  {details.length > 0 ? (
+                    <div className="max-h-[200px] overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
+                      {details.map((inv, i) => (
+                        <div key={i} className="flex justify-between items-center text-[10px] p-2 bg-slate-50 rounded border border-slate-100">
+                          <span className="font-bold text-slate-600">{inv.period}</span>
+                          <span className="font-mono font-black text-rose-600">Rs. {inv.balance.toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500 py-4 text-center italic">No monthly breakdown available</p>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
         )
       }
     },
     {
       accessorKey: "last_paid",
-      header: "Last Payment",
-      cell: ({ row }) => <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded">{row.getValue("last_paid") || "-"}</span>,
+      header: ({ column }) => <div className="text-center">Last Payment</div>,
+      cell: ({ row }) => (
+        <div className="text-center">
+          <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded">
+            {row.getValue("last_paid") || "-"}
+          </span>
+        </div>
+      ),
     },
     {
       id: "actions",
+      header: ({ column }) => <div className="text-right">Actions</div>,
       cell: ({ row }) => (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center justify-end gap-1">
           <Button
             size="icon" variant="ghost"
             className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-full"
