@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import useSWR, { mutate } from "swr";
 import { apiFetcher } from "@/lib/api";
-import { motion } from "framer-motion";
 import {
   Printer,
   FileText,
@@ -51,6 +50,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { accountingService } from "@/services/accountingService";
 
 import { BillingSkeleton } from "@/components/billing/BillingSkeleton";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -283,13 +283,16 @@ export default function MonthlyInvoicesPage() {
   const { data: invoices = [], isLoading: loading, isValidating } = useSWR(
     `/billing/invoices?period=${currentMonth}`, 
     apiFetcher,
-    { keepPreviousData: true }
+    { 
+        keepPreviousData: true,
+        revalidateOnFocus: false,
+        revalidateOnReconnect: false
+    }
   );
 
-
-  const refreshInvoices = () => mutate(`/billing/invoices?period=${currentMonth}`);
-
-
+  const refreshInvoices = useCallback(() => {
+    mutate(`/billing/invoices?period=${currentMonth}`);
+  }, [currentMonth]);
 
   // Generate Sanda
   const handleGenerateSanda = async () => {
@@ -306,6 +309,7 @@ export default function MonthlyInvoicesPage() {
     }
   };
 
+  // Memoize Table Config to prevent infinite loops
   const table = useReactTable({
     data: invoices,
     columns,
@@ -336,11 +340,7 @@ export default function MonthlyInvoicesPage() {
 
       <BatchPrintTemplate invoices={printingInvoices} month={currentMonth} />
 
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative z-10 flex flex-col space-y-6 px-6 pb-6 pt-8 max-w-7xl mx-auto"
-      >
+      <div className="flex flex-col space-y-6 px-6 pb-6 pt-8 max-w-7xl mx-auto">
 
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -454,7 +454,7 @@ export default function MonthlyInvoicesPage() {
             )}
         </div>
 
-      </motion.div>
+      </div>
     </div>
   );
 }
