@@ -49,6 +49,25 @@ import { Skeleton } from "@/components/ui/skeleton";
 const BulkPrintReceipts = ({ receipts, settings }) => {
     if (!receipts || receipts.length === 0) return null;
 
+    // Grouping logic: Consolidate by memberId
+    const consolidatedReceipts = useMemo(() => {
+        const groups = {};
+        receipts.forEach(r => {
+            if (!groups[r.memberId]) {
+                groups[r.memberId] = {
+                    memberName: r.memberName,
+                    memberId: r.memberId,
+                    periods: [],
+                    totalAmount: 0,
+                    receiptNo: r.receiptNo // Use first receipt ID as reference
+                };
+            }
+            groups[r.memberId].periods.push(r.period);
+            groups[r.memberId].totalAmount += Number(r.amount);
+        });
+        return Object.values(groups);
+    }, [receipts]);
+
     const mosqueName = settings?.mosqueName || "Masjid Name";
     const address = settings?.address || "Address Line 1";
     const contact = settings?.phone || "Contact Number";
@@ -69,58 +88,64 @@ const BulkPrintReceipts = ({ receipts, settings }) => {
                         width: 80mm;
                         padding: 10px;
                         margin-bottom: 20px;
-                        page-break-after: always; /* CRITICAL FOR SPLIT */
+                        page-break-after: always;
                         break-after: always;
+                        background: white;
+                        color: black;
                     }
                     @page { margin: 0; size: auto; }
                 }
             `}</style>
 
-            {receipts.map((data, index) => (
+            {consolidatedReceipts.map((data, index) => (
                 <div key={index} className="receipt-page font-mono text-sm leading-tight text-black">
                     <div className="text-center mb-4">
                         <h1 className="font-bold text-lg uppercase">{mosqueName}</h1>
-                        <p className="text-xs">{address}</p>
-                        <p className="text-xs">{contact}</p>
+                        <p className="text-[10px] uppercase">{address}</p>
+                        <p className="text-[10px]">{contact}</p>
                     </div>
 
                     <div className="border-b-2 border-dashed border-black my-2" />
 
-                    <div className="flex justify-between text-xs mb-2">
+                    <div className="flex justify-between text-[10px] mb-2">
                         <span>Date: {new Date().toLocaleDateString()}</span>
-                        <span>Rec #: {data.receiptNo.toString().slice(-6)}</span>
+                        <span>Ref: {data.receiptNo.toString().slice(-8).toUpperCase()}</span>
                     </div>
 
                     <div className="border-b border-dashed border-black my-2" />
 
                     <div className="my-4">
                         <div className="flex justify-between font-bold mb-1">
-                            <span>Member:</span>
-                            <span>{data.memberName}</span>
+                            <span className="text-xs uppercase">Member:</span>
+                            <span className="text-base">{data.memberName}</span>
                         </div>
-                        <div className="flex justify-between text-xs mb-3">
+                        <div className="flex justify-between text-[10px] mb-4">
                             <span>ID:</span>
                             <span>{data.memberId}</span>
                         </div>
                         
-                        <div className="flex justify-between mb-1">
-                            <span>Period:</span>
-                            <span>{data.period}</span>
+                        <div className="space-y-1">
+                            <span className="text-[10px] font-bold uppercase text-slate-500">Periods Covered:</span>
+                            <div className="flex flex-wrap gap-x-2 text-xs font-bold bg-slate-50 p-2 rounded border border-slate-200">
+                                {data.periods.sort().map((p, i) => (
+                                    <span key={p}>{p}{i < data.periods.length - 1 ? ',' : ''}</span>
+                                ))}
+                            </div>
                         </div>
                     </div>
 
-                    <div className="border-b-2 border-dashed border-black my-2" />
-
-                    <div className="flex justify-between items-center my-4">
-                        <span className="font-bold text-lg">TOTAL</span>
-                        <span className="font-bold text-xl">Rs. {Number(data.amount).toLocaleString()}</span>
+                    <div className="border-t-2 border-b-2 border-black py-4 my-4">
+                        <div className="flex justify-between items-center">
+                            <span className="font-bold text-base uppercase">Total Received</span>
+                            <span className="font-black text-xl">Rs. {data.totalAmount.toLocaleString()}</span>
+                        </div>
                     </div>
 
-                    <div className="text-center text-xs mt-6">
-                        <p>Jazakallahu Khairan</p>
-                        <div className="mt-4 pt-2 border-t border-dashed border-black/50 opacity-70">
-                            <p className="font-semibold">Product of Inzeedo</p>
-                            <p>Contact number 0785706441</p>
+                    <div className="text-center text-[10px] mt-6">
+                        <p className="font-bold tracking-widest uppercase mb-2">--- jazakallahu khairan ---</p>
+                        <div className="mt-4 pt-4 border-t border-dashed border-black/20 opacity-60">
+                            <p className="font-bold">Official Receipt - IVTC Campus</p>
+                            <p>Software by Inzeedo | 0785706441</p>
                         </div>
                     </div>
                 </div>
@@ -260,12 +285,13 @@ export default function BulkCollectionPage() {
 
             const result = await res.json();
             
-            // Success! Prepare for printing
+            // Success! Clear selections and prepare for printing
+            setSelectedPayments({}); 
             setPrintReceipts(result.results);
             setIsConfirmOpen(false);
             setIsPrintConfirmOpen(true); // Open Print Confirmation
             
-            refreshData(); // Refresh data
+            refreshData(); // Refresh data to show 'Paid' checkmarks
         } catch (error) {
             console.error(error);
             toast.error("Failed to process payments");
