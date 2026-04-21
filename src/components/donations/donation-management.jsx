@@ -55,6 +55,10 @@ import {
 import { DataTable } from "@/components/general/data-table"; // Assuming you have this generic component
 import Link from "next/link";
 import { exportToCSV } from "@/lib/export-utils";
+import { donationService } from "@/services/donationService";
+import { toast } from "sonner";
+import { DonationSkeleton } from "./DonationSkeleton";
+import { cn } from "@/lib/utils";
 
 // --- 1. Animation Variants ---
 const containerVariants = {
@@ -79,6 +83,30 @@ const formatCurrency = (amount) => {
 // --- 3. Mock Data ---
 // Mock Data Removed
 
+// --- 3. DataTableColumnHeader ---
+const DataTableColumnHeader = ({ column, title, className }) => {
+  if (!column.getCanSort()) {
+    return <div className={cn("text-xs font-semibold text-slate-500", className)}>{title}</div>
+  }
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className={cn("-ml-3 h-8 data-[state=open]:bg-accent text-xs font-semibold text-slate-500 hover:text-slate-900", className)}
+      onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+    >
+      <span>{title}</span>
+      {column.getIsSorted() === "desc" ? (
+        <ArrowUpDown className="ml-2 h-3 w-3 rotate-180" />
+      ) : column.getIsSorted() === "asc" ? (
+        <ArrowUpDown className="ml-2 h-3 w-3" />
+      ) : (
+        <ArrowUpDown className="ml-2 h-3 w-3 opacity-50" />
+      )}
+    </Button>
+  )
+}
+
 // --- 4. Columns Definition ---
 const columns = [
   {
@@ -102,11 +130,7 @@ const columns = [
   },
   {
     accessorKey: "donor_name",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-        Donor Name <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Donor Name" />,
     cell: ({ row }) => {
         const name = row.original.donor_name;
         const isAnonymous = name === "Anonymous" || name === "Friday Collection";
@@ -122,7 +146,7 @@ const columns = [
   },
   {
     accessorKey: "purpose",
-    header: "Fund / Purpose",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Fund / Purpose" />,
     cell: ({ row }) => {
       const purpose = row.original.purpose;
       let badgeColor = "bg-slate-100 text-slate-600 hover:bg-slate-200"; // Default
@@ -136,16 +160,14 @@ const columns = [
   },
   {
     accessorKey: "amount",
-    header: ({ column }) => (
-        <div className="text-right">Amount</div>
-    ),
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Amount" className="justify-end w-full text-right" />,
     cell: ({ row }) => {
       return <div className="text-right font-bold text-slate-900">{formatCurrency(row.getValue("amount"))}</div>;
     },
   },
   {
     accessorKey: "date",
-    header: "Date",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
     cell: ({ row }) => <div className="text-sm text-slate-500">{format(new Date(row.getValue("date")), "MMM dd, yyyy")}</div>,
   },
   {
@@ -181,10 +203,7 @@ const columns = [
   },
 ];
 
-import { donationService } from "@/services/donationService";
-import { toast } from "sonner";
 
-// ... (keep imports)
 
 export default function DonationsPage() {
   // Data Fetching with SWR
@@ -233,6 +252,10 @@ export default function DonationsPage() {
         handleDelete // Pass delete handler to columns
     }
   });
+
+  if (isLoading) {
+    return <DonationSkeleton />;
+  }
 
   const handleExport = () => {
     if (donations.length === 0) {
