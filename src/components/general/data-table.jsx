@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 const DataTablePagination = ({ table }) => {
   return (
@@ -99,7 +100,7 @@ const DataTablePagination = ({ table }) => {
   );
 };
 
-export function DataTable({ table, columns }) {
+export function DataTable({ table, columns, dense = false }) {
   return (
     <div className="space-y-4">
       <div className="rounded-md border">
@@ -109,13 +110,16 @@ export function DataTable({ table, columns }) {
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead
+                      key={header.id}
+                      className={cn(dense && "h-8 px-2 text-[11px] uppercase tracking-wider")}
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                     </TableHead>
                   );
                 })}
@@ -128,9 +132,13 @@ export function DataTable({ table, columns }) {
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  className={cn(dense && "h-8")}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell
+                      key={cell.id}
+                      className={cn(dense && "p-2 py-1.5")}
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
