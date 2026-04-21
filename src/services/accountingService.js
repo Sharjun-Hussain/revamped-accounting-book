@@ -42,7 +42,7 @@ export const accountingService = {
         return response.data;
     },
     getFinancialReport: async (params) => {
-        const response = await api.get('/reports/financial', { params });
+        const response = await api.get('/accounting/reports/financial', { params });
         return response.data;
     },
     generateSanda: async (period) => {

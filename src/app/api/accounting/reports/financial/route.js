@@ -8,51 +8,49 @@ export async function GET(request) {
         const from = searchParams.get('from');
         const to = searchParams.get('to');
 
+        // Business Date Filter
         const dateFilter = {};
         if (from) {
-            dateFilter.createdAt = {
+            dateFilter.date = {
                 gte: new Date(from),
                 lte: to ? new Date(to) : new Date()
             };
         }
 
         // 1. Fetch Data
-        // Income (Donations)
+        // Income (Donations) - uses 'date'
         const donations = await prisma.donation.findMany({
             where: dateFilter,
         });
 
-        // Income (Sanda Payments)
+        // Income (Sanda Payments) - uses 'date'
         const payments = await prisma.payment.findMany({
-            where: {
-                date: dateFilter.createdAt
-            },
+            where: dateFilter,
             include: { invoice: true }
         });
 
-        // Income (Other)
+        // Income (Other) - uses 'date'
         const otherIncomes = await prisma.income.findMany({
-            where: {
-                date: dateFilter.createdAt
-            },
+            where: dateFilter,
             include: { category: true }
         });
 
-        // Expenses
+        // Expenses - uses 'date'
         const expenses = await prisma.expense.findMany({
-            where: {
-                date: dateFilter.createdAt
-            },
+            where: dateFilter,
             include: { category: true }
         });
 
         // Bank Accounts (for Assets)
-        const bankAccounts = await prisma.bankAccount.findMany();
+        const bankAccounts = await prisma.bankAccount.findMany({
+            where: { deletedAt: null }
+        });
 
         // Pending Invoices (for Liabilities)
         const pendingInvoices = await prisma.invoice.findMany({
             where: {
-                status: { in: ['pending', 'partial', 'overdue'] }
+                status: { in: ['pending', 'partial', 'overdue'] },
+                deletedAt: null
             }
         });
 
@@ -129,22 +127,22 @@ export async function GET(request) {
 
             const monthDonations = await prisma.donation.aggregate({
                 _sum: { amount: true },
-                where: { createdAt: { gte: monthStart, lte: monthEnd } }
+                where: { date: { gte: monthStart, lte: monthEnd }, deletedAt: null }
             });
 
             const monthPayments = await prisma.payment.aggregate({
                 _sum: { amount: true },
-                where: { date: { gte: monthStart, lte: monthEnd } }
+                where: { date: { gte: monthStart, lte: monthEnd }, deletedAt: null }
             });
 
             const monthOther = await prisma.income.aggregate({
                 _sum: { amount: true },
-                where: { date: { gte: monthStart, lte: monthEnd } }
+                where: { date: { gte: monthStart, lte: monthEnd }, deletedAt: null }
             });
 
             const monthExpenses = await prisma.expense.aggregate({
                 _sum: { amount: true },
-                where: { date: { gte: monthStart, lte: monthEnd } }
+                where: { date: { gte: monthStart, lte: monthEnd }, deletedAt: null }
             });
 
             monthlyPerformance.push({
