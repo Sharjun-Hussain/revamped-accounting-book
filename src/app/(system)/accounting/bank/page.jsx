@@ -134,7 +134,7 @@ const BankDialog = ({ open, onOpenChange, onAccountSaved, accountToEdit }) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{accountToEdit ? "Edit Account" : "Add Account"}</DialogTitle>
           <DialogDescription>{accountToEdit ? "Modify account details." : "Register a new bank account or cash asset."}</DialogDescription>
