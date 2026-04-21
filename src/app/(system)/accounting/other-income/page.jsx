@@ -58,7 +58,7 @@ const incomeSchema = z.object({
 export default function OtherIncomePage() {
   // SWR Fetching
   const { data: incomes = [], isLoading: incomesLoading } = useSWR('/accounting/other-income', apiFetcher);
-  const { data: categories = [], isLoading: categoriesLoading } = useSWR('/accounting/income-categories', apiFetcher);
+  const { data: categories = [], isLoading: categoriesLoading } = useSWR('/accounting/categories', apiFetcher);
 
   const loading = incomesLoading || categoriesLoading;
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -67,7 +67,7 @@ export default function OtherIncomePage() {
 
   const refreshData = () => {
     mutate('/accounting/other-income');
-    mutate('/accounting/income-categories');
+    mutate('/accounting/categories');
   };
 
   const form = useForm({
