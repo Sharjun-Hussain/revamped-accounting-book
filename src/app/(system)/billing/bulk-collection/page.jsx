@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import useSWR, { mutate } from 'swr';
 import { apiFetcher } from "@/lib/api";
 import { format, addMonths, subMonths, eachMonthOfInterval, parseISO, startOfMonth, endOfMonth } from 'date-fns';
-import { Search, Loader2, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight, User, Phone, Mail, MapPin, Calendar, CreditCard, Printer } from 'lucide-react';
+import { Search, Loader2, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight, User, Phone, Mail, MapPin, Calendar, CreditCard, Printer, Maximize2, Minimize2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from "@/components/ui/button";
@@ -171,6 +171,9 @@ export default function BulkCollectionPage() {
     // Print State
     const [printReceipts, setPrintReceipts] = useState([]);
     const [isPrintConfirmOpen, setIsPrintConfirmOpen] = useState(false);
+    
+    // Maximise View State
+    const [isMaximised, setIsMaximised] = useState(false);
 
     const refreshData = () => {
         mutate(`/sanda/bulk-status?startMonth=${startMonth}&endMonth=${endMonth}`);
@@ -320,15 +323,46 @@ export default function BulkCollectionPage() {
     const monthOptions = generateMonthOptions();
 
     return (
-        <div className="p-6 space-y-6 h-full flex flex-col">
+        <div className={`space-y-6 flex flex-col ${isMaximised ? 'h-screen p-4' : 'p-6 h-full'}`}>
             <BulkPrintReceipts receipts={printReceipts} settings={appSettings} />
+
+            {isMaximised && (
+                <style dangerouslySetInnerHTML={{ __html: `
+                    .no-print { display: none !important; }
+                    .flex-1.pt-14 { padding-top: 0 !important; }
+                    main[data-slot="sidebar-inset"] { 
+                        margin: 0 !important; 
+                        border-radius: 0 !important; 
+                        box-shadow: none !important; 
+                        min-height: 100vh !important;
+                        height: 100vh !important;
+                        display: flex !important;
+                        flex-direction: column !important;
+                    }
+                    footer { display: none !important; }
+                    body { overflow: hidden !important; height: 100vh !important; }
+                `}} />
+            )}
 
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Bulk Payment Matrix</h1>
                     <p className="text-muted-foreground">Manage payments across multiple months.</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
+                    <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setIsMaximised(!isMaximised)}
+                        className={`gap-2 h-10 ${isMaximised ? 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100' : 'bg-white'}`}
+                    >
+                        {isMaximised ? (
+                            <><Minimize2 className="h-4 w-4" /> Restore View</>
+                        ) : (
+                            <><Maximize2 className="h-4 w-4" /> Maximize View</>
+                        )}
+                    </Button>
+                    <div className="h-8 w-[1px] bg-slate-200 mx-1 hidden md:block" />
                     <Select value={startMonth} onValueChange={setStartMonth}>
                         <SelectTrigger className="w-[140px]">
                             <SelectValue placeholder="Start" />
@@ -366,9 +400,9 @@ export default function BulkCollectionPage() {
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent className="flex-1 p-0 overflow-hidden">
-                    <div className="h-[calc(100vh-250px)] overflow-auto relative">
-                        <Table className="border-collapse">
+                <CardContent className="flex-1 p-0 overflow-hidden flex flex-col">
+                    <div className={`overflow-auto relative transition-all duration-300 flex-1 ${!isMaximised && 'h-[calc(100vh-250px)]'}`}>
+                        <Table className="border-collapse w-full min-w-max">
                             <TableHeader className="sticky top-0 bg-white z-30 shadow-sm">
                                     <TableRow>
                                         <TableHead className="w-[200px] min-w-[200px] sticky left-0 bg-white z-40 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Member</TableHead>

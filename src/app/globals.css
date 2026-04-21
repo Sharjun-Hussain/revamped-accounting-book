@@ -120,3 +120,22 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Maximised View Logic */
+body.maximised-view .no-print {
+  display: none !important;
+}
+
+body.maximised-view .flex-1.pt-14 {
+  padding-top: 0 !important;
+}
+
+body.maximised-view main[data-slot="sidebar-inset"] {
+  margin: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+body.maximised-view footer {
+  display: none !important;
+}
