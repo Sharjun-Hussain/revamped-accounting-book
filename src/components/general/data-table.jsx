@@ -112,7 +112,10 @@ export function DataTable({ table, columns, dense = false }) {
                   return (
                     <TableHead
                       key={header.id}
-                      className={cn(dense && "h-8 px-2 text-[11px] uppercase tracking-wider")}
+                      className={cn(
+                        dense && "h-8 px-2 text-[11px] uppercase tracking-wider",
+                        header.column.columnDef.meta?.headerClassName
+                      )}
                     >
                       {header.isPlaceholder
                         ? null
@@ -137,7 +140,10 @@ export function DataTable({ table, columns, dense = false }) {
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
-                      className={cn(dense && "p-2 py-1.5")}
+                      className={cn(
+                        dense && "p-2 py-1.5",
+                        cell.column.columnDef.meta?.className
+                      )}
                     >
                       {flexRender(
                         cell.column.columnDef.cell,

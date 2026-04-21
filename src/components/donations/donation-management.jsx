@@ -127,6 +127,10 @@ const columns = [
     ),
     enableSorting: false,
     enableHiding: false,
+    meta: {
+      headerClassName: "w-[40px] text-center",
+      className: "text-center"
+    }
   },
   {
     accessorKey: "donor_name",
@@ -160,9 +164,12 @@ const columns = [
   },
   {
     accessorKey: "amount",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Amount" className="justify-end w-full text-right" />,
+    meta: {
+        headerClassName: "justify-end w-full text-right",
+        className: "text-right"
+    },
     cell: ({ row }) => {
-      return <div className="text-right font-bold text-slate-900">{formatCurrency(row.getValue("amount"))}</div>;
+      return <span className="font-bold text-slate-900">{formatCurrency(row.getValue("amount"))}</span>;
     },
   },
   {
@@ -172,32 +179,38 @@ const columns = [
   },
   {
     id: "actions",
+    meta: {
+      headerClassName: "text-right",
+      className: "text-right"
+    },
     cell: ({ row, table }) => {
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem>View Receipt</DropdownMenuItem>
-            <DropdownMenuItem>Print Acknowledgement</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <Link href={`/donations/${row.original.id}/edit`}>
-                <DropdownMenuItem>
-                    <Pencil className="w-4 h-4 mr-2" /> Edit Details
-                </DropdownMenuItem>
-            </Link>
-            <DropdownMenuItem 
-                className="text-red-600"
-                onClick={() => table.options.meta?.handleDelete(row.original.id)}
-            >
-                Void Transaction
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem>View Receipt</DropdownMenuItem>
+              <DropdownMenuItem>Print Acknowledgement</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <Link href={`/donations/${row.original.id}/edit`}>
+                  <DropdownMenuItem>
+                      <Pencil className="w-4 h-4 mr-2" /> Edit Details
+                  </DropdownMenuItem>
+              </Link>
+              <DropdownMenuItem 
+                  className="text-red-600"
+                  onClick={() => table.options.meta?.handleDelete(row.original.id)}
+              >
+                  Void Transaction
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       );
     },
   },
