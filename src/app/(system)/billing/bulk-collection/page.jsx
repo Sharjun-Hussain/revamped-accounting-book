@@ -366,13 +366,12 @@ export default function BulkCollectionPage() {
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent className="flex-1 overflow-hidden p-0">
-                    <ScrollArea className="h-[calc(100vh-250px)] w-full">
-                        <div className="min-w-[1000px]">
-                            <Table>
-                                <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
+                <CardContent className="flex-1 p-0 overflow-hidden">
+                    <div className="h-[calc(100vh-250px)] overflow-auto relative">
+                        <Table className="border-collapse">
+                            <TableHeader className="sticky top-0 bg-white z-30 shadow-sm">
                                     <TableRow>
-                                        <TableHead className="w-[200px] sticky left-0 bg-background z-20">Member</TableHead>
+                                        <TableHead className="w-[200px] min-w-[200px] sticky left-0 bg-white z-40 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Member</TableHead>
                                         {months.map(month => (
                                             <TableHead key={month} className="text-center min-w-[80px] cursor-pointer hover:bg-muted/50" onClick={() => handleSelectColumn(month)}>
                                                 {format(parseISO(month + '-01'), 'MMM yy')}
@@ -384,7 +383,7 @@ export default function BulkCollectionPage() {
                                     {loading ? (
                                         Array.from({ length: 15 }).map((_, i) => (
                                             <TableRow key={i}>
-                                                <TableCell className="sticky left-0 bg-background z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                                                <TableCell className="sticky left-0 bg-white z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                                                     <div className="flex flex-col gap-2">
                                                         <Skeleton className="h-4 w-24" />
                                                         <Skeleton className="h-3 w-32" />
@@ -405,8 +404,8 @@ export default function BulkCollectionPage() {
                                         </TableRow>
                                     ) : (
                                         filteredMembers.map((member) => (
-                                            <TableRow key={member.memberId}>
-                                                <TableCell className="font-medium sticky left-0 bg-background z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] cursor-pointer hover:bg-muted/50" onClick={() => handleMemberClick(member)}>
+                                            <TableRow key={member.memberId} className="hover:bg-slate-50 transition-colors">
+                                                <TableCell className="font-medium sticky left-0 bg-white z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleMemberClick(member)}>
                                                     <div className="flex flex-col">
                                                         <span>{member.name}</span>
                                                         <span className="text-xs text-muted-foreground">{member.contact}</span>
@@ -441,10 +440,8 @@ export default function BulkCollectionPage() {
                                         ))
                                     )}
                                 </TableBody>
-                            </Table>
-                        </div>
-                        <ScrollBar orientation="horizontal" />
-                    </ScrollArea>
+                        </Table>
+                    </div>
                 </CardContent>
             </Card>
 
