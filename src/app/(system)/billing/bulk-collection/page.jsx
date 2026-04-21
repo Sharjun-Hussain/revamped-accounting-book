@@ -474,9 +474,14 @@ export default function BulkCollectionPage() {
                                         return Object.keys(grouped).map(memberId => {
                                             const m = members.find(mem => mem.memberId === memberId);
                                             const monthsList = grouped[memberId].sort();
+                                            const memberTotal = (m?.amount || 0) * monthsList.length;
+
                                             return (
                                                 <div key={memberId} className="text-sm border-b border-slate-100 pb-2 last:border-0">
-                                                    <div className="font-medium text-slate-800">{m?.name}</div>
+                                                    <div className="flex justify-between items-start">
+                                                        <div className="font-medium text-slate-800">{m?.name}</div>
+                                                        <div className="font-bold text-emerald-700">Rs. {memberTotal.toLocaleString()}</div>
+                                                    </div>
                                                     <div className="flex flex-wrap gap-1 mt-1">
                                                         {monthsList.map(month => (
                                                             <Badge key={month} variant="outline" className="bg-white text-slate-600 font-normal border-slate-200">
