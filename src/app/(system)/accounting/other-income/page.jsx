@@ -40,8 +40,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Loader2, Coins } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Coins, Calendar as CalendarIcon } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { accountingService } from "@/services/accountingService";
 import { AccountingSkeleton } from "@/components/accounting/AccountingSkeleton";
+import { cn } from "@/lib/utils";
 
 // Schema
 const incomeSchema = z.object({
@@ -217,11 +221,39 @@ export default function OtherIncomePage() {
                       control={form.control}
                       name="date"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="flex flex-col">
                           <FormLabel>Date</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant={"outline"}
+                                  className={cn(
+                                    "w-full pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {field.value ? (
+                                    format(new Date(field.value), "PPP")
+                                  ) : (
+                                    <span>Pick a date</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value ? new Date(field.value) : undefined}
+                                onSelect={(date) => field.onChange(date ? format(date, "yyyy-MM-dd") : "")}
+                                disabled={(date) =>
+                                  date > new Date() || date < new Date("1900-01-01")
+                                }
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -229,12 +261,12 @@ export default function OtherIncomePage() {
                   </div>
                   <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={isSubmitting}>
                     {isSubmitting ? (
-                        <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            {editingIncome ? "Updating..." : "Saving..."}
-                        </>
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        {editingIncome ? "Updating..." : "Saving..."}
+                      </>
                     ) : (
-                        editingIncome ? "Update Record" : "Save Record"
+                      editingIncome ? "Update Record" : "Save Record"
                     )}
                   </Button>
                 </form>
