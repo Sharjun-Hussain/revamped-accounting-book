@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import useSWR from "swr";
+import { apiFetcher } from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,7 +20,8 @@ import {
   Save,
   AlertCircle,
   CheckCircle2,
-  X
+  X,
+  Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -57,6 +60,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import { memberService } from "@/services/memberService";
 import { accountingService } from "@/services/accountingService";
@@ -157,16 +161,48 @@ const formSchema = z.object({
 });
 
 export default function SandaCollectionPage() {
-  const [selectedMember, setSelectedMember] = useState(null);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const urlMemberId = searchParams.get("memberId");
+
+  // --- 5. DATA FETCHING (SWR) ---
+  const { data: members = [] } = useSWR('/members', apiFetcher);
+  const { data: bankAccounts = [] } = useSWR('/accounting/bank-accounts', apiFetcher);
+  const { data: appSettings } = useSWR('/settings/app', apiFetcher);
+  
+  // Fetch Pending Invoices (SWR)
+  const { data: rawInvoices = [], isLoading: isMemberLoading } = useSWR(
+    urlMemberId ? `/accounting/invoices/pending/${urlMemberId}` : null,
+    apiFetcher
+  );
+
+  const pendingInvoices = useMemo(() => {
+    return rawInvoices.map(inv => ({
+        id: inv.id,
+        month: inv.period || format(new Date(inv.dueDate), "MMMM yyyy"),
+        amount: inv.amount,
+        balance: inv.amount - inv.paidAmount,
+        status: inv.status
+    }));
+  }, [rawInvoices]);
+
+  const selectedMember = useMemo(() => {
+    if (!urlMemberId || members.length === 0) return null;
+    const member = members.find(m => m.id === urlMemberId);
+    if (!member) return null;
+    
+    const totalArrears = pendingInvoices.reduce((sum, inv) => sum + inv.balance, 0);
+    return {
+        ...member,
+        arrears: totalArrears,
+        monthly_rate: member.amountPerCycle || 0
+    };
+  }, [urlMemberId, members, pendingInvoices]);
+
   const [openSearch, setOpenSearch] = useState(false);
   const [printData, setPrintData] = useState(null);
-  
-  // Data State
-  const [members, setMembers] = useState([]);
-  const [bankAccounts, setBankAccounts] = useState([]);
-  const [pendingInvoices, setPendingInvoices] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [appSettings, setAppSettings] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -179,39 +215,16 @@ export default function SandaCollectionPage() {
     },
   });
 
-  // Load Initial Data
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [membersData, accountsData, settingsData] = await Promise.all([
-          memberService.getAll(),
-          accountingService.getBankAccounts(),
-          fetch('/api/settings/app').then(res => res.json())
-        ]);
-        setMembers(membersData);
-        setBankAccounts(accountsData);
-        setAppSettings(settingsData);
-      } catch (error) {
-        console.error("Failed to load data", error);
-        toast.error("Failed to load members or accounts");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadData();
-  }, []);
-
   const watchAmount = form.watch("amount");
 
   // --- SMART ALLOCATION LOGIC ---
-  // Calculates which months get paid based on the entered amount
   const allocationPreview = useMemo(() => {
     if (!selectedMember || !watchAmount || !pendingInvoices.length) return [];
     
     let remainingPayment = Number(watchAmount);
     return pendingInvoices.map(bill => {
       let paidForThis = 0;
-      let status = "unpaid"; // unpaid, partial, full
+      let status = "unpaid";
 
       if (remainingPayment > 0) {
         if (remainingPayment >= bill.balance) {
@@ -229,62 +242,19 @@ export default function SandaCollectionPage() {
     });
   }, [selectedMember, watchAmount, pendingInvoices]);
 
-  // Handle Member Selection
-  const handleSelectMember = async (id) => {
-    const member = members.find(m => m.id === id);
-    if (!member) return;
-
-    // Fetch Pending Invoices
-    try {
-        const invoices = await accountingService.getPendingInvoices(id);
-        // Transform invoices to match UI expectation
-        const formattedInvoices = invoices.map(inv => ({
-            id: inv.id,
-            month: inv.period || format(new Date(inv.dueDate), "MMMM yyyy"),
-            amount: inv.amount,
-            balance: inv.amount - inv.paidAmount,
-            status: inv.status
-        }));
-        
-        setPendingInvoices(formattedInvoices);
-        
-        // Calculate Arrears
-        const totalArrears = formattedInvoices.reduce((sum, inv) => sum + inv.balance, 0);
-        
-        setSelectedMember({
-            ...member,
-            arrears: totalArrears,
-            monthly_rate: member.amountPerCycle || 0
-        });
-
-        form.setValue("memberId", id);
-        form.setValue("amount", ""); 
-        setOpenSearch(false);
-
-    } catch (error) {
-        console.error("Error fetching invoices", error);
-        toast.error("Could not load member invoices");
-    }
+  const handleSelectMember = (id) => {
+    const params = new URLSearchParams(searchParams);
+    params.set("memberId", id);
+    router.push(`${pathname}?${params.toString()}`);
+    
+    form.setValue("memberId", id);
+    form.setValue("amount", ""); 
+    setOpenSearch(false);
   };
 
-  // --- AUTO-SELECT FROM URL ---
-  const searchParams = useSearchParams();
-  const urlMemberId = searchParams.get("memberId");
-
-  useEffect(() => {
-    if (urlMemberId && members.length > 0 && !selectedMember) {
-      const memberExists = members.find(m => m.id === urlMemberId);
-      if (memberExists) {
-        handleSelectMember(urlMemberId);
-      }
-    }
-  }, [members, urlMemberId]);
-
-  // Quick Pay Actions
   const handleQuickPay = (monthsCount) => {
     if (!selectedMember || !pendingInvoices.length) return;
     let total = 0;
-    // Sum up the balance of the first N unpaid months
     pendingInvoices.slice(0, monthsCount).forEach(bill => {
       total += bill.balance;
     });
@@ -292,7 +262,7 @@ export default function SandaCollectionPage() {
   };
 
   const onSubmit = async (data) => {
-    // 1. Prepare Print Data
+    setIsSubmitting(true);
     const covered = allocationPreview.filter(a => a.paidForThis > 0).map(a => ({
         month: a.month,
         paid: a.paidForThis,
@@ -305,10 +275,10 @@ export default function SandaCollectionPage() {
         } else {
             toast.error("Amount does not cover any invoices.", { description: "Please enter a valid amount." });
         }
+        setIsSubmitting(false);
         return;
     }
 
-    // 2. Process Payments
     try {
         for (const item of covered) {
             await accountingService.collectPayment({
@@ -329,20 +299,19 @@ export default function SandaCollectionPage() {
 
         toast.success("Payment Recorded", { description: `Rs. ${data.amount} collected.` });
         
-        // 3. Print
         if (data.autoPrint) {
             setPrintData(receiptData);
             setTimeout(() => window.print(), 100);
         }
 
-        // 4. Reset
-        setSelectedMember(null);
-        setPendingInvoices([]);
+        router.push(pathname); 
         form.reset({ memberId: "", amount: "", paymentMethod: "Cash", bankAccountId: "", autoPrint: true });
 
     } catch (error) {
         console.error("Payment failed", error);
         toast.error("Failed to record payment.");
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
@@ -350,13 +319,10 @@ export default function SandaCollectionPage() {
     <div className="min-h-screen bg-slate-50 p-6 relative">
       <div className="fixed inset-0 pointer-events-none opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')]"></div>
       
-      {/* Hidden Receipt */}
-      {/* Hidden Receipt */}
       <SandaReceipt data={printData} settings={appSettings} />
 
       <div className="max-w-6xl mx-auto space-y-6 relative z-10">
         
-        {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
                 <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
@@ -366,7 +332,6 @@ export default function SandaCollectionPage() {
                 <p className="text-slate-500 text-sm">Collect monthly subscription payments from members.</p>
             </div>
             
-            {/* Member Search Bar (Top Level) */}
             <Popover open={openSearch} onOpenChange={setOpenSearch}>
                 <PopoverTrigger asChild>
                     <Button variant="outline" role="combobox" className="w-[300px] justify-between bg-white h-11 border-slate-300 shadow-sm text-slate-600">
@@ -401,35 +366,44 @@ export default function SandaCollectionPage() {
             </Popover>
         </div>
 
-        {/* --- MAIN CONTENT AREA --- */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            {/* LEFT: Payment Entry */}
             <div className="lg:col-span-2 space-y-6">
                 <AnimatePresence mode="wait">
-                    {!selectedMember ? (
+                    {isMemberLoading || (urlMemberId && !selectedMember) ? (
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-start gap-4">
+                                <Skeleton className="h-16 w-16 rounded-full" />
+                                <div className="space-y-2 flex-1">
+                                    <Skeleton className="h-6 w-1/3" />
+                                    <Skeleton className="h-4 w-1/2" />
+                                    <div className="flex gap-2 mt-2">
+                                        <Skeleton className="h-6 w-24" />
+                                        <Skeleton className="h-6 w-24" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div className="space-y-2"><Skeleton className="h-4 w-20" /><Skeleton className="h-14 w-full" /></div>
+                                    <div className="space-y-2"><Skeleton className="h-4 w-20" /><Skeleton className="h-14 w-full" /></div>
+                                </div>
+                                <Skeleton className="h-14 w-full" />
+                                <div className="flex justify-between items-center bg-slate-50/50 p-4 rounded-lg">
+                                    <Skeleton className="h-6 w-32" />
+                                    <Skeleton className="h-12 w-48" />
+                                </div>
+                            </div>
+                        </motion.div>
+                    ) : !selectedMember ? (
                         <motion.div 
                             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                             className="h-64 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-400 bg-white/50"
                         >
-                            {urlMemberId && isLoading ? (
-                                <>
-                                    <div className="flex flex-col items-center gap-2">
-                                        <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-200 border-t-emerald-600"></div>
-                                        <p className="text-emerald-600 font-medium animate-pulse">Loading Member Details...</p>
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <Search className="w-10 h-10 mb-2 opacity-20" />
-                                    <p>Select a member to begin collection</p>
-                                </>
-                            )}
+                            <Search className="w-10 h-10 mb-2 opacity-20" />
+                            <p>Select a member to begin collection</p>
                         </motion.div>
                     ) : (
                         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
-                            
-                            {/* Member Card */}
                             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
                                 <div className="absolute top-0 right-0 p-6 opacity-10">
                                     <User className="w-24 h-24 text-emerald-600" />
@@ -456,12 +430,9 @@ export default function SandaCollectionPage() {
                                 </div>
                             </div>
 
-                            {/* Payment Form */}
                             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                                 <Form {...form}>
                                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                                        
-                                        {/* Quick Actions */}
                                         {selectedMember.arrears > 0 && (
                                             <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
                                                 <Button type="button" size="sm" variant="outline" onClick={() => handleQuickPay(1)} className="text-xs bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100">
@@ -564,8 +535,9 @@ export default function SandaCollectionPage() {
                                                 )}
                                             />
 
-                                            <Button type="submit" size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white min-w-[200px] shadow-lg shadow-emerald-200">
-                                                <Save className="w-5 h-5 mr-2" /> Collect Payment
+                                            <Button type="submit" size="lg" disabled={isSubmitting} className="bg-emerald-600 hover:bg-emerald-700 text-white min-w-[200px] shadow-lg shadow-emerald-200">
+                                                {isSubmitting ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Save className="w-5 h-5 mr-2" />}
+                                                Collect Payment
                                             </Button>
                                         </div>
                                     </form>
@@ -576,7 +548,6 @@ export default function SandaCollectionPage() {
                 </AnimatePresence>
             </div>
 
-            {/* RIGHT: Visual Ledger (Smart Card) */}
             <div className="space-y-4">
                 <div className="flex items-center gap-2 text-slate-500 font-medium">
                     <Wallet className="w-5 h-5" />
@@ -584,29 +555,35 @@ export default function SandaCollectionPage() {
                 </div>
 
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 min-h-[400px] relative overflow-hidden">
-                    {!selectedMember ? (
-                        <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-50">
+                    {isMemberLoading || (urlMemberId && !selectedMember) ? (
+                        <div className="space-y-4">
+                            <div className="flex justify-between pb-2 border-b">
+                                <Skeleton className="h-3 w-12" />
+                                <Skeleton className="h-3 w-12" />
+                                <Skeleton className="h-3 w-12" />
+                            </div>
+                            {[1,2,3,4].map(i => (
+                                <div key={i} className="flex justify-between items-center gap-4">
+                                    <Skeleton className="h-10 w-full" />
+                                    <Skeleton className="h-10 w-12" />
+                                </div>
+                            ))}
+                        </div>
+                    ) : !selectedMember ? (
+                        <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-50 pt-20">
                             <Calendar className="w-12 h-12 mb-2" />
                             <p className="text-sm text-center">Select a member to view<br/>outstanding bills</p>
                         </div>
-                    ) : pendingInvoices.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-50">
-                            <CheckCircle2 className="w-12 h-12 mb-2 text-emerald-500" />
-                            <p className="text-sm text-center font-medium text-emerald-600">No Pending Invoices</p>
-                            <p className="text-xs text-center">This member has no outstanding dues.</p>
-                        </div>
                     ) : (
                         <div className="space-y-3">
-                             {/* Header Row */}
                              <div className="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider pb-2 border-b border-slate-100">
                                 <span>Month</span>
                                 <span>Balance</span>
                                 <span>Paying</span>
                              </div>
 
-                             {/* Unpaid Months List */}
                              <div className="space-y-2">
-                                {allocationPreview.length === 0 && (
+                                {pendingInvoices.length === 0 && (
                                     <div className="text-center py-8 text-emerald-600 bg-emerald-50 rounded-lg">
                                         <CheckCircle2 className="w-8 h-8 mx-auto mb-2" />
                                         <p className="font-medium">All Caught Up!</p>
@@ -649,7 +626,6 @@ export default function SandaCollectionPage() {
                                 ))}
                              </div>
 
-                             {/* Advance Payment Logic (If paying more than arrears) */}
                              {Number(watchAmount) > selectedMember.arrears && (
                                  <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg flex justify-between items-center text-blue-700">
                                      <span className="text-sm font-medium">Excess (Advance)</span>
@@ -660,7 +636,6 @@ export default function SandaCollectionPage() {
                     )}
                 </div>
             </div>
-
         </div>
       </div>
     </div>

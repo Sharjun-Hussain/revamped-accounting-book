@@ -62,9 +62,7 @@ const menuVariants = {
 
 import { signOut, useSession } from "next-auth/react";
 import useSWR from "swr";
-import api from "@/lib/api";
-
-const apiFetcher = (url) => api.get(url).then((res) => res.data);
+import { apiFetcher } from "@/lib/api";
 
 // ... (keep imports)
 
@@ -75,8 +73,7 @@ import { QuickActions } from "@/components/general/QuickActions";
 
 export default function MosqueDashboard() {
   const { data: session } = useSession();
-  const fetcher = (url) => fetch(url).then((res) => res.json());
-  const { data: settings } = useSWR('/api/settings/app', fetcher);
+  const { data: settings } = useSWR('/settings/app', apiFetcher);
 
   // State Management
   // Dropdown States
