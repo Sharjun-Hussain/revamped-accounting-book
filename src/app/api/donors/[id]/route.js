@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { logUpdate, logDelete } from '@/lib/auditLog';
 
 export async function GET(request, { params }) {
     try {
@@ -41,6 +42,8 @@ export async function PUT(request, { params }) {
         const body = await request.json();
         const { name, contact, email, address } = body;
 
+        const oldDonor = await prisma.donor.findUnique({ where: { id: params.id } });
+
         const donor = await prisma.donor.update({
             where: { id: params.id },
             data: {
@@ -50,6 +53,10 @@ export async function PUT(request, { params }) {
                 address
             }
         });
+
+        if (oldDonor) {
+            await logUpdate(request, 'Donor', oldDonor, donor);
+        }
 
         return NextResponse.json(donor);
     } catch (error) {
@@ -74,9 +81,15 @@ export async function DELETE(request, { params }) {
             return NextResponse.json({ error: 'Cannot delete donor with existing donations' }, { status: 400 });
         }
 
+        const currentDonor = await prisma.donor.findUnique({ where: { id: params.id } });
+        
         await prisma.donor.delete({
             where: { id: params.id }
         });
+
+        if (currentDonor) {
+            await logDelete(request, 'Donor', currentDonor);
+        }
 
         return NextResponse.json({ success: true });
     } catch (error) {

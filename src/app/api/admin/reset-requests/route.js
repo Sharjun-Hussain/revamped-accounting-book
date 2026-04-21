@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { logUpdate, logDelete } from '@/lib/auditLog';
 
 // GET: List all reset requests (Admin only)
 export async function GET() {
@@ -90,10 +91,13 @@ export async function PUT(request) {
                 }),
             ]);
 
-            await prisma.resetRequest.update({
+            const updatedResetRequest = await prisma.resetRequest.update({
                 where: { id: resetRequestId },
                 data: { status: 'restored', restoredAt: new Date() }
             });
+
+            // Log restoration
+            await logUpdate(request, 'ResetRequest', resetRequest, updatedResetRequest, 'reason');
 
             return NextResponse.json({ success: true, message: 'Data restored successfully' });
 
@@ -111,10 +115,13 @@ export async function PUT(request) {
                 prisma.bankAccount.deleteMany({ where: { deletedByResetId: resetRequestId } }),
             ]);
 
-            await prisma.resetRequest.update({
+            const deletedResetRequest = await prisma.resetRequest.update({
                 where: { id: resetRequestId },
                 data: { status: 'deleted', deletedAt: new Date() }
             });
+
+            // Log permanent deletion
+            await logDelete(request, 'ResetRequest', resetRequest, 'reason');
 
             return NextResponse.json({ success: true, message: 'Data permanently deleted' });
         }

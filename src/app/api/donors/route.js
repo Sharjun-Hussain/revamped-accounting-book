@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { logCreate } from '@/lib/auditLog';
 
 export const dynamic = 'force-dynamic';
 
@@ -150,6 +151,9 @@ export async function POST(request) {
                 address
             }
         });
+
+        // Log donor creation
+        await logCreate(request, 'Donor', donor);
 
         return NextResponse.json(donor);
     } catch (error) {

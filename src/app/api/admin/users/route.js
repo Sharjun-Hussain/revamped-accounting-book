@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { logCreate } from '@/lib/auditLog';
 
 export async function GET() {
     const session = await getServerSession(authOptions);
@@ -66,6 +67,9 @@ export async function POST(request) {
         });
 
         const { password: _, ...userWithoutPassword } = user;
+
+        // Log user creation
+        await logCreate(request, 'User', userWithoutPassword, 'email');
 
         return NextResponse.json(userWithoutPassword, { status: 201 });
     } catch (error) {

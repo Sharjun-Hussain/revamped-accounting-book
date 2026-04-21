@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { logCreate } from '@/lib/auditLog';
 
 export async function POST(request) {
     try {
@@ -55,6 +56,13 @@ export async function POST(request) {
                 results.errors++;
             }
         }
+
+        // Log sanda generation
+        await logCreate(request, 'SandaGeneration', { 
+            id: period, 
+            period, 
+            ...results 
+        }, 'period');
 
         return NextResponse.json({ message: 'Sanda generation complete', results });
     } catch (error) {
