@@ -314,17 +314,56 @@ export default function DonorsPage() {
 
         {/* Stats Cards */}
         <motion.div variants={itemVariants} className="grid gap-4 md:grid-cols-3">
-          <Card className="rounded-xl border-slate-100 shadow-sm">
+          <Card className="rounded-xl border-slate-100 shadow-sm bg-white overflow-hidden relative group transition-all hover:shadow-md">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <Users className="h-12 w-12 text-emerald-600" />
+            </div>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-500">Total Donors</CardTitle>
-              <Users className="h-4 w-4 text-emerald-600" />
+              <CardTitle className="text-sm font-medium text-slate-500 uppercase tracking-wider">Total Donors</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-slate-900">{data.length}</div>
-              <p className="text-xs text-slate-400 mt-1">Registered Guest Donors</p>
+              <div className="text-3xl font-bold text-slate-900">{data.length}</div>
+              <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1 font-medium bg-emerald-50 w-fit px-2 py-0.5 rounded-full">
+                All Guest Profiles
+              </p>
             </CardContent>
           </Card>
-          {/* Add more stats as needed */}
+
+          <Card className="rounded-xl border-slate-100 shadow-sm bg-white overflow-hidden relative group transition-all hover:shadow-md">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <Trophy className="h-12 w-12 text-amber-600" />
+            </div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-500 uppercase tracking-wider">Top Contributor</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl font-bold text-slate-900 truncate pr-8">
+                {data.length > 0 
+                  ? [...data].sort((a,b) => b.total_contributed - a.total_contributed)[0].name 
+                  : "N/A"}
+              </div>
+              <p className="text-xs text-amber-600 mt-2 flex items-center gap-1 font-medium bg-amber-50 w-fit px-2 py-0.5 rounded-full">
+                Most Generous Donor
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-xl border-slate-100 shadow-sm bg-white overflow-hidden relative group transition-all hover:shadow-md border-l-4 border-l-emerald-500">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <HeartHandshake className="h-12 w-12 text-emerald-600" />
+            </div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-500 uppercase tracking-wider">Total Collections</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-emerald-700">
+                {formatCurrency(data.reduce((sum, d) => sum + (d.total_contributed || 0), 0))}
+              </div>
+              <p className="text-xs text-slate-400 mt-2 font-medium">
+                Lifetime Donor Giving
+              </p>
+            </CardContent>
+          </Card>
         </motion.div>
 
         {/* Data Table */}
