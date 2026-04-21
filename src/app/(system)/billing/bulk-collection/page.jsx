@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/select";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // --- BULK RECEIPT COMPONENT ---
 const BulkPrintReceipts = ({ receipts, settings }) => {
@@ -354,11 +355,21 @@ export default function BulkCollectionPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {loading ? (
-                                        <TableRow>
-                                            <TableCell colSpan={months.length + 1} className="h-24 text-center">
-                                                <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                                            </TableCell>
-                                        </TableRow>
+                                        Array.from({ length: 15 }).map((_, i) => (
+                                            <TableRow key={i}>
+                                                <TableCell className="sticky left-0 bg-background z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                                                    <div className="flex flex-col gap-2">
+                                                        <Skeleton className="h-4 w-24" />
+                                                        <Skeleton className="h-3 w-32" />
+                                                    </div>
+                                                </TableCell>
+                                                {months.map(month => (
+                                                    <TableCell key={month} className="p-1 border-l text-center">
+                                                        <Skeleton className="h-6 w-6 mx-auto rounded-md" />
+                                                    </TableCell>
+                                                ))}
+                                            </TableRow>
+                                        ))
                                     ) : filteredMembers.length === 0 ? (
                                         <TableRow>
                                             <TableCell colSpan={months.length + 1} className="h-24 text-center">
