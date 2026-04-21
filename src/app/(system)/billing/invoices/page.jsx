@@ -256,16 +256,17 @@ const BatchPrintTemplate = ({ invoices, month }) => {
 };
 
 export default function MonthlyInvoicesPage() {
-  // Data Fetching with SWR
-  const { data: invoices = [], isLoading: loading } = useSWR(`/billing/invoices?period=${currentMonth}`, apiFetcher);
-  
-  // Sorting & Filtering State
+  // --- STATES ---
+  const [currentMonth, setCurrentMonth] = useState(format(new Date(), "yyyy-MM")); // Default to current month
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [rowSelection, setRowSelection] = useState({});
-  const [currentMonth, setCurrentMonth] = useState(format(new Date(), "yyyy-MM")); // Default to current month
   const [printingInvoices, setPrintingInvoices] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Data Fetching with SWR
+  const { data: invoices = [], isLoading: loading } = useSWR(`/billing/invoices?period=${currentMonth}`, apiFetcher);
+  
 
   const refreshInvoices = () => mutate(`/billing/invoices?period=${currentMonth}`);
 
