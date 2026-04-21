@@ -47,6 +47,15 @@ import { accountingService } from "@/services/accountingService";
 import { AccountingSkeleton } from "@/components/accounting/AccountingSkeleton";
 import { cn } from "@/lib/utils";
 
+const colorOptions = [
+  { value: "emerald", label: "Emerald Green", bg: "bg-emerald-100", text: "text-emerald-700" },
+  { value: "blue", label: "Royal Blue", bg: "bg-blue-100", text: "text-blue-700" },
+  { value: "amber", label: "Amber / Warning", bg: "bg-amber-100", text: "text-amber-700" },
+  { value: "purple", label: "Purple", bg: "bg-purple-100", text: "text-purple-700" },
+  { value: "rose", label: "Rose Red", bg: "bg-rose-100", text: "text-rose-700" },
+  { value: "slate", label: "Slate Grey", bg: "bg-slate-100", text: "text-slate-700" },
+];
+
 // Schema
 const incomeSchema = z.object({
   description: z.string().min(1, "Description is required"),
@@ -201,16 +210,22 @@ export default function OtherIncomePage() {
                           <FormLabel>Category</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className={"w-full"}>
                                 <SelectValue placeholder="Select Category" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {categories.map((cat) => (
-                                <SelectItem key={cat.id} value={cat.id}>
-                                  {cat.name}
-                                </SelectItem>
-                              ))}
+                              {categories.map((cat) => {
+                                const color = colorOptions.find(c => c.value === cat.color) || colorOptions[0];
+                                return (
+                                  <SelectItem key={cat.id} value={cat.id}>
+                                    <div className="flex items-center gap-2">
+                                      <div className={`w-2 h-2 rounded-full ${color.bg.replace("100", "500")}`} />
+                                      {cat.name}
+                                    </div>
+                                  </SelectItem>
+                                );
+                              })}
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -305,9 +320,15 @@ export default function OtherIncomePage() {
                     <TableCell>{format(new Date(income.date), "MMM dd, yyyy")}</TableCell>
                     <TableCell className="font-medium text-slate-900">{income.description}</TableCell>
                     <TableCell>
-                      <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-800">
-                        {income.category?.name}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {(() => {
+                          const color = colorOptions.find(c => c.value === income.category?.color) || colorOptions[0];
+                          return <div className={`w-2 h-2 rounded-full ${color.bg.replace("100", "500")}`} />;
+                        })()}
+                        <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-800 border border-slate-200">
+                          {income.category?.name}
+                        </span>
+                      </div>
                     </TableCell>
                     <TableCell className="text-right font-bold text-slate-900">
                       Rs. {income.amount.toLocaleString()}
