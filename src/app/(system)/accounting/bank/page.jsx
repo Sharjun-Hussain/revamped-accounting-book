@@ -57,7 +57,8 @@ import {
 } from "@tanstack/react-table";
 import { DataTable } from "@/components/general/data-table"; 
 import { toast } from "sonner"; 
-import { accountingService } from "@/services/accountingService";
+import useSWR, { mutate } from "swr";
+import { apiFetcher } from "@/lib/api";
 import { useEffect } from "react";
 import { AccountingSkeleton } from "@/components/accounting/AccountingSkeleton";
 
@@ -214,26 +215,10 @@ const BankDialog = ({ open, onOpenChange, onAccountSaved, accountToEdit }) => {
 
 // --- 4. TRANSACTIONS DIALOG ---
 const BankTransactionsDialog = ({ open, onOpenChange, account }) => {
-    const [transactions, setTransactions] = useState([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        if (open && account) {
-            const fetchTransactions = async () => {
-                setLoading(true);
-                try {
-                    const data = await accountingService.getBankTransactions(account.id);
-                    setTransactions(data);
-                } catch (error) {
-                    console.error("Failed to fetch transactions", error);
-                    toast.error("Failed to load transactions");
-                } finally {
-                    setLoading(false);
-                }
-            };
-            fetchTransactions();
-        }
-    }, [open, account]);
+    const { data: transactions = [], isLoading: loading } = useSWR(
+        open && account ? `/accounting/ledger?bankAccountId=${account.id}` : null,
+        apiFetcher
+    );
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -302,33 +287,22 @@ const BankTransactionsDialog = ({ open, onOpenChange, account }) => {
 
 // --- 5. MAIN PAGE ---
 export default function BankAccountsPage() {
-  const [accounts, setAccounts] = useState([]);
+  // Data Fetching with SWR
+  const { data: accounts = [], isLoading: loading } = useSWR('/accounting/bank-accounts', apiFetcher);
+  
+  // Sorting & Filtering State
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
-  const [loading, setLoading] = useState(true);
-  
+
   // Dialog States
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
   const [isTransactionsOpen, setIsTransactionsOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState(null);
 
-  const fetchAccounts = async () => {
-    try {
-        setLoading(true);
-        const data = await accountingService.getBankAccounts();
-        setAccounts(data);
-    } catch (error) {
-        console.error("Error fetching accounts:", error);
-        toast.error("Failed to load accounts");
-    } finally {
-        setLoading(false);
-    }
-  };
+  const refreshAccounts = () => mutate('/accounting/bank-accounts');
 
-  useEffect(() => {
-    fetchAccounts();
-  }, []);
+
 
   const handleEdit = (account) => {
     setEditingAccount(account);
@@ -547,7 +521,7 @@ export default function BankAccountsPage() {
         <BankDialog 
             open={isDialogOpen} 
             onOpenChange={setIsDialogOpen} 
-            onAccountSaved={fetchAccounts} 
+            onAccountSaved={refreshAccounts} 
             accountToEdit={editingAccount}
         />
         

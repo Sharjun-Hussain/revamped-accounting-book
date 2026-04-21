@@ -52,7 +52,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel
 } from "@/components/ui/dropdown-menu";
-import { accountingService } from "@/services/accountingService";
+import useSWR from "swr";
+import api, { apiFetcher } from "@/lib/api";
 import { toast } from "sonner";
 import {
   Popover,
@@ -147,33 +148,22 @@ export default function IncomeSummaryPage() {
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [dateRange, setDateRange] = useState(undefined);
-  const [transactions, setTransactions] = useState([]);
-  const [stats, setStats] = useState({ total: 0, sanda: 0, donations: 0, other: 0 });
-  const [chartData, setChartData] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchIncomeData = async () => {
-      setLoading(true);
-      try {
-          const params = {};
-          if (dateRange?.from) params.from = dateRange.from.toISOString();
-          if (dateRange?.to) params.to = dateRange.to.toISOString();
-
-          const data = await accountingService.getIncomeSummary(params);
-          setTransactions(data.transactions);
-          setStats(data.stats);
-          setChartData(data.chartData);
-      } catch (error) {
-          console.error("Failed to fetch income data", error);
-          toast.error("Failed to load income summary");
-      } finally {
-          setLoading(false);
-      }
-  };
-
-  useState(() => {
-      fetchIncomeData();
+  // Data Fetching with SWR (Key includes date range for caching unique views)
+  const swrKey = useMemo(() => {
+    const params = new URLSearchParams();
+    if (dateRange?.from) params.append('from', dateRange.from.toISOString());
+    if (dateRange?.to) params.append('to', dateRange.to.toISOString());
+    return `/accounting/income?${params.toString()}`;
   }, [dateRange]);
+
+  const { data: incomeData, isLoading: loading } = useSWR(swrKey, apiFetcher);
+
+  // Derived Data
+  const transactions = incomeData?.transactions || [];
+  const stats = incomeData?.stats || { total: 0, sanda: 0, donations: 0, other: 0 };
+  const chartData = incomeData?.chartData || [];
+
+
 
   const table = useReactTable({
     data: transactions,

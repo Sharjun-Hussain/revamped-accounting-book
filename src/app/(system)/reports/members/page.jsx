@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import useSWR from "swr";
+import { apiFetcher } from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   User,
@@ -50,57 +52,26 @@ import {
 import { cn } from "@/lib/utils";
 
 // Import PDF Generator and Services
-import { generateFinancialPDF } from "@/lib/report-generator";
 import { memberService } from "@/services/memberService";
 
 // --- REMOVED MOCK DATA - NOW USING REAL API ---
 
 export default function MemberStatementPage() {
-  const [open, setOpen] = useState(false);
-  const [selectedMember, setSelectedMember] = useState(null);
-  const [financialData, setFinancialData] = useState(null);
-  const [members, setMembers] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [loadingStatement, setLoadingStatement] = useState(false);
-  const [error, setError] = useState(null);
+  // Data Fetching with SWR
+  const { data: members = [], isLoading: loading } = useSWR('/members', apiFetcher);
+  
+  // Conditional Fetching for individual statement
+  const statementKey = selectedMember ? `/members/${selectedMember.id}/statement` : null;
+  const { data: statementResponse, isLoading: loadingStatement, error: statementError } = useSWR(statementKey, apiFetcher);
 
-  // --- FETCH MEMBERS ON MOUNT ---
-  useEffect(() => {
-    fetchMembers();
-  }, []);
-
-  const fetchMembers = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await memberService.getAll();
-      setMembers(data);
-    } catch (err) {
-      console.error('Error fetching members:', err);
-      setError('Failed to load members. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Derived Financial Data
+  const financialData = statementResponse?.financial || null;
+  const error = statementError ? 'Failed to load member statement. Please try again.' : null;
 
   // --- HANDLER: SELECT MEMBER ---
-  const handleSelect = async (member) => {
+  const handleSelect = (member) => {
     setSelectedMember(member);
     setOpen(false);
-    
-    // Fetch statement data for selected member
-    try {
-      setLoadingStatement(true);
-      setError(null);
-      const statementData = await memberService.getMemberStatement(member.id);
-      setFinancialData(statementData.financial);
-    } catch (err) {
-      console.error('Error fetching member statement:', err);
-      setError('Failed to load member statement. Please try again.');
-      setFinancialData(null);
-    } finally {
-      setLoadingStatement(false);
-    }
   };
 
   // --- HANDLER: PRINT STATEMENT ---

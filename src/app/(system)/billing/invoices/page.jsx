@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
+import useSWR, { mutate } from "swr";
+import { apiFetcher } from "@/lib/api";
 import { motion } from "framer-motion";
 import {
   Printer,
@@ -45,7 +47,6 @@ import {
 } from "@tanstack/react-table";
 import { DataTable } from "@/components/general/data-table"; 
 
-import { accountingService } from "@/services/accountingService";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import Link from "next/link";
@@ -255,32 +256,20 @@ const BatchPrintTemplate = ({ invoices, month }) => {
 };
 
 export default function MonthlyInvoicesPage() {
+  // Data Fetching with SWR
+  const { data: invoices = [], isLoading: loading } = useSWR(`/billing/invoices?period=${currentMonth}`, apiFetcher);
+  
+  // Sorting & Filtering State
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [rowSelection, setRowSelection] = useState({});
   const [currentMonth, setCurrentMonth] = useState(format(new Date(), "yyyy-MM")); // Default to current month
   const [printingInvoices, setPrintingInvoices] = useState([]);
-  const [invoices, setInvoices] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [loading, setLoading] = useState(true);
 
-  // Fetch Invoices
-  const fetchInvoices = async () => {
-    try {
-        setLoading(true);
-        const data = await accountingService.getInvoices({ period: currentMonth });
-        setInvoices(data);
-    } catch (error) {
-        console.error("Error fetching invoices:", error);
-        toast.error("Failed to load invoices");
-    } finally {
-        setLoading(false);
-    }
-  };
+  const refreshInvoices = () => mutate(`/billing/invoices?period=${currentMonth}`);
 
-  useEffect(() => {
-    fetchInvoices();
-  }, [currentMonth]);
+
 
   // Generate Sanda
   const handleGenerateSanda = async () => {
@@ -288,7 +277,7 @@ export default function MonthlyInvoicesPage() {
     try {
         const result = await accountingService.generateSanda(currentMonth);
         toast.success(`Generation Complete: ${result.results.generated} created, ${result.results.skipped} skipped.`);
-        fetchInvoices(); // Refresh list
+        refreshInvoices(); // Refresh list
     } catch (error) {
         console.error("Error generating sanda:", error);
         toast.error("Failed to generate invoices");

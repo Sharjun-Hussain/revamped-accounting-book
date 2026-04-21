@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import useSWR from "swr";
+import { apiFetcher } from "@/lib/api";
 import { motion } from "framer-motion";
 import {
   AlertCircle,
@@ -54,7 +56,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 // Import Shared PDF Utility
 import { exportToPDF, exportToCSV } from "@/lib/export-utils"; 
 
-import { accountingService } from "@/services/accountingService";
 import { toast } from "sonner";
 
 import { BillingSkeleton } from "@/components/billing/BillingSkeleton";
@@ -213,27 +214,12 @@ const columns = [
 
   
 export default function ArrearsPage() {
+  // Data Fetching with SWR
+  const { data: arrearsData = [], isLoading: loading } = useSWR('/billing/arrears', apiFetcher);
+  
+  // Sorting & Filtering State
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
-  const [arrearsData, setArrearsData] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchArrears = async () => {
-    try {
-        setLoading(true);
-        const data = await accountingService.getOutstandingArrears();
-        setArrearsData(data);
-    } catch (error) {
-        console.error("Error fetching arrears:", error);
-        toast.error("Failed to load outstanding arrears");
-    } finally {
-        setLoading(false);
-    }
-  };
-
-  useState(() => {
-    fetchArrears();
-  }, []);
   
   const table = useReactTable({
     data: arrearsData,

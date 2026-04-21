@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import useSWR, { mutate } from "swr";
+import { apiFetcher } from "@/lib/api";
 import { motion } from "framer-motion";
 import {
   ArrowUpDown,
@@ -185,38 +187,30 @@ import { toast } from "sonner";
 // ... (keep imports)
 
 export default function DonationsPage() {
+  // Data Fetching with SWR
+  const { data: rawDonations = [], isLoading } = useSWR('/donations', apiFetcher);
+
+  // Formatting data for the table
+  const donations = useMemo(() => {
+    return rawDonations.map(d => ({
+        ...d,
+        donor_name: d.isAnonymous ? "Anonymous" : (d.member ? d.member.name : d.donorName),
+    }));
+  }, [rawDonations]);
+
   const [isNavigating, setIsNavigating] = useState(false);
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [rowSelection, setRowSelection] = useState({});
-  const [donations, setDonations] = useState([]);
 
-  const fetchDonations = async () => {
-      try {
-          const data = await donationService.getAll();
-          // Map API data to table format if needed, or adjust columns
-          const formattedData = data.map(d => ({
-              ...d,
-              donor_name: d.isAnonymous ? "Anonymous" : (d.member ? d.member.name : d.donorName),
-              // Ensure date is string or date object as expected by column formatter
-          }));
-          setDonations(formattedData);
-      } catch (error) {
-          console.error("Failed to fetch donations", error);
-          toast.error("Failed to load donations");
-      }
-  };
-
-  useState(() => {
-      fetchDonations();
-  }, []);
+  const refreshDonations = () => mutate('/donations');
 
   const handleDelete = async (id) => {
       if(confirm("Are you sure you want to delete this donation?")) {
           try {
               await donationService.delete(id);
               toast.success("Donation deleted");
-              fetchDonations();
+              refreshDonations();
           } catch (error) {
               console.error("Failed to delete donation", error);
               toast.error("Failed to delete donation");

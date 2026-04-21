@@ -5,8 +5,7 @@ import useSWR from 'swr';
 import AuditLogTable from '@/components/audit-logs/AuditLogTable';
 import AuditLogFilters from '@/components/audit-logs/AuditLogFilters';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-
-const fetcher = (url) => fetch(url).then((res) => res.json());
+import { apiFetcher } from '@/lib/api';
 
 export default function AuditLogsPage() {
     const [filters, setFilters] = useState({
@@ -33,8 +32,8 @@ export default function AuditLogsPage() {
 
     const queryString = buildQueryString();
     const { data, error, isLoading, mutate } = useSWR(
-        `/api/audit-logs?${queryString}`,
-        fetcher
+        `/audit-logs?${queryString}`,
+        apiFetcher
     );
 
     const handleFilterChange = (newFilters) => {

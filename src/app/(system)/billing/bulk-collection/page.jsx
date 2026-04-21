@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
+import useSWR, { mutate } from 'swr';
+import { apiFetcher } from "@/lib/api";
 import { format, addMonths, subMonths, eachMonthOfInterval, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { Search, Loader2, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight, User, Phone, Mail, MapPin, Calendar, CreditCard, Printer } from 'lucide-react';
 import { toast } from 'sonner';
@@ -131,8 +133,10 @@ export default function BulkCollectionPage() {
     const [startMonth, setStartMonth] = useState(format(subMonths(new Date(), 5), 'yyyy-MM'));
     const [endMonth, setEndMonth] = useState(format(addMonths(new Date(), 6), 'yyyy-MM'));
     
-    const [members, setMembers] = useState([]);
-    const [loading, setLoading] = useState(false);
+    // Data Fetching with SWR
+    const { data: members = [], isLoading: loading } = useSWR(`/sanda/bulk-status?startMonth=${startMonth}&endMonth=${endMonth}`, apiFetcher);
+    const { data: appSettings } = useSWR('/settings/app', apiFetcher);
+
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedPayments, setSelectedPayments] = useState({}); // { memberId_month: true }
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -141,33 +145,16 @@ export default function BulkCollectionPage() {
     // Print State
     const [printReceipts, setPrintReceipts] = useState([]);
     const [isPrintConfirmOpen, setIsPrintConfirmOpen] = useState(false);
-    const [appSettings, setAppSettings] = useState(null);
+
+    const refreshData = () => {
+        mutate(`/sanda/bulk-status?startMonth=${startMonth}&endMonth=${endMonth}`);
+    };
 
     // Member Details Modal State
     const [selectedMember, setSelectedMember] = useState(null);
     const [isMemberDetailsOpen, setIsMemberDetailsOpen] = useState(false);
 
-    useEffect(() => {
-        fetchMembers();
-        // Fetch settings for receipt
-        fetch('/api/settings/app').then(res => res.json()).then(setAppSettings).catch(console.error);
-    }, [startMonth, endMonth]);
 
-    const fetchMembers = async () => {
-        setLoading(true);
-        try {
-            const res = await fetch(`/api/sanda/bulk-status?startMonth=${startMonth}&endMonth=${endMonth}`);
-            if (!res.ok) throw new Error('Failed to fetch data');
-            const data = await res.json();
-            setMembers(data);
-            setSelectedPayments({}); // Reset selection on range change
-        } catch (error) {
-            console.error(error);
-            toast.error("Failed to load members");
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleSearch = (e) => {
         setSearchTerm(e.target.value);
@@ -276,7 +263,7 @@ export default function BulkCollectionPage() {
             setIsConfirmOpen(false);
             setIsPrintConfirmOpen(true); // Open Print Confirmation
             
-            fetchMembers(); // Refresh data
+            refreshData(); // Refresh data
         } catch (error) {
             console.error(error);
             toast.error("Failed to process payments");

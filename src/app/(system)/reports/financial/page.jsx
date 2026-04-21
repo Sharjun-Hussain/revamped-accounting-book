@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
+import useSWR from "swr";
+import { apiFetcher } from "@/lib/api";
 import { motion } from "framer-motion";
 import {
   PieChart as PieChartIcon,
@@ -54,7 +56,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { accountingService } from "@/services/accountingService";
 import { toast } from "sonner";
 
 // Import Shared PDF Utility
@@ -94,47 +95,32 @@ export default function FinancialReportsPage() {
       });
   };
   
-  const [financialSummary, setFinancialSummary] = useState({
-    totalIncome: 0, totalExpense: 0, netSurplus: 0, cashOnHand: 0, bankBalance: 0, pendingBills: 0
-  });
-  const [incomeStatementData, setIncomeStatementData] = useState({ income: [], expenses: [] });
-  const [balanceSheetData, setBalanceSheetData] = useState({ assets: [], liabilities: [], equity: [] });
-  const [monthlyPerformance, setMonthlyPerformance] = useState([]);
-  const [expenseBreakdown, setExpenseBreakdown] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchReportData = async () => {
-      setLoading(true);
-      try {
-          const params = {};
-          if (dateRange?.from) params.from = dateRange.from.toISOString();
-          if (dateRange?.to) params.to = dateRange.to.toISOString();
-
-          const data = await accountingService.getFinancialReport(params);
-          setFinancialSummary(data.summary);
-          setIncomeStatementData(data.incomeStatement);
-          setBalanceSheetData(data.balanceSheet);
-          setMonthlyPerformance(data.monthlyPerformance);
-          
-          // Generate expense breakdown for pie chart
-          const breakdown = data.incomeStatement.expenses.map((e, i) => ({
-              name: e.category,
-              value: e.amount,
-              color: Object.values(THEME)[i % Object.values(THEME).length]
-          }));
-          setExpenseBreakdown(breakdown);
-
-      } catch (error) {
-          console.error("Failed to fetch report data", error);
-          toast.error("Failed to load financial reports");
-      } finally {
-          setLoading(false);
-      }
-  };
-
-  useEffect(() => {
-      fetchReportData();
+  // Data Fetching with SWR
+  const swrKey = useMemo(() => {
+    const params = new URLSearchParams();
+    if (dateRange?.from) params.append('from', dateRange.from.toISOString());
+    if (dateRange?.to) params.append('to', dateRange.to.toISOString());
+    return `/accounting/reports/financial?${params.toString()}`;
   }, [dateRange]);
+
+  const { data: reportData, isLoading: loading } = useSWR(swrKey, apiFetcher);
+
+  // Derived Data
+  const financialSummary = reportData?.summary || { totalIncome: 0, totalExpense: 0, netSurplus: 0, cashOnHand: 0, bankBalance: 0, pendingBills: 0 };
+  const incomeStatementData = reportData?.incomeStatement || { income: [], expenses: [] };
+  const balanceSheetData = reportData?.balanceSheet || { assets: [], liabilities: [], equity: [] };
+  const monthlyPerformance = reportData?.monthlyPerformance || [];
+
+  const expenseBreakdown = useMemo(() => {
+    if (!reportData?.incomeStatement?.expenses) return [];
+    return reportData.incomeStatement.expenses.map((e, i) => ({
+        name: e.category,
+        value: e.amount,
+        color: Object.values(THEME)[i % Object.values(THEME).length]
+    }));
+  }, [reportData]);
+
+
 
   // --- EXPORT HANDLERS ---
 

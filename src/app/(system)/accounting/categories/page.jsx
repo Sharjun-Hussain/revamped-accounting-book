@@ -57,7 +57,8 @@ import {
 import { DataTable } from "@/components/general/data-table"; 
 import { Progress } from "@/components/ui/progress";
 
-import { categoryService } from "@/services/categoryService";
+import useSWR, { mutate } from "swr";
+import { apiFetcher } from "@/lib/api";
 import { toast } from "sonner";
 import { AccountingSkeleton } from "@/components/accounting/AccountingSkeleton";
 
@@ -252,27 +253,14 @@ export default function ExpenseCategoriesPage() {
   const [columnFilters, setColumnFilters] = useState([]);
   const [rowSelection, setRowSelection] = useState({}); // New State for Selection
   
+  // Data Fetching with SWR
+  const { data: categories = [], isLoading: loading } = useSWR('/accounting/categories', apiFetcher);
+
+  const refreshCategories = () => mutate('/accounting/categories');
+
+  // Dialog States
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchCategories = async () => {
-    try {
-        setLoading(true);
-        const data = await categoryService.getAll();
-        setCategories(data);
-    } catch (error) {
-        console.error("Error fetching categories:", error);
-        toast.error("Failed to load categories");
-    } finally {
-        setLoading(false);
-    }
-  };
-
-  useState(() => {
-    fetchCategories();
-  }, []);
 
   const handleEdit = (category) => {
     setEditingCategory(category);
@@ -289,7 +277,7 @@ export default function ExpenseCategoriesPage() {
           try {
               await categoryService.delete(id);
               toast.success("Category deleted");
-              fetchCategories();
+              refreshCategories();
           } catch (error) {
               console.error("Error deleting category:", error);
               toast.error("Failed to delete category");
@@ -425,7 +413,7 @@ export default function ExpenseCategoriesPage() {
         open={isDialogOpen} 
         onOpenChange={setIsDialogOpen} 
         initialData={editingCategory} 
-        onSuccess={fetchCategories}
+        onSuccess={refreshCategories}
       />
 
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 flex flex-col space-y-6 px-6 pb-6 pt-8 max-w-7xl mx-auto">

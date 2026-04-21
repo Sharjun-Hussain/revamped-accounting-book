@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
+import useSWR, { mutate } from "swr";
+import { apiFetcher } from "@/lib/api";
 import { motion } from "framer-motion";
 import {
   TrendingDown,
@@ -86,10 +88,12 @@ export default function ExpensesPage() {
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [rowSelection, setRowSelection] = useState({});
-  const [expenses, setExpenses] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [bankAccounts, setBankAccounts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Data Fetching with SWR
+  const { data: expenses = [], isLoading: expensesLoading } = useSWR('/accounting/expenses', apiFetcher);
+  const { data: categories = [], isLoading: categoriesLoading } = useSWR('/accounting/categories', apiFetcher);
+  const { data: bankAccounts = [], isLoading: bankAccountsLoading } = useSWR('/accounting/bank-accounts', apiFetcher);
+
+  const loading = expensesLoading || categoriesLoading || bankAccountsLoading;
   
   // Edit State
   const [editExpense, setEditExpense] = useState(null);
@@ -105,28 +109,11 @@ export default function ExpensesPage() {
       setIsDialogOpen(true);
   };
 
-  const fetchData = async () => {
-    try {
-        setLoading(true);
-        const [expensesData, categoriesData, accountsData] = await Promise.all([
-            accountingService.getExpenses(),
-            categoryService.getAll(),
-            accountingService.getBankAccounts()
-        ]);
-        setExpenses(expensesData);
-        setCategories(categoriesData);
-        setBankAccounts(accountsData);
-    } catch (error) {
-        console.error("Error fetching data:", error);
-        toast.error("Failed to load expenses");
-    } finally {
-        setLoading(false);
-    }
+  const refreshData = () => {
+    mutate('/accounting/expenses');
+    mutate('/accounting/categories');
+    mutate('/accounting/bank-accounts');
   };
-
-  useState(() => {
-    fetchData();
-  }, []);
 
   const columns = useMemo(() => [
     {
@@ -312,7 +299,7 @@ export default function ExpensesPage() {
                  <ExpenseDialog 
                     open={isDialogOpen} 
                     setOpen={setIsDialogOpen} 
-                    onSuccess={fetchData} 
+                    onSuccess={refreshData} 
                     categories={categories} 
                     bankAccounts={bankAccounts} 
                     expenseToEdit={editExpense}
@@ -361,7 +348,7 @@ export default function ExpensesPage() {
                 <ExpenseTableToolbar 
                     table={table} 
                     categories={categories} 
-                    bulkActionsComponent={<ExpenseBulkActions table={table} onSuccess={fetchData} />}
+                    bulkActionsComponent={<ExpenseBulkActions table={table} onSuccess={refreshData} />}
                 />
             </CardContent>
         </Card>

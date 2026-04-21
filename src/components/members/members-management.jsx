@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import useSWR from "swr";
-import api from "@/lib/api";
+import { apiFetcher } from "@/lib/api";
 import { motion } from "framer-motion"; // Added animations
 import { columns } from "@/components/members/columns";
 import { DataTable } from "@/components/general/data-table";
@@ -69,8 +69,7 @@ import { BulkUploadModal } from "@/components/members/bulk-upload-modal";
 import { MemberSkeleton } from "@/components/members/MemberSkeleton";
 import { Badge } from "@/components/ui/badge";
 
-// SWR fetcher that goes through the axios instance (interceptors, base URL, etc.)
-const apiFetcher = (url) => api.get(url).then((res) => res.data);
+
 
 // --- Animation Variants ---
 const containerVariants = {

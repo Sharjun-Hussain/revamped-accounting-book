@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import useSWR from "swr";
+import { apiFetcher } from "@/lib/api";
 import { motion } from "framer-motion";
 import {
   Printer,
@@ -60,7 +62,6 @@ import { DataTable } from "@/components/general/data-table";
 import { exportToCSV, exportToPDF } from "@/lib/export-utils";
 import { cn } from "@/lib/utils";
 
-import { accountingService } from "@/services/accountingService";
 import { toast } from "sonner";
 
 import { BillingSkeleton } from "@/components/billing/BillingSkeleton";
@@ -139,35 +140,22 @@ const columns = [
 ];
 
 export default function PaymentHistoryPage() {
+  // Data Fetching with SWR (Key includes date range for caching)
+  const swrKey = useMemo(() => {
+    const params = new URLSearchParams();
+    if (dateRange?.from) params.append('from', dateRange.from.toISOString());
+    if (dateRange?.to) params.append('to', dateRange.to.toISOString());
+    return `/billing/history?${params.toString()}`;
+  }, [dateRange]);
+
+  const { data: payments = [], isLoading: loading } = useSWR(swrKey, apiFetcher);
+  
+  // Sorting & Filtering State
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   // DATE RANGE STATE
   const [dateRange, setDateRange] = useState(undefined);
 
-  const [payments, setPayments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  
-  // Fetch Payments
-  const fetchPayments = async () => {
-    try {
-        setLoading(true);
-        const params = {};
-        if (dateRange?.from) params.from = dateRange.from.toISOString();
-        if (dateRange?.to) params.to = dateRange.to.toISOString();
-        
-        const data = await accountingService.getPaymentHistory(params);
-        setPayments(data);
-    } catch (error) {
-        console.error("Error fetching payments:", error);
-        toast.error("Failed to load payment history");
-    } finally {
-        setLoading(false);
-    }
-  };
-
-  useState(() => {
-    fetchPayments();
-  }, [dateRange]);
 
   const table = useReactTable({
     data: payments,

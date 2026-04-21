@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import useSWR, { mutate } from "swr";
+import { apiFetcher } from "@/lib/api";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import { accountingService } from "@/services/accountingService";
 import { toast } from "sonner";
 import {
   Table,
@@ -51,12 +52,19 @@ const incomeSchema = z.object({
 });
 
 export default function OtherIncomePage() {
-  const [incomes, setIncomes] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // SWR Fetching
+  const { data: incomes = [], isLoading: incomesLoading } = useSWR('/accounting/other-income', apiFetcher);
+  const { data: categories = [], isLoading: categoriesLoading } = useSWR('/accounting/income-categories', apiFetcher);
+
+  const loading = incomesLoading || categoriesLoading;
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingIncome, setEditingIncome] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const refreshData = () => {
+    mutate('/accounting/other-income');
+    mutate('/accounting/income-categories');
+  };
 
   const form = useForm({
     resolver: zodResolver(incomeSchema),
@@ -68,26 +76,7 @@ export default function OtherIncomePage() {
     },
   });
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [incomeData, categoryData] = await Promise.all([
-        accountingService.getOtherIncomes(),
-        accountingService.getCategories(),
-      ]);
-      setIncomes(incomeData);
-      setCategories(categoryData);
-    } catch (error) {
-      console.error("Failed to fetch data", error);
-      toast.error("Failed to load data");
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
 
   const onSubmit = async (data) => {
     try {
@@ -102,7 +91,7 @@ export default function OtherIncomePage() {
       setIsDialogOpen(false);
       setEditingIncome(null);
       form.reset();
-      fetchData();
+      refreshData();
     } catch (error) {
       console.error("Failed to save income", error);
       toast.error("Failed to save income");
@@ -127,7 +116,7 @@ export default function OtherIncomePage() {
       try {
         await accountingService.deleteOtherIncome(id);
         toast.success("Record deleted");
-        fetchData();
+        refreshData();
       } catch (error) {
         console.error("Failed to delete", error);
         toast.error("Failed to delete record");

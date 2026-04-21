@@ -26,6 +26,8 @@ import {
   Inbox
 } from "lucide-react";
 import { toast } from "sonner";
+import { apiFetcher } from "@/lib/api";
+import { mutate } from "swr";
 // UI Imports
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -115,11 +117,10 @@ export default function SettingsPage() {
   const [contactMessage, setContactMessage] = useState('');
   const [isContactSending, setIsContactSending] = useState(false);
 
-  const fetcher = (url) => fetch(url).then((res) => res.json());
-  const { data: appSettings, isLoading: isLoadingFooter, mutate } = useSWR('/api/settings/app', fetcher);
-  const { data: systemStatus, isLoading: isLoadingSystem } = useSWR(activeTab === 'system-status' ? '/api/system/status' : null, fetcher, { refreshInterval: 30000 });
-  const { data: adminAlerts, mutate: mutateAlerts } = useSWR(activeTab === 'admin-alerts' ? '/api/admin/notifications' : null, fetcher, { refreshInterval: 60000 });
-  const { data: resetRequests, mutate: mutateResets } = useSWR(activeTab === 'admin-alerts' ? '/api/admin/reset-requests' : null, fetcher, { refreshInterval: 60000 });
+  const { data: appSettings, isLoading: isLoadingFooter } = useSWR('/settings/app', apiFetcher);
+  const { data: systemStatus, isLoading: isLoadingSystem } = useSWR(activeTab === 'system-status' ? '/system/status' : null, apiFetcher, { refreshInterval: 30000 });
+  const { data: adminAlerts } = useSWR(activeTab === 'admin-alerts' ? '/admin/notifications' : null, apiFetcher, { refreshInterval: 60000 });
+  const { data: resetRequests } = useSWR(activeTab === 'admin-alerts' ? '/admin/reset-requests' : null, apiFetcher, { refreshInterval: 60000 });
 
   useEffect(() => {
     if (appSettings && !hasInitialized.current) {
@@ -128,6 +129,10 @@ export default function SettingsPage() {
       hasInitialized.current = true;
     }
   }, [appSettings]);
+
+  const refreshAppSettings = () => mutate('/settings/app');
+  const refreshAlerts = () => mutate(activeTab === 'admin-alerts' ? '/admin/notifications' : null);
+  const refreshResets = () => mutate(activeTab === 'admin-alerts' ? '/admin/reset-requests' : null);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -142,7 +147,7 @@ export default function SettingsPage() {
 
       if (response.ok) {
         toast.success("Settings Updated Successfully");
-        mutate();
+        refreshAppSettings();
       } else {
         toast.error("Failed to update settings");
       }
@@ -184,7 +189,7 @@ export default function SettingsPage() {
 
       if (response.ok) {
         toast.success('Footer Settings Updated Successfully');
-        mutate();
+        refreshAppSettings();
       } else {
         const error = await response.json();
         toast.error(error.error || 'Failed to update footer settings');
@@ -263,7 +268,7 @@ export default function SettingsPage() {
       });
 
       if (response.ok) {
-        mutateAlerts();
+        refreshAlerts();
       }
     } catch (error) {
       console.error("Failed to mark notification as read", error);
@@ -281,7 +286,7 @@ export default function SettingsPage() {
       const data = await response.json();
       if (response.ok) {
         toast.success(data.message);
-        mutateResets();
+        refreshResets();
       } else {
         toast.error(data.error || 'Action failed');
       }

@@ -38,3 +38,9 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+/**
+ * Standard fetcher for SWR that uses the configured AXIOS instance.
+ * Automatically handles baseURL, headers, and interceptors.
+ */
+export const apiFetcher = (url) => api.get(url).then((res) => res.data);
