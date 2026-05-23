@@ -22,7 +22,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import { CompactStatCard } from "@/components/general/compact-stat-card";
+import { CompactTableCard } from "@/components/general/compact-table-card";
+import { CompactFilterToolbar } from "@/components/general/compact-filter-toolbar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -423,7 +426,7 @@ export default function BankAccountsPage() {
     <div className="min-h-screen bg-slate-50 relative">
       <div className="fixed inset-0 pointer-events-none opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')]"></div>
       
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 flex flex-col space-y-6 px-6 pb-6 pt-8 max-w-7xl mx-auto">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 flex flex-col space-y-4 px-6 pb-6 pt-8 max-w-7xl mx-auto">
         
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -483,39 +486,35 @@ export default function BankAccountsPage() {
             ))}
         </div>
 
-        {/* TOTAL SUMMARY BAR */}
-        <Card className="rounded-xl border-emerald-100 bg-emerald-50/50 shadow-sm">
-            <div className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-emerald-100 rounded-full text-emerald-600">
-                        <Wallet className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <p className="text-sm font-medium text-emerald-900">Total Liquidity</p>
-                        <p className="text-xs text-emerald-600">Sum of all accounts</p>
-                    </div>
-                </div>
-                <div className="text-2xl font-bold text-emerald-700">
-                    Rs. {totalLiquidity.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </div>
-            </div>
-        </Card>
+        <CompactStatCard
+          label="Total Liquidity"
+          value={`Rs. ${totalLiquidity.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+          sublabel="Sum of all accounts"
+          icon={Wallet}
+          iconClassName="text-emerald-600"
+          iconBgClassName="bg-emerald-50"
+          className="border-emerald-100 bg-emerald-50/50"
+        />
 
-        {/* DATA TABLE */}
-        <Card className="rounded-xl border-slate-200 shadow-sm bg-white overflow-hidden">
-             <div className="p-4 border-b border-slate-100">
-                <div className="relative w-full max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                        placeholder="Search accounts..."
-                        value={(table.getColumn("bankName")?.getFilterValue()) ?? ""}
-                        onChange={(event) => table.getColumn("bankName")?.setFilterValue(event.target.value)}
-                        className="pl-10 bg-slate-50 border-slate-200"
-                    />
-                </div>
-             </div>
-             <DataTable table={table} columns={columns} />
-        </Card>
+        <CompactTableCard
+          toolbar={
+            <CompactFilterToolbar>
+              <div className="relative w-full sm:max-w-[220px] sm:flex-1 sm:min-w-[180px]">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                <Input
+                  placeholder="Search accounts..."
+                  value={(table.getColumn("bankName")?.getFilterValue()) ?? ""}
+                  onChange={(event) =>
+                    table.getColumn("bankName")?.setFilterValue(event.target.value)
+                  }
+                  className="h-9 pl-8 text-sm bg-slate-50 border-slate-200"
+                />
+              </div>
+            </CompactFilterToolbar>
+          }
+        >
+          <DataTable table={table} columns={columns} />
+        </CompactTableCard>
 
         {/* DIALOGS */}
         <BankDialog 

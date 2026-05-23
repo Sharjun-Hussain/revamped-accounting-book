@@ -26,7 +26,8 @@ import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { CompactTableCard } from "@/components/general/compact-table-card";
+import { CompactFilterToolbar } from "@/components/general/compact-filter-toolbar";
 import {
   Select,
   SelectContent,
@@ -230,7 +231,7 @@ export default function PaymentHistoryPage() {
     <div className="min-h-screen bg-slate-50 relative">
       <div className="fixed inset-0 pointer-events-none opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')]"></div>
       
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 flex flex-col space-y-6 px-6 pb-6 pt-8 max-w-7xl mx-auto">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 flex flex-col space-y-4 px-6 pb-6 pt-8 max-w-7xl mx-auto">
         
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -262,35 +263,30 @@ export default function PaymentHistoryPage() {
             </DropdownMenu>
         </div>
 
-        {/* TOOLBAR */}
-        <Card className="rounded-xl border-slate-200 shadow-sm bg-white">
-            <CardContent className="p-4">
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                    
-                    {/* Filters */}
-                    <div className="flex flex-1 items-center gap-3 w-full flex-wrap">
-                        {/* Name Search */}
-                        <div className="relative w-full md:max-w-xs">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                            <Input
-                                placeholder="Search receipt ID or name..."
-                                value={(table.getColumn("name")?.getFilterValue()) ?? ""}
-                                onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)}
-                                className="pl-10 bg-slate-50 border-slate-200"
-                            />
-                        </div>
-                        
-                        {/* Date Range Picker */}
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    className={cn(
-                                        "w-[240px] justify-start text-left font-normal bg-slate-50 border-slate-200",
+        <CompactTableCard
+          toolbar={
+            <CompactFilterToolbar>
+              <div className="relative w-full sm:max-w-[220px] sm:flex-1 sm:min-w-[180px]">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                <Input
+                  placeholder="Search receipt ID or name..."
+                  value={(table.getColumn("name")?.getFilterValue()) ?? ""}
+                  onChange={(event) =>
+                    table.getColumn("name")?.setFilterValue(event.target.value)
+                  }
+                  className="h-9 pl-8 text-sm bg-slate-50 border-slate-200"
+                />
+              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "h-9 w-full sm:w-[200px] justify-start text-left text-sm font-normal bg-slate-50 border-slate-200",
                                         !dateRange && "text-muted-foreground"
                                     )}
                                 >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    <CalendarIcon className="mr-2 h-3.5 w-3.5 shrink-0" />
                                     {dateRange?.from ? (
                                         dateRange.to ? (
                                             <>
@@ -318,20 +314,21 @@ export default function PaymentHistoryPage() {
                         </Popover>
                         
                         {/* Clear Date Button */}
-                        {dateRange && (
-                             <Button variant="ghost" onClick={clearDateFilter} className="h-9 px-2 text-xs text-rose-500 hover:text-rose-700 hover:bg-rose-50">
-                                Reset Date
-                             </Button>
-                        )}
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-
-        {/* DATA TABLE */}
-        <Card className="rounded-xl border-slate-200 shadow-sm bg-white overflow-hidden">
-             <DataTable table={table} columns={columns} />
-        </Card>
+              {dateRange && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearDateFilter}
+                  className="h-9 px-2 text-xs text-rose-500 hover:text-rose-700 hover:bg-rose-50"
+                >
+                  Reset Date
+                </Button>
+              )}
+            </CompactFilterToolbar>
+          }
+        >
+          <DataTable table={table} columns={columns} />
+        </CompactTableCard>
 
       </motion.div>
     </div>

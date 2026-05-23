@@ -16,7 +16,7 @@ import {
   Wallet,
   Calendar,
   Filter,
-  Pencil
+  Pencil,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -33,11 +33,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  CompactStatCard,
+  CompactStatsGrid,
+} from "@/components/general/compact-stat-card";
+import { CompactTableCard } from "@/components/general/compact-table-card";
+import { CompactFilterToolbar } from "@/components/general/compact-filter-toolbar";
 import {
   Select,
   SelectContent,
@@ -86,13 +86,20 @@ const formatCurrency = (amount) => {
 // --- 3. DataTableColumnHeader ---
 const DataTableColumnHeader = ({ column, title, className }) => {
   if (!column.getCanSort()) {
-    return <div className={cn("text-xs font-semibold text-slate-500", className)}>{title}</div>
+    return (
+      <div className={cn("text-xs font-semibold text-slate-500", className)}>
+        {title}
+      </div>
+    );
   }
   return (
     <Button
       variant="ghost"
       size="sm"
-      className={cn("-ml-3 h-8 data-[state=open]:bg-accent text-xs font-semibold text-slate-500 hover:text-slate-900", className)}
+      className={cn(
+        "-ml-3 h-8 data-[state=open]:bg-accent text-xs font-semibold text-slate-500 hover:text-slate-900",
+        className,
+      )}
       onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
     >
       <span>{title}</span>
@@ -104,8 +111,8 @@ const DataTableColumnHeader = ({ column, title, className }) => {
         <ArrowUpDown className="ml-2 h-3 w-3 opacity-50" />
       )}
     </Button>
-  )
-}
+  );
+};
 
 // --- 4. Columns Definition ---
 const columns = [
@@ -113,7 +120,10 @@ const columns = [
     id: "select",
     header: ({ table }) => (
       <Checkbox
-        checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && "indeterminate")
+        }
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
         aria-label="Select all"
       />
@@ -129,59 +139,85 @@ const columns = [
     enableHiding: false,
     meta: {
       headerClassName: "w-[40px] text-center",
-      className: "text-center"
-    }
+      className: "text-center",
+    },
   },
   {
     accessorKey: "donor_name",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Donor Name" />,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Donor Name" />
+    ),
     cell: ({ row }) => {
-        const name = row.original.donor_name;
-        const isAnonymous = name === "Anonymous" || name === "Friday Collection";
-        return (
-            <div className="flex items-center gap-3">
-                <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold ${isAnonymous ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
-                    {isAnonymous ? "?" : name.charAt(0)}
-                </div>
-                <span className="font-medium text-slate-900">{name}</span>
-            </div>
-        )
-    }
+      const name = row.original.donor_name;
+      const isAnonymous = name === "Anonymous" || name === "Friday Collection";
+      return (
+        <div className="flex items-center gap-3">
+          <div
+            className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold ${isAnonymous ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}
+          >
+            {isAnonymous ? "?" : name.charAt(0)}
+          </div>
+          <span className="font-medium text-slate-900">{name}</span>
+        </div>
+      );
+    },
   },
   {
     accessorKey: "purpose",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Fund / Purpose" />,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Fund / Purpose" />
+    ),
     cell: ({ row }) => {
       const purpose = row.original.purpose;
       let badgeColor = "bg-slate-100 text-slate-600 hover:bg-slate-200"; // Default
-      
-      if (purpose === "Zakat") badgeColor = "bg-amber-100 text-amber-700 hover:bg-amber-200 border-amber-200";
-      if (purpose === "Building Fund") badgeColor = "bg-blue-100 text-blue-700 hover:bg-blue-200 border-blue-200";
-      if (purpose === "Jummah") badgeColor = "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-100";
 
-      return <Badge variant="outline" className={`${badgeColor} border`}>{purpose}</Badge>;
+      if (purpose === "Zakat")
+        badgeColor =
+          "bg-amber-100 text-amber-700 hover:bg-amber-200 border-amber-200";
+      if (purpose === "Building Fund")
+        badgeColor =
+          "bg-blue-100 text-blue-700 hover:bg-blue-200 border-blue-200";
+      if (purpose === "Jummah")
+        badgeColor =
+          "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-100";
+
+      return (
+        <Badge variant="outline" className={`${badgeColor} border`}>
+          {purpose}
+        </Badge>
+      );
     },
   },
   {
     accessorKey: "amount",
     meta: {
-        headerClassName: "justify-end w-full text-right",
-        className: "text-right"
+      headerClassName: "justify-end w-full text-right",
+      className: "text-right",
     },
     cell: ({ row }) => {
-      return <span className="font-bold text-slate-900">{formatCurrency(row.getValue("amount"))}</span>;
+      return (
+        <span className="font-bold text-slate-900">
+          {formatCurrency(row.getValue("amount"))}
+        </span>
+      );
     },
   },
   {
     accessorKey: "date",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
-    cell: ({ row }) => <div className="text-sm text-slate-500">{format(new Date(row.getValue("date")), "MMM dd, yyyy")}</div>,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Date" />
+    ),
+    cell: ({ row }) => (
+      <div className="text-sm text-slate-500">
+        {format(new Date(row.getValue("date")), "MMM dd, yyyy")}
+      </div>
+    ),
   },
   {
     id: "actions",
     meta: {
       headerClassName: "text-right",
-      className: "text-right"
+      className: "text-right",
     },
     cell: ({ row, table }) => {
       return (
@@ -198,15 +234,17 @@ const columns = [
               <DropdownMenuItem>Print Acknowledgement</DropdownMenuItem>
               <DropdownMenuSeparator />
               <Link href={`/donations/${row.original.id}/edit`}>
-                  <DropdownMenuItem>
-                      <Pencil className="w-4 h-4 mr-2" /> Edit Details
-                  </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Pencil className="w-4 h-4 mr-2" /> Edit Details
+                </DropdownMenuItem>
               </Link>
-              <DropdownMenuItem 
-                  className="text-red-600"
-                  onClick={() => table.options.meta?.handleDelete(row.original.id)}
+              <DropdownMenuItem
+                className="text-red-600"
+                onClick={() =>
+                  table.options.meta?.handleDelete(row.original.id)
+                }
               >
-                  Void Transaction
+                Void Transaction
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -216,17 +254,22 @@ const columns = [
   },
 ];
 
-
-
 export default function DonationsPage() {
   // Data Fetching with SWR
-  const { data: rawDonations = [], isLoading } = useSWR('/donations', apiFetcher);
+  const { data: rawDonations = [], isLoading } = useSWR(
+    "/donations",
+    apiFetcher,
+  );
 
   // Formatting data for the table
   const donations = useMemo(() => {
-    return rawDonations.map(d => ({
-        ...d,
-        donor_name: d.isAnonymous ? "Anonymous" : (d.member ? d.member.name : d.donorName),
+    return rawDonations.map((d) => ({
+      ...d,
+      donor_name: d.isAnonymous
+        ? "Anonymous"
+        : d.member
+          ? d.member.name
+          : d.donorName,
     }));
   }, [rawDonations]);
 
@@ -235,19 +278,19 @@ export default function DonationsPage() {
   const [columnFilters, setColumnFilters] = useState([]);
   const [rowSelection, setRowSelection] = useState({});
 
-  const refreshDonations = () => mutate('/donations');
+  const refreshDonations = () => mutate("/donations");
 
   const handleDelete = async (id) => {
-      if(confirm("Are you sure you want to delete this donation?")) {
-          try {
-              await donationService.delete(id);
-              toast.success("Donation deleted");
-              refreshDonations();
-          } catch (error) {
-              console.error("Failed to delete donation", error);
-              toast.error("Failed to delete donation");
-          }
+    if (confirm("Are you sure you want to delete this donation?")) {
+      try {
+        await donationService.delete(id);
+        toast.success("Donation deleted");
+        refreshDonations();
+      } catch (error) {
+        console.error("Failed to delete donation", error);
+        toast.error("Failed to delete donation");
       }
+    }
   };
 
   const table = useReactTable({
@@ -262,8 +305,8 @@ export default function DonationsPage() {
     onRowSelectionChange: setRowSelection,
     state: { sorting, columnFilters, rowSelection },
     meta: {
-        handleDelete // Pass delete handler to columns
-    }
+      handleDelete, // Pass delete handler to columns
+    },
   });
 
   if (isLoading) {
@@ -276,20 +319,23 @@ export default function DonationsPage() {
       return;
     }
 
-    const dataToExport = table.getFilteredRowModel().rows.map(row => {
+    const dataToExport = table.getFilteredRowModel().rows.map((row) => {
       const d = row.original;
       return {
         "Donor Name": d.donor_name,
         "Fund / Purpose": d.purpose,
-        "Amount": d.amount,
-        "Date": format(new Date(d.date), "yyyy-MM-dd"),
+        Amount: d.amount,
+        Date: format(new Date(d.date), "yyyy-MM-dd"),
         "Payment Method": d.paymentMethod || "N/A",
-        "Anonymous": d.isAnonymous ? "Yes" : "No",
-        "Remarks": d.remarks || ""
+        Anonymous: d.isAnonymous ? "Yes" : "No",
+        Remarks: d.remarks || "",
       };
     });
 
-    exportToCSV(dataToExport, `donations-export-${format(new Date(), "yyyy-MM-dd")}.csv`);
+    exportToCSV(
+      dataToExport,
+      `donations-export-${format(new Date(), "yyyy-MM-dd")}.csv`,
+    );
     toast.success("Exporting CSV...");
   };
 
@@ -307,145 +353,153 @@ export default function DonationsPage() {
         initial="hidden"
         animate="visible"
         variants={containerVariants}
-        className="relative z-10 flex flex-col space-y-6 px-6 pb-6 pt-8 max-w-7xl mx-auto"
+        className="relative z-10 flex flex-col space-y-4 px-6 pb-6 pt-8 max-w-7xl mx-auto"
       >
         {/* Header */}
-        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <motion.div
+          variants={itemVariants}
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+        >
           <div className="space-y-1">
             <h1 className="text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
               <HandCoins className="h-8 w-8 text-emerald-600" />
               Donations & Collections
             </h1>
-            <p className="text-slate-500">Track incoming funds, Zakat, and other contributions.</p>
+            <p className="text-slate-500">
+              Track incoming funds, Zakat, and other contributions.
+            </p>
           </div>
           <div className="flex items-center gap-3">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="gap-2 bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
               onClick={handleExport}
             >
               <Download className="h-4 w-4" /> Export
             </Button>
             <Link href="/donations/new">
-                <Button 
-                    className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-200"
-                    onClick={() => setIsNavigating(true)}
-                    disabled={isNavigating}
-                >
-                {isNavigating ? <LoaderIcon className="animate-spin h-4 w-4" /> : <PlusCircle className="h-4 w-4" />}
+              <Button
+                className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-200"
+                onClick={() => setIsNavigating(true)}
+                disabled={isNavigating}
+              >
+                {isNavigating ? (
+                  <LoaderIcon className="animate-spin h-4 w-4" />
+                ) : (
+                  <PlusCircle className="h-4 w-4" />
+                )}
                 Add Donation
-                </Button>
+              </Button>
             </Link>
           </div>
         </motion.div>
 
-        {/* Stats Cards */}
-        <motion.div variants={itemVariants} className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="rounded-xl border-slate-100 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-500">Total Collected</CardTitle>
-              <Wallet className="h-4 w-4 text-emerald-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-slate-900">
-                {formatCurrency(donations.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0))}
-              </div>
-              <p className="text-xs text-slate-400 mt-1">Lifetime collections</p>
-            </CardContent>
-          </Card>
-          <Card className="rounded-xl border-slate-100 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-500">This Month</CardTitle>
-              <Calendar className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-slate-900">
-                {formatCurrency(
-                    donations
-                        .filter(d => new Date(d.date).getMonth() === new Date().getMonth() && new Date(d.date).getFullYear() === new Date().getFullYear())
-                        .reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0)
-                )}
-              </div>
-              <p className="text-xs text-emerald-600 font-medium mt-1">Current month total</p>
-            </CardContent>
-          </Card>
-          <Card className="rounded-xl border-slate-100 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-500">Zakat Fund</CardTitle>
-              <Heart className="h-4 w-4 text-amber-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-slate-900">
-                {formatCurrency(
-                    donations
-                        .filter(d => d.purpose === "Zakat")
-                        .reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0)
-                )}
-              </div>
-              <p className="text-xs text-slate-400 mt-1">Restricted funds</p>
-            </CardContent>
-          </Card>
-           <Card className="rounded-xl shadow-sm bg-emerald-50 border-emerald-100">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-emerald-700">Recent Donors</CardTitle>
-              <HandCoins className="h-4 w-4 text-emerald-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-emerald-900">
-                {donations.filter(d => {
-                    const date = new Date(d.date);
-                    const now = new Date();
-                    const diffTime = Math.abs(now - date);
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-                    return diffDays <= 7;
-                }).length}
-              </div>
-              <p className="text-xs text-emerald-600 mt-1">Contributors this week</p>
-            </CardContent>
-          </Card>
+        <motion.div variants={itemVariants}>
+          <CompactStatsGrid cols={4}>
+            <CompactStatCard
+              label="Total Collected"
+              value={formatCurrency(
+                donations.reduce(
+                  (acc, curr) => acc + (Number(curr.amount) || 0),
+                  0,
+                ),
+              )}
+              sublabel="Lifetime collections"
+              icon={Wallet}
+              iconClassName="text-emerald-600"
+              iconBgClassName="bg-emerald-50"
+            />
+            <CompactStatCard
+              label="This Month"
+              value={formatCurrency(
+                donations
+                  .filter(
+                    (d) =>
+                      new Date(d.date).getMonth() === new Date().getMonth() &&
+                      new Date(d.date).getFullYear() ===
+                        new Date().getFullYear(),
+                  )
+                  .reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0),
+              )}
+              sublabel="Current month"
+              icon={Calendar}
+              iconClassName="text-blue-600"
+              iconBgClassName="bg-blue-50"
+            />
+            <CompactStatCard
+              label="Zakat Fund"
+              value={formatCurrency(
+                donations
+                  .filter((d) => d.purpose === "Zakat")
+                  .reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0),
+              )}
+              sublabel="Restricted funds"
+              icon={Heart}
+              iconClassName="text-amber-600"
+              iconBgClassName="bg-amber-50"
+            />
+            <CompactStatCard
+              label="Recent Donors"
+              value={
+                donations.filter((d) => {
+                  const diffDays = Math.ceil(
+                    Math.abs(new Date() - new Date(d.date)) /
+                      (1000 * 60 * 60 * 24),
+                  );
+                  return diffDays <= 7;
+                }).length
+              }
+              sublabel="This week"
+              icon={HandCoins}
+              iconClassName="text-emerald-600"
+              iconBgClassName="bg-emerald-50"
+            />
+          </CompactStatsGrid>
         </motion.div>
 
-        {/* Data Table */}
         <motion.div variants={itemVariants}>
-          <Card className="rounded-xl border-slate-100 shadow-sm overflow-hidden bg-white">
-            <CardContent className="pt-6">
-                
-              {/* Toolbar */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
-                <div className="flex flex-1 items-center gap-3 w-full sm:w-auto">
-                    <div className="relative w-full max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                        placeholder="Search donors..."
-                        value={table.getColumn("donor_name")?.getFilterValue() ?? ""}
-                        onChange={(event) => table.getColumn("donor_name")?.setFilterValue(event.target.value)}
-                        className="pl-10 bg-slate-50 border-slate-200 focus:ring-emerald-500 focus:border-emerald-500"
-                    />
-                    </div>
-                    <Select
-                        value={table.getColumn("purpose")?.getFilterValue() ?? ""}
-                        onValueChange={(value) => table.getColumn("purpose")?.setFilterValue(value === "all" ? undefined : value)}
-                    >
-                    <SelectTrigger className="w-[180px] bg-slate-50 border-slate-200 focus:ring-emerald-500">
-                        <SelectValue placeholder="Fund / Purpose" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Funds</SelectItem>
-                        <SelectItem value="General">General Fund</SelectItem>
-                        <SelectItem value="Zakat">Zakat</SelectItem>
-                        <SelectItem value="Building Fund">Building Fund</SelectItem>
-                        <SelectItem value="Jummah">Jummah Collection</SelectItem>
-                    </SelectContent>
-                    </Select>
+          <CompactTableCard
+            toolbar={
+              <CompactFilterToolbar>
+                <div className="relative w-full sm:max-w-[220px] sm:flex-1 sm:min-w-[180px]">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                  <Input
+                    placeholder="Search donors..."
+                    value={
+                      table.getColumn("donor_name")?.getFilterValue() ?? ""
+                    }
+                    onChange={(event) =>
+                      table
+                        .getColumn("donor_name")
+                        ?.setFilterValue(event.target.value)
+                    }
+                    className="h-9 pl-8 text-sm bg-slate-50 border-slate-200 focus:ring-emerald-500 focus:border-emerald-500"
+                  />
                 </div>
-              </div>
-
-              {/* Table */}
-              <div className="rounded-md border border-slate-100">
-                <DataTable table={table} columns={columns} />
-              </div>
-            </CardContent>
-          </Card>
+                <Select
+                  value={table.getColumn("purpose")?.getFilterValue() ?? ""}
+                  onValueChange={(value) =>
+                    table
+                      .getColumn("purpose")
+                      ?.setFilterValue(value === "all" ? undefined : value)
+                  }
+                >
+                  <SelectTrigger className="h-9 w-full sm:w-[150px] text-sm bg-slate-50 border-slate-200 focus:ring-emerald-500">
+                    <SelectValue placeholder="Fund / Purpose" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Funds</SelectItem>
+                    <SelectItem value="General">General Fund</SelectItem>
+                    <SelectItem value="Zakat">Zakat</SelectItem>
+                    <SelectItem value="Building Fund">Building Fund</SelectItem>
+                    <SelectItem value="Jummah">Jummah Collection</SelectItem>
+                  </SelectContent>
+                </Select>
+              </CompactFilterToolbar>
+            }
+          >
+            <DataTable table={table} columns={columns} />
+          </CompactTableCard>
         </motion.div>
       </motion.div>
     </div>

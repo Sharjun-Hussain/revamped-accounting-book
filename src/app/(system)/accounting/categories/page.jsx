@@ -21,7 +21,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { CompactTableCard } from "@/components/general/compact-table-card";
+import { CompactFilterToolbar } from "@/components/general/compact-filter-toolbar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -416,7 +417,7 @@ export default function ExpenseCategoriesPage() {
         onSuccess={refreshCategories}
       />
 
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 flex flex-col space-y-6 px-6 pb-6 pt-8 max-w-7xl mx-auto">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 flex flex-col space-y-4 px-6 pb-6 pt-8 max-w-7xl mx-auto">
         
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -438,75 +439,73 @@ export default function ExpenseCategoriesPage() {
             </div>
         </div>
 
-        {/* TOOLBAR & BULK ACTIONS */}
-        <Card className="rounded-xl border-slate-200 shadow-sm bg-white">
-            <CardContent className="p-4">
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                    
-                    {/* Left: Filters */}
-                    <div className="flex flex-1 items-center gap-3 w-full">
-                        <div className="relative w-full max-w-sm">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                            <Input
-                                placeholder="Search categories..."
-                                value={(table.getColumn("name")?.getFilterValue()) ?? ""}
-                                onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)}
-                                className="pl-10 bg-slate-50 border-slate-200"
-                            />
-                        </div>
-                        
-                        <Select
-                            value={(table.getColumn("status")?.getFilterValue()) ?? ""}
-                            onValueChange={(value) => table.getColumn("status")?.setFilterValue(value === "all" ? undefined : value)}
+        <CompactTableCard
+          toolbar={
+            <CompactFilterToolbar
+              end={
+                selectedCount > 0 ? (
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-emerald-100">
+                      {selectedCount} Selected
+                    </Badge>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-9 border-slate-200 text-slate-700">
+                          Bulk Actions
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>
+                          <CheckSquare className="w-4 h-4 mr-2" /> Mark as Active
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <Archive className="w-4 h-4 mr-2" /> Archive Selected
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={handleDeleteSelected}
+                          className="text-rose-600 focus:text-rose-600 focus:bg-rose-50"
                         >
-                            <SelectTrigger className="w-[150px] bg-slate-50 border-slate-200">
-                                <Filter className="w-3 h-3 mr-2 text-slate-500" />
-                                <SelectValue placeholder="Status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Status</SelectItem>
-                                <SelectItem value="Active">Active</SelectItem>
-                                <SelectItem value="Inactive">Inactive</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    {/* Right: Bulk Actions */}
-                    {selectedCount > 0 && (
-                        <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-5 duration-200">
-                            <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-emerald-100">
-                                {selectedCount} Selected
-                            </Badge>
-                            
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm" className="border-slate-200 text-slate-700">
-                                        Bulk Actions
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem>
-                                        <CheckSquare className="w-4 h-4 mr-2" /> Mark as Active
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem>
-                                        <Archive className="w-4 h-4 mr-2" /> Archive Selected
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem onClick={handleDeleteSelected} className="text-rose-600 focus:text-rose-600 focus:bg-rose-50">
-                                        <Trash2 className="w-4 h-4 mr-2" /> Delete Selected
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                    )}
-                </div>
-            </CardContent>
-        </Card>
-
-        {/* DATA TABLE */}
-        <Card className="rounded-xl border-slate-200 shadow-sm bg-white overflow-hidden">
-             <DataTable table={table} columns={columns} />
-        </Card>
+                          <Trash2 className="w-4 h-4 mr-2" /> Delete Selected
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                ) : null
+              }
+            >
+              <div className="relative w-full sm:max-w-[220px] sm:flex-1 sm:min-w-[180px]">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                <Input
+                  placeholder="Search categories..."
+                  value={(table.getColumn("name")?.getFilterValue()) ?? ""}
+                  onChange={(event) =>
+                    table.getColumn("name")?.setFilterValue(event.target.value)
+                  }
+                  className="h-9 pl-8 text-sm bg-slate-50 border-slate-200"
+                />
+              </div>
+              <Select
+                value={(table.getColumn("status")?.getFilterValue()) ?? ""}
+                onValueChange={(value) =>
+                  table.getColumn("status")?.setFilterValue(value === "all" ? undefined : value)
+                }
+              >
+                <SelectTrigger className="h-9 w-full sm:w-[130px] text-sm bg-slate-50 border-slate-200">
+                  <Filter className="w-3 h-3 mr-2 text-slate-500 shrink-0" />
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </CompactFilterToolbar>
+          }
+        >
+          <DataTable table={table} columns={columns} />
+        </CompactTableCard>
 
       </motion.div>
     </div>

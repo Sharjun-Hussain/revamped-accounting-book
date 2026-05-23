@@ -18,14 +18,14 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { CompactFilterToolbar } from "@/components/general/compact-filter-toolbar";
 
 export const ExpenseTableToolbar = ({ table, categories, bulkActionsComponent }) => {
   const isFiltered = table.getState().columnFilters.length > 0;
   const dateFilter = table.getColumn("date")?.getFilterValue();
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-      <div className="flex flex-1 flex-wrap items-center gap-2 min-w-0">
+    <CompactFilterToolbar end={bulkActionsComponent}>
         <div className="relative w-full sm:max-w-[220px] sm:flex-1 sm:min-w-[180px]">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
           <Input
@@ -104,9 +104,6 @@ export const ExpenseTableToolbar = ({ table, categories, bulkActionsComponent })
             <X className="ml-1.5 h-3.5 w-3.5" />
           </Button>
         )}
-      </div>
-
-      {bulkActionsComponent}
-    </div>
+    </CompactFilterToolbar>
   );
 };

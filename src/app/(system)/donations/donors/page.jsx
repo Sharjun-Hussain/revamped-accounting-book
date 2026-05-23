@@ -14,7 +14,7 @@ import {
   CalendarClock,
   HeartHandshake,
   Pencil,
-  Trash2
+  Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -34,11 +34,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  CompactStatCard,
+  CompactStatsGrid,
+} from "@/components/general/compact-stat-card";
+import { CompactTableCard } from "@/components/general/compact-table-card";
+import { CompactFilterToolbar } from "@/components/general/compact-filter-toolbar";
 import {
   Select,
   SelectContent,
@@ -90,7 +90,10 @@ const DonorSkeleton = () => (
         ))}
       </div>
       {[1, 2, 3, 4, 5].map((row) => (
-        <div key={row} className="p-4 border-b border-slate-50 flex items-center justify-between">
+        <div
+          key={row}
+          className="p-4 border-b border-slate-50 flex items-center justify-between"
+        >
           <div className="flex items-center gap-3">
             <Skeleton className="h-10 w-10 rounded-full" />
             <div className="space-y-2">
@@ -114,7 +117,7 @@ export default function DonorsPage() {
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [rowSelection, setRowSelection] = useState({});
-  
+
   // Modal State
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingDonor, setEditingDonor] = useState(null);
@@ -152,7 +155,10 @@ export default function DonorsPage() {
       id: "select",
       header: ({ table }) => (
         <Checkbox
-          checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
         />
@@ -170,7 +176,10 @@ export default function DonorsPage() {
     {
       accessorKey: "name",
       header: ({ column }) => (
-        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
           Donor Profile <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
@@ -180,7 +189,9 @@ export default function DonorsPage() {
           <div className="flex items-center gap-3">
             <Avatar className="h-9 w-9 bg-emerald-50 text-emerald-700 border border-emerald-100">
               <AvatarImage src="" />
-              <AvatarFallback>{donor.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+              <AvatarFallback>
+                {donor.name.substring(0, 2).toUpperCase()}
+              </AvatarFallback>
             </Avatar>
             <div>
               <div className="font-medium text-slate-900">{donor.name}</div>
@@ -194,9 +205,7 @@ export default function DonorsPage() {
     },
     {
       accessorKey: "total_contributed",
-      header: ({ column }) => (
-          <div className="text-right">Total Given</div>
-      ),
+      header: ({ column }) => <div className="text-right">Total Given</div>,
       cell: ({ row }) => {
         return (
           <div className="text-right font-bold text-slate-900">
@@ -220,7 +229,7 @@ export default function DonorsPage() {
       header: "Last Active",
       cell: ({ row }) => (
         <div className="text-sm text-slate-500">
-          {row.getValue("last_donation") 
+          {row.getValue("last_donation")
             ? format(new Date(row.getValue("last_donation")), "MMM dd, yyyy")
             : "Never"}
         </div>
@@ -239,11 +248,19 @@ export default function DonorsPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => { setEditingDonor(donor); setIsFormOpen(true); }}>
+              <DropdownMenuItem
+                onClick={() => {
+                  setEditingDonor(donor);
+                  setIsFormOpen(true);
+                }}
+              >
                 <Pencil className="w-4 h-4 mr-2" /> Edit Details
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(donor.id)}>
+              <DropdownMenuItem
+                className="text-red-600"
+                onClick={() => handleDelete(donor.id)}
+              >
                 <Trash2 className="w-4 h-4 mr-2" /> Delete Profile
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -276,127 +293,116 @@ export default function DonorsPage() {
         }}
       ></div>
 
-      <DonorForm 
-        open={isFormOpen} 
-        onOpenChange={setIsFormOpen} 
-        donorToEdit={editingDonor} 
-        onSuccess={fetchDonors} 
+      <DonorForm
+        open={isFormOpen}
+        onOpenChange={setIsFormOpen}
+        donorToEdit={editingDonor}
+        onSuccess={fetchDonors}
       />
 
       <motion.div
         initial="hidden"
         animate="visible"
         variants={containerVariants}
-        className="relative z-10 flex flex-col space-y-6 px-6 pb-6 pt-8 max-w-7xl mx-auto"
+        className="relative z-10 flex flex-col space-y-4 px-6 pb-6 pt-8 max-w-7xl mx-auto"
       >
         {/* Header */}
-        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <motion.div
+          variants={itemVariants}
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+        >
           <div className="space-y-1">
             <h1 className="text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
               <Users className="h-8 w-8 text-emerald-600" />
               Donor Management
             </h1>
-            <p className="text-slate-500">Track profiles of guest contributors.</p>
+            <p className="text-slate-500">
+              Track profiles of guest contributors.
+            </p>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" className="gap-2 bg-white border-slate-200 text-slate-700 hover:bg-slate-50">
+            <Button
+              variant="outline"
+              className="gap-2 bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+            >
               <Download className="h-4 w-4" /> Export CSV
             </Button>
-            <Button 
-                className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-200"
-                onClick={() => { setEditingDonor(null); setIsFormOpen(true); }}
+            <Button
+              className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-200"
+              onClick={() => {
+                setEditingDonor(null);
+                setIsFormOpen(true);
+              }}
             >
-            <UserPlus className="h-4 w-4" />
-            New Guest Profile
+              <UserPlus className="h-4 w-4" />
+              New Guest Profile
             </Button>
           </div>
         </motion.div>
 
-        {/* Stats Cards */}
-        <motion.div variants={itemVariants} className="grid gap-4 md:grid-cols-3">
-          <Card className="rounded-xl border-slate-100 shadow-sm bg-white overflow-hidden relative group transition-all hover:shadow-md">
-            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-              <Users className="h-12 w-12 text-emerald-600" />
-            </div>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-500 uppercase tracking-wider">Total Donors</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-slate-900">{data.length}</div>
-              <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1 font-medium bg-emerald-50 w-fit px-2 py-0.5 rounded-full">
-                All Guest Profiles
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-xl border-slate-100 shadow-sm bg-white overflow-hidden relative group transition-all hover:shadow-md">
-            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-              <Trophy className="h-12 w-12 text-amber-600" />
-            </div>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-500 uppercase tracking-wider">Top Contributor</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl font-bold text-slate-900 truncate pr-8">
-                {data.length > 0 
-                  ? [...data].sort((a,b) => b.total_contributed - a.total_contributed)[0].name 
-                  : "N/A"}
-              </div>
-              <p className="text-xs text-amber-600 mt-2 flex items-center gap-1 font-medium bg-amber-50 w-fit px-2 py-0.5 rounded-full">
-                Most Generous Donor
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-xl border-slate-100 shadow-sm bg-white overflow-hidden relative group transition-all hover:shadow-md border-l-4 border-l-emerald-500">
-            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-              <HeartHandshake className="h-12 w-12 text-emerald-600" />
-            </div>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-500 uppercase tracking-wider">Total Collections</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-emerald-700">
-                {formatCurrency(data.reduce((sum, d) => sum + (d.total_contributed || 0), 0))}
-              </div>
-              <p className="text-xs text-slate-400 mt-2 font-medium">
-                Lifetime Donor Giving
-              </p>
-            </CardContent>
-          </Card>
+        <motion.div variants={itemVariants}>
+          <CompactStatsGrid>
+            <CompactStatCard
+              label="Total Donors"
+              value={data.length}
+              sublabel="Guest profiles"
+              icon={Users}
+              iconClassName="text-emerald-600"
+              iconBgClassName="bg-emerald-50"
+            />
+            <CompactStatCard
+              label="Top Contributor"
+              value={
+                data.length > 0
+                  ? [...data].sort(
+                      (a, b) => b.total_contributed - a.total_contributed,
+                    )[0].name
+                  : "N/A"
+              }
+              sublabel="Most generous donor"
+              icon={Trophy}
+              iconClassName="text-amber-600"
+              iconBgClassName="bg-amber-50"
+            />
+            <CompactStatCard
+              label="Total Collections"
+              value={formatCurrency(
+                data.reduce((sum, d) => sum + (d.total_contributed || 0), 0),
+              )}
+              sublabel="Lifetime giving"
+              icon={HeartHandshake}
+              iconClassName="text-emerald-600"
+              iconBgClassName="bg-emerald-50"
+            />
+          </CompactStatsGrid>
         </motion.div>
 
-        {/* Data Table */}
         <motion.div variants={itemVariants}>
-          <Card className="rounded-xl border-slate-100 shadow-sm overflow-hidden bg-white">
-            <CardContent className="pt-6">
-              {isLoading ? (
-                <DonorSkeleton />
-              ) : (
-                <>
-                  {/* Toolbar */}
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
-                    <div className="flex flex-1 items-center gap-3 w-full sm:w-auto">
-                        <div className="relative w-full max-w-sm">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                        <Input
-                            placeholder="Search by name..."
-                            value={table.getColumn("name")?.getFilterValue() ?? ""}
-                            onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)}
-                            className="pl-10 bg-slate-50 border-slate-200 focus:ring-emerald-500 focus:border-emerald-500"
-                        />
-                        </div>
-                    </div>
+          {isLoading ? (
+            <DonorSkeleton />
+          ) : (
+            <CompactTableCard
+              toolbar={
+                <CompactFilterToolbar>
+                  <div className="relative w-full sm:max-w-[220px] sm:flex-1 sm:min-w-[180px]">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                    <Input
+                      placeholder="Search by name..."
+                      value={table.getColumn("name")?.getFilterValue() ?? ""}
+                      onChange={(event) =>
+                        table
+                          .getColumn("name")
+                          ?.setFilterValue(event.target.value)
+                      }
+                      className="h-9 pl-8 text-sm bg-slate-50 border-slate-200 focus:ring-emerald-500 focus:border-emerald-500"
+                    />
                   </div>
-
-                  {/* Table */}
-                  <div className="rounded-md border border-slate-100">
-                    <DataTable table={table} columns={columns} />
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+                </CompactFilterToolbar>
+              }
+            >
+              <DataTable table={table} columns={columns} />
+            </CompactTableCard>
+          )}
         </motion.div>
       </motion.div>
     </div>

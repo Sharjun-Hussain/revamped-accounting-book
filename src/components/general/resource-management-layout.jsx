@@ -10,11 +10,11 @@ import {
 } from "@tanstack/react-table";
 import { DataTable } from "@/components/general/data-table";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { LoaderIcon, PlusCircle, Download, Search, x, X } from "lucide-react";
+import { LoaderIcon, PlusCircle, Download, Search, X } from "lucide-react";
+import { CompactTableCard } from "@/components/general/compact-table-card";
+import { CompactFilterToolbar } from "@/components/general/compact-filter-toolbar";
 
-// A new, generic toolbar
 const ResourceTableToolbar = ({
   table,
   searchColumn,
@@ -22,46 +22,39 @@ const ResourceTableToolbar = ({
   bulkActionsComponent,
   filterComponents,
 }) => {
-  const numSelected = table.getFilteredSelectedRowModel().rows.length;
   const columnFilters = table.getState().columnFilters;
   const isFiltered = columnFilters.length > 0;
 
   return (
-    <div className="flex items-center justify-between space-x-4 mb-4">
-      <div className="flex flex-1 items-center space-x-2">
-        {/* Generic Search Input */}
-        <div className="relative w-full max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder={searchPlaceholder || "Search..."}
-            value={table.getColumn(searchColumn)?.getFilterValue() ?? ""}
-            onChange={(event) =>
-              table.getColumn(searchColumn)?.setFilterValue(event.target.value)
-            }
-            className="pl-10"
-          />
-        </div>
-        {filterComponents && filterComponents(table)}
-
-        {isFiltered && (
-          <Button
-            variant="ghost"
-            onClick={() => table.resetColumnFilters()} // Clears all filters
-            className="h-8 px-2 text-red-500 lg:px-3 hover:bg-red-50 hover:text-red-600"
-          >
-            <X className="mr-1 h-4 w-4" />
-            Clear ({columnFilters.length})
-          </Button>
-        )}
+    <CompactFilterToolbar end={bulkActionsComponent}>
+      <div className="relative w-full sm:max-w-[220px] sm:flex-1 sm:min-w-[180px]">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+        <Input
+          placeholder={searchPlaceholder || "Search..."}
+          value={table.getColumn(searchColumn)?.getFilterValue() ?? ""}
+          onChange={(event) =>
+            table.getColumn(searchColumn)?.setFilterValue(event.target.value)
+          }
+          className="h-9 pl-8 text-sm"
+        />
       </div>
+      {filterComponents?.(table)}
 
-      {/* Render bulk actions if any rows are selected */}
-      {numSelected > 0 && bulkActionsComponent}
-    </div>
+      {isFiltered && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => table.resetColumnFilters()}
+          className="h-9 px-2 text-red-500 hover:bg-red-50 hover:text-red-600"
+        >
+          <X className="mr-1 h-3.5 w-3.5" />
+          Clear ({columnFilters.length})
+        </Button>
+      )}
+    </CompactFilterToolbar>
   );
 };
 
-// The Main Generic Layout Component
 export const ResourceManagementLayout = ({
   data,
   columns,
@@ -71,18 +64,14 @@ export const ResourceManagementLayout = ({
   onRetry,
   headerTitle,
   headerDescription,
-  // Actions
   addButtonLabel = "Add New",
   onAddClick,
   onExportClick,
-  isAdding, // For loader on "Add" button
-  // Content Slots
+  isAdding,
   statCardsComponent,
   bulkActionsComponent,
-  // Config
   searchColumn,
   searchPlaceholder,
-  // Skeleton
   loadingSkeleton,
   filterComponents,
 }) => {
@@ -113,7 +102,7 @@ export const ResourceManagementLayout = ({
 
   if (isError) {
     return (
-      <div className="hidden h-full flex-1 flex-col space-y-6 px-6 pb-6 pt-3 md:flex">
+      <div className="hidden h-full flex-1 flex-col space-y-4 px-6 pb-6 pt-3 md:flex">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <p className="text-red-500 mb-4">Error: {errorMessage}</p>
@@ -128,14 +117,12 @@ export const ResourceManagementLayout = ({
     );
   }
 
-  // Pass the table instance to the bulk actions component
   const renderedBulkActions = bulkActionsComponent
     ? React.cloneElement(bulkActionsComponent, { table })
     : null;
 
   return (
-    <div className="hidden h-full flex-1 flex-col space-y-6 px-6 pb-6 pt-3 md:flex">
-      {/* Header Section */}
+    <div className="hidden h-full flex-1 flex-col space-y-4 px-6 pb-6 pt-3 md:flex">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h1 className="text-3xl font-bold tracking-tight">{headerTitle}</h1>
@@ -161,12 +148,10 @@ export const ResourceManagementLayout = ({
         </div>
       </div>
 
-      {/* Statistics Cards (Rendered via prop) */}
       {statCardsComponent}
 
-      {/* Table Section */}
-      <Card>
-        <CardContent>
+      <CompactTableCard
+        toolbar={
           <ResourceTableToolbar
             table={table}
             searchColumn={searchColumn}
@@ -174,10 +159,10 @@ export const ResourceManagementLayout = ({
             bulkActionsComponent={renderedBulkActions}
             filterComponents={filterComponents}
           />
-
-          <DataTable table={table} columns={columns} />
-        </CardContent>
-      </Card>
+        }
+      >
+        <DataTable table={table} columns={columns} />
+      </CompactTableCard>
     </div>
   );
 };
