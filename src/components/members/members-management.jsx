@@ -241,7 +241,7 @@ export default function MembersPage() {
         "Name": m.name,
         "Contact": m.contact,
         "Email": m.email || "N/A",
-        "Frequency": m.paymentFrequency,
+        "Sandha Plan": m.paymentFrequency,
         "Amount": m.amountPerCycle,
         "Status": m.status,
         "Start Date": format(new Date(m.startDate), "yyyy-MM-dd"),
