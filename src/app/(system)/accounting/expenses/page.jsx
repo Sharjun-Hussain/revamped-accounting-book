@@ -30,7 +30,7 @@ import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -277,7 +277,7 @@ export default function ExpensesPage() {
         }}
       ></div>
       
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 flex flex-col space-y-6 px-6 pb-6 pt-8 max-w-7xl mx-auto">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 flex flex-col space-y-4 px-6 pb-6 pt-8 max-w-7xl mx-auto">
         
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -307,55 +307,59 @@ export default function ExpensesPage() {
             </div>
         </div>
 
-        {/* STATS OVERVIEW */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-             <Card className="rounded-xl border-slate-200 shadow-sm">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium text-slate-500">Total Expenses (Dec)</CardTitle>
-                    <TrendingDown className="h-4 w-4 text-rose-600" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold text-slate-900">Rs. {expenses.reduce((sum, e) => sum + e.amount, 0).toLocaleString()}</div>
-                    <p className="text-xs text-rose-600 mt-1">Total Expenses</p>
-                </CardContent>
-             </Card>
-             <Card className="rounded-xl border-slate-200 shadow-sm">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium text-slate-500">Highest Category</CardTitle>
-                    <Users className="h-4 w-4 text-blue-500" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold text-slate-900">{highestCategory.name}</div>
-                    <p className="text-xs text-slate-500 mt-1">Rs. {highestCategory.amount.toLocaleString()}</p>
-                </CardContent>
-             </Card>
-             <Card className="rounded-xl border-slate-200 shadow-sm">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium text-slate-500">Total Transactions</CardTitle>
-                    <Receipt className="h-4 w-4 text-amber-500" />
-                </CardHeader>
-                <CardContent>
-
-                    <div className="text-2xl font-bold text-slate-900">{expenses.length}</div>
-                    <p className="text-xs text-slate-500 mt-1">Total Records</p>
-                </CardContent>
-             </Card>
+        {/* STATS OVERVIEW — compact */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-rose-50">
+              <TrendingDown className="h-4 w-4 text-rose-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-slate-500">
+                Total Expenses ({format(new Date(), "MMM")})
+              </p>
+              <p className="text-base font-bold text-slate-900 leading-tight">
+                Rs. {expenses.reduce((sum, e) => sum + e.amount, 0).toLocaleString()}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-blue-50">
+              <Users className="h-4 w-4 text-blue-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-slate-500">Highest Category</p>
+              <p className="text-base font-bold text-slate-900 leading-tight truncate">
+                {highestCategory.name}
+              </p>
+              <p className="text-xs text-slate-500">
+                Rs. {highestCategory.amount.toLocaleString()}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-amber-50">
+              <Receipt className="h-4 w-4 text-amber-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-slate-500">Total Transactions</p>
+              <p className="text-base font-bold text-slate-900 leading-tight">{expenses.length}</p>
+              <p className="text-xs text-slate-500">Records</p>
+            </div>
+          </div>
         </div>
 
-        {/* TOOLBAR */}
-        <Card className="rounded-xl border-slate-200 shadow-sm bg-white">
-            <CardContent className="p-4">
-                <ExpenseTableToolbar 
-                    table={table} 
-                    categories={categories} 
-                    bulkActionsComponent={<ExpenseBulkActions table={table} onSuccess={refreshData} />}
-                />
-            </CardContent>
-        </Card>
-
-        {/* DATA TABLE */}
-        <Card className="rounded-xl border-slate-200 shadow-sm bg-white overflow-hidden">
-             <DataTable table={table} columns={columns} />
+        {/* FILTERS + DATA TABLE */}
+        <Card className="rounded-xl border-slate-200 shadow-sm bg-white overflow-hidden gap-0 py-0">
+          <div className="border-b border-slate-100 px-3 py-2">
+            <ExpenseTableToolbar
+              table={table}
+              categories={categories}
+              bulkActionsComponent={
+                <ExpenseBulkActions table={table} onSuccess={refreshData} />
+              }
+            />
+          </div>
+          <DataTable table={table} columns={columns} />
         </Card>
 
       </motion.div>

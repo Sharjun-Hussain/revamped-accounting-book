@@ -24,29 +24,27 @@ export const ExpenseTableToolbar = ({ table, categories, bulkActionsComponent })
   const dateFilter = table.getColumn("date")?.getFilterValue();
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
-      <div className="flex flex-1 items-center gap-3 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0">
-        {/* Filter by Description/Payee */}
-        <div className="relative w-full max-w-sm min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <div className="flex flex-1 flex-wrap items-center gap-2 min-w-0">
+        <div className="relative w-full sm:max-w-[220px] sm:flex-1 sm:min-w-[180px]">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
           <Input
             placeholder="Search payee or description..."
             value={(table.getColumn("description")?.getFilterValue()) ?? ""}
             onChange={(event) =>
               table.getColumn("description")?.setFilterValue(event.target.value)
             }
-            className="pl-10 bg-slate-50 border-slate-200 focus:ring-emerald-500 focus:border-emerald-500"
+            className="h-9 pl-8 text-sm bg-slate-50 border-slate-200 focus:ring-emerald-500 focus:border-emerald-500"
           />
         </div>
 
-        {/* Filter by Category */}
         <Select
           value={table.getColumn("category")?.getFilterValue() ?? ""}
           onValueChange={(value) => {
             table.getColumn("category")?.setFilterValue(value === "all" ? undefined : value);
           }}
         >
-          <SelectTrigger className="w-[180px] bg-slate-50 border-slate-200 focus:ring-emerald-500">
+          <SelectTrigger className="h-9 w-full sm:w-[150px] text-sm bg-slate-50 border-slate-200 focus:ring-emerald-500">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
@@ -59,17 +57,16 @@ export const ExpenseTableToolbar = ({ table, categories, bulkActionsComponent })
           </SelectContent>
         </Select>
 
-        {/* Filter by Date Range */}
         <Popover>
           <PopoverTrigger asChild>
             <Button
               variant={"outline"}
               className={cn(
-                "w-[240px] justify-start text-left font-normal bg-slate-50 border-slate-200",
+                "h-9 w-full sm:w-[200px] justify-start text-left text-sm font-normal bg-slate-50 border-slate-200",
                 !dateFilter && "text-muted-foreground"
               )}
             >
-              <CalendarIcon className="mr-2 h-4 w-4" />
+              <CalendarIcon className="mr-2 h-3.5 w-3.5 shrink-0" />
               {dateFilter?.from ? (
                 dateFilter.to ? (
                   <>
@@ -96,19 +93,19 @@ export const ExpenseTableToolbar = ({ table, categories, bulkActionsComponent })
           </PopoverContent>
         </Popover>
 
-        {/* Reset Filters */}
         {isFiltered && (
           <Button
             variant="ghost"
+            size="sm"
             onClick={() => table.resetColumnFilters()}
-            className="h-8 px-2 lg:px-3 text-slate-500 hover:text-rose-600"
+            className="h-9 px-2 text-slate-500 hover:text-rose-600"
           >
             Reset
-            <X className="ml-2 h-4 w-4" />
+            <X className="ml-1.5 h-3.5 w-3.5" />
           </Button>
         )}
       </div>
-      
+
       {bulkActionsComponent}
     </div>
   );
