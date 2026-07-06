@@ -113,17 +113,13 @@ export default function LoginPage() {
         />
 
         {/* Logo Area */}
-        <div className="relative z-20 flex items-center gap-3">
-          <div className="relative h-12 w-12 bg-white/10 rounded-full p-2 flex items-center justify-center border border-white/20">
-            <img
-              src="/assets/images/hadhi-logo.png"
-              alt="Logo"
-              width={40}
-              height={40}
-              className="object-contain"
-            />
-          </div>
-          <span className="text-2xl font-bold tracking-tight">
+        <div className="relative z-20 flex items-center gap-4">
+          <img
+            src="/assets/images/hadhi-logo.png"
+            alt="Logo"
+            className="h-16 w-16 object-contain"
+          />
+          <span className="text-3xl font-bold tracking-tight">
             {mosqueName}
           </span>
         </div>
