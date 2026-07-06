@@ -161,20 +161,6 @@ export default function LoginPage() {
             <p className="text-sm text-slate-500">
               Welcome back to your accounting book
             </p>
-            {/* Demo Credentials */}
-            <div className="mt-4 p-4 rounded-lg border-2 border-dashed" style={{ borderColor: THEME_COLOR, backgroundColor: THEME_LIGHT }}>
-              <p className="text-xs font-semibold text-slate-600 mb-2">Demo Credentials</p>
-              <div className="space-y-1 text-left">
-                <div className="flex items-center gap-2">
-                  <Mail className="h-3 w-3" style={{ color: THEME_COLOR }} />
-                  <code className="text-xs font-mono text-slate-700">mrjoon005@gmail.com</code>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Lock className="h-3 w-3" style={{ color: THEME_COLOR }} />
-                  <code className="text-xs font-mono text-slate-700">12345678</code>
-                </div>
-              </div>
-            </div>
           </div>
 
           <div className="grid gap-6">
