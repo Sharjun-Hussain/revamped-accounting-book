@@ -115,8 +115,8 @@ export default function LoginPage() {
         {/* Logo Area */}
         <div className="relative z-20 flex items-center gap-3">
           <div className="relative h-12 w-12 bg-white/10 rounded-full p-2 flex items-center justify-center border border-white/20">
-            <Image
-              src={logoSrc}
+            <img
+              src="/assets/images/hadhi-logo.png"
               alt="Logo"
               width={40}
               height={40}
@@ -323,7 +323,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-           
+
 
             <p className="px-8 text-center text-sm text-slate-500 mt-4">
               By clicking continue, you agree to our{" "}

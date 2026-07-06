@@ -10,6 +10,6 @@ export default withAuth({
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|login|forgot-password|reset-password|verify-token).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|assets|login|forgot-password|reset-password|verify-token).*)',
   ],
 };
