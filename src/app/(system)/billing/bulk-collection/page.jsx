@@ -442,7 +442,12 @@ export default function BulkCollectionPage() {
                                                 <TableCell className="font-medium sticky left-0 bg-white z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleMemberClick(member)}>
                                                     <div className="flex flex-col">
                                                         <span>{member.name}</span>
-                                                        <span className="text-xs text-muted-foreground">{member.contact}</span>
+                                                        <div className="flex justify-between items-center mt-0.5">
+                                                            <span className="text-xs text-muted-foreground">{member.contact}</span>
+                                                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded">
+                                                                Rs. {member.amount?.toLocaleString()}
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 </TableCell>
                                                 {months.map(month => {
