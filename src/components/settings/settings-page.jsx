@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useSession } from 'next-auth/react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import useSWR from 'swr';
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -28,6 +29,7 @@ import {
 import { toast } from "sonner";
 import { apiFetcher } from "@/lib/api";
 import { mutate } from "swr";
+import { Skeleton } from "@/components/ui/skeleton";
 // UI Imports
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -81,12 +83,26 @@ const TAB_ITEMS = [
 
 export default function SettingsPage() {
   const { data: session } = useSession();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const [settings, setSettings] = useState({});
-  const [activeTab, setActiveTab] = useState("general");
   const [isSaving, setIsSaving] = useState(false);
   const [footerSettings, setFooterSettings] = useState(null);
   const hasInitialized = useRef(false);
   const fileInputRef = useRef(null);
+
+  // Sync activeTab with URL ?tab= param
+  const validTabs = TAB_ITEMS.map(t => t.value);
+  const tabFromUrl = searchParams.get('tab');
+  const activeTab = validTabs.includes(tabFromUrl) ? tabFromUrl : 'general';
+
+  const setActiveTab = (tab) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', tab);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
   
   // Logo Upload Handler
   const handleLogoUpload = (e) => {
@@ -369,6 +385,37 @@ export default function SettingsPage() {
                         exit={{ opacity: 0, y: -10 }}
                         transition={{ duration: 0.2 }}
                     >
+                        {(!appSettings && isLoadingFooter) ? (
+                            <div className="space-y-6 mt-0 w-full animate-pulse">
+                                <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+                                    <div className="space-y-2">
+                                        <Skeleton className="h-6 w-48" />
+                                        <Skeleton className="h-4 w-72" />
+                                    </div>
+                                    <Skeleton className="h-10 w-32" />
+                                </div>
+                                <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
+                                    <CardContent className="p-6 md:p-8 space-y-8">
+                                        <div className="flex flex-col md:flex-row gap-8 items-start">
+                                            <Skeleton className="h-32 w-32 rounded-full flex-shrink-0" />
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                                                {[1, 2, 3, 4].map(i => (
+                                                    <div key={i} className="space-y-2">
+                                                        <Skeleton className="h-4 w-24" />
+                                                        <Skeleton className="h-10 w-full" />
+                                                    </div>
+                                                ))}
+                                                <div className="space-y-2 md:col-span-2">
+                                                    <Skeleton className="h-4 w-24" />
+                                                    <Skeleton className="h-24 w-full" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        ) : (
+                            <>
                         
                         {/* TAB 1: GENERAL */}
                         <TabsContent value="general" className="mt-0 space-y-6">
@@ -974,8 +1021,20 @@ export default function SettingsPage() {
                                 </div>
 
                                 {isLoadingSystem ? (
-                                    <div className="flex items-center justify-center py-12">
-                                        <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+                                    <div className="grid gap-6 md:grid-cols-2">
+                                        {[0,1].map(i => (
+                                          <Card key={i} className="border-slate-200 shadow-sm">
+                                            <CardHeader className="pb-2"><Skeleton className="h-5 w-36" /></CardHeader>
+                                            <CardContent className="space-y-3">
+                                              {[0,1,2,3].map(j => (
+                                                <div key={j} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                                                  <Skeleton className="h-4 w-28" />
+                                                  <Skeleton className="h-6 w-20 rounded-full" />
+                                                </div>
+                                              ))}
+                                            </CardContent>
+                                          </Card>
+                                        ))}
                                     </div>
                                 ) : (
                                     <div className="grid gap-6 md:grid-cols-2">
@@ -1041,6 +1100,9 @@ export default function SettingsPage() {
                                     </div>
                                 )}
                             </TabsContent>
+                        )}
+                        
+                            </>
                         )}
                         
                     </motion.div>
