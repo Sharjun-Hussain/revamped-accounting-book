@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { sendSms } from '@/lib/smsService';
 
 export async function POST(request) {
     try {
@@ -118,6 +119,7 @@ export async function POST(request) {
                 processed.push({
                     memberId: p.memberId,
                     memberName: member.name,
+                    contact: member.contact,
                     amount: payment.amount,
                     period: paymentPeriod,
                     receiptNo: payment.id,
@@ -128,6 +130,15 @@ export async function POST(request) {
             return processed;
         }, {
             timeout: 15000 // Increase timeout for bulk transactions
+        });
+
+        // Send SMS asynchronously for all processed payments
+        results.forEach(result => {
+            if (result.contact) {
+                // Keep it short for 160 char limit
+                const message = `Dear ${result.memberName}, received Rs.${result.amount} Sanda for ${result.period}. Jazakallah Khair.`;
+                sendSms(result.contact, message).catch(console.error);
+            }
         });
 
         return NextResponse.json({ message: 'Bulk payment processed', results });

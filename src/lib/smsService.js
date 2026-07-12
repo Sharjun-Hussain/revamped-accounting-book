@@ -15,11 +15,11 @@ export const sendSms = async (recipient, message) => {
             return false;
         }
 
-        const apiKey = settings.textLkApiKey;
-        const senderId = settings.textLkSenderId || 'Text.lk'; // Default fallback
+        const apiKey = process.env.TEXTLK_API_KEY || settings.textLkApiKey;
+        const senderId = process.env.TEXTLK_SENDER_ID || settings.textLkSenderId || 'Text.lk'; // Default fallback
 
         if (!apiKey) {
-            console.warn('Text.lk: API key is missing in settings. Cannot send SMS.');
+            console.warn('Text.lk: API key is missing in .env or settings. Cannot send SMS.');
             return false;
         }
 

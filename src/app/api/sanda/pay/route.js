@@ -85,7 +85,8 @@ export async function POST(request) {
             const memberName = result.invoice.member.name;
             const amount = result.amount;
             const period = result.invoice.period || 'your subscription';
-            const message = `Dear ${memberName}, we have received your payment of Rs. ${amount} for ${period}. Thank you.`;
+            // Keep it short for 160 char limit
+            const message = `Dear ${memberName}, received Rs.${amount} Sanda for ${period}. Jazakallah Khair.`;
             
             // Don't await so we don't block response
             sendSms(result.invoice.member.contact, message).catch(console.error);

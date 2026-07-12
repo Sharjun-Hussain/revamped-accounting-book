@@ -152,7 +152,7 @@ export async function POST(request) {
             }
 
             if (contact) {
-                const message = `Dear ${name}, we have received your donation of Rs. ${result.amount} for ${result.purpose}. Jazakallahu Khairan.`;
+                const message = `Dear ${name}, received Rs.${result.amount} donation. Jazakallah Khair.`;
                 sendSms(contact, message).catch(console.error);
             }
         }
