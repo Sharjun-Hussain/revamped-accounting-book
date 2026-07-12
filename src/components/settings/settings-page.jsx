@@ -584,9 +584,15 @@ export default function SettingsPage() {
 
                         {/* TAB 3: NOTIFICATIONS */}
                         <TabsContent value="notifications" className="mt-0 space-y-6">
-                            <div className="pb-4 border-b border-slate-200">
-                                <h2 className="text-lg font-medium text-slate-900">Notifications</h2>
-                                <p className="text-sm text-slate-500">Choose how you want to be notified.</p>
+                            <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+                                <div>
+                                    <h2 className="text-lg font-medium text-slate-900">Notifications</h2>
+                                    <p className="text-sm text-slate-500">Choose how you want to be notified.</p>
+                                </div>
+                                <Button onClick={handleSave} disabled={isSaving} className="bg-emerald-600 hover:bg-emerald-700 shadow-sm">
+                                    {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                                    Save Changes
+                                </Button>
                             </div>
 
                             <Card className="border-slate-200 shadow-sm">
