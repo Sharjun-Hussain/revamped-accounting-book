@@ -46,7 +46,7 @@ export async function PUT(request) {
             appName, appVersion, footerText, footerCopyright, showFooter,
             mosqueName, regNo, email, phone, address,
             currency, fiscalYearStart, autoBillDate, receiptFooter,
-            smsEnabled, emailEnabled, logo,
+            smsEnabled, emailEnabled, logo, textLkApiKey, textLkSenderId,
             memberIdFormat, memberIdPrefix, nextMemberId // Add new fields
         } = body;
 
@@ -67,7 +67,7 @@ export async function PUT(request) {
                     appName, appVersion, footerText, footerCopyright, showFooter,
                     mosqueName, regNo, email, phone, address,
                     currency, fiscalYearStart, autoBillDate, receiptFooter,
-                    smsEnabled, emailEnabled, logo,
+                    smsEnabled, emailEnabled, logo, textLkApiKey, textLkSenderId,
                     memberIdFormat, memberIdPrefix, nextMemberId: nextMemberId ? parseInt(nextMemberId) : undefined
                 },
             });
@@ -81,7 +81,7 @@ export async function PUT(request) {
                     appName, appVersion, footerText, footerCopyright, showFooter,
                     mosqueName, regNo, email, phone, address,
                     currency, fiscalYearStart, autoBillDate, receiptFooter,
-                    smsEnabled, emailEnabled
+                    smsEnabled, emailEnabled, textLkApiKey, textLkSenderId
                 },
             });
         }

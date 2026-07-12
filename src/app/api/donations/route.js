@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { logCreate } from '@/lib/auditLog';
+import { sendSms } from '@/lib/smsService';
 
 export async function GET() {
     try {
@@ -89,6 +90,10 @@ export async function POST(request) {
                     donor: finalDonorId ? { connect: { id: finalDonorId } } : undefined,
                     remarks: remarks || undefined,
                 },
+                include: {
+                    member: true,
+                    donor: true
+                }
             });
 
             // 2. Find target bank account (or default Cash account if not provided)
@@ -133,6 +138,24 @@ export async function POST(request) {
 
         // Log donation creation
         await logCreate(request, 'Donation', result, 'purpose');
+
+        // Send SMS asynchronously if contact exists
+        if (!result.isAnonymous) {
+            let contact = null;
+            let name = null;
+            if (result.donorType === 'member' && result.member) {
+                contact = result.member.contact;
+                name = result.member.name;
+            } else if (result.donorType === 'guest' && result.donor) {
+                contact = result.donor.contact;
+                name = result.donor.name;
+            }
+
+            if (contact) {
+                const message = `Dear ${name}, we have received your donation of Rs. ${result.amount} for ${result.purpose}. Jazakallahu Khairan.`;
+                sendSms(contact, message).catch(console.error);
+            }
+        }
 
         return NextResponse.json(result, { status: 201 });
     } catch (error) {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { logCreate } from '@/lib/auditLog';
+import { sendSms } from '@/lib/smsService';
 
 export async function POST(request) {
     try {
@@ -78,6 +79,17 @@ export async function POST(request) {
 
         // Log payment creation
         await logCreate(request, 'Payment', result, 'amount');
+
+        // Send SMS asynchronously if contact exists
+        if (result.invoice && result.invoice.member && result.invoice.member.contact) {
+            const memberName = result.invoice.member.name;
+            const amount = result.amount;
+            const period = result.invoice.period || 'your subscription';
+            const message = `Dear ${memberName}, we have received your payment of Rs. ${amount} for ${period}. Thank you.`;
+            
+            // Don't await so we don't block response
+            sendSms(result.invoice.member.contact, message).catch(console.error);
+        }
 
         return NextResponse.json(result, { status: 201 });
     } catch (error) {

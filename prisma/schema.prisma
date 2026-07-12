@@ -276,6 +276,8 @@ model AppSettings {
   // Notifications
   smsEnabled      Boolean  @default(true)
   emailEnabled    Boolean  @default(false)
+  textLkApiKey    String?
+  textLkSenderId  String?
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
