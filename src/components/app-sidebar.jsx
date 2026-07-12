@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   Landmark,
   CreditCard,
+  Tags,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -105,8 +106,9 @@ export function AppSidebar({ ...props }) {
             url: "/accounting/expenses",
           },
           {
-            title: "Expense Categories", // Electricity, Salary, Maintenance
+            title: "Income & Expense Categories", // Building Fund, Iftar Fund, Electricity, Salary, Maintenance
             url: "/accounting/categories",
+            icon: Tags,
           },
           {
             title: "Income Summary",

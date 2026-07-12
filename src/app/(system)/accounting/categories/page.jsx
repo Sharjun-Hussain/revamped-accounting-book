@@ -156,7 +156,7 @@ const CategoryDialog = ({ open, onOpenChange, initialData, onSuccess }) => {
              {isEditMode ? "Edit Category" : "Add New Category"}
           </DialogTitle>
           <DialogDescription>
-            {isEditMode ? "Modify account details and limits." : "Define a new bucket for tracking expenses."}
+            {isEditMode ? "Modify category details and limits." : "Define a new category for tracking income or expenses."}
           </DialogDescription>
         </DialogHeader>
         
@@ -209,7 +209,7 @@ const CategoryDialog = ({ open, onOpenChange, initialData, onSuccess }) => {
                     <Textarea 
                         value={formData.description} 
                         onChange={(e) => setFormData({...formData, description: e.target.value})}
-                        placeholder="What kind of expenses go here?" 
+                        placeholder="What kind of transactions go here?" 
                         className="resize-none h-20" 
                     />
                 </div>
@@ -249,7 +249,7 @@ const CategoryDialog = ({ open, onOpenChange, initialData, onSuccess }) => {
 };
 
 // --- 4. MAIN PAGE ---
-export default function ExpenseCategoriesPage() {
+export default function CategoriesPage() {
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [rowSelection, setRowSelection] = useState({}); // New State for Selection
@@ -424,9 +424,9 @@ export default function ExpenseCategoriesPage() {
             <div className="space-y-1">
                 <h1 className="text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
                     <Tags className="h-8 w-8 text-emerald-600" />
-                    Expense Categories
+                    Income & Expense Categories
                 </h1>
-                <p className="text-slate-500">Configure accounts and budget limits for expenditures.</p>
+                <p className="text-slate-500">Configure categories and budget limits for tracking both revenue and expenditures.</p>
             </div>
             
             <div className="flex gap-2">
