@@ -5,6 +5,7 @@ import { logCreate, logUpdate } from '@/lib/auditLog';
 export async function GET() {
     try {
         const accounts = await prisma.bankAccount.findMany({
+            where: { deletedAt: null },
             orderBy: { createdAt: 'desc' },
         });
         return NextResponse.json(accounts);

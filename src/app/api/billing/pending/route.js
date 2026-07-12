@@ -13,6 +13,7 @@ export async function GET(request) {
         const invoices = await prisma.invoice.findMany({
             where: {
                 memberId: memberId,
+                deletedAt: null,
                 status: {
                     in: ['pending', 'partial', 'overdue']
                 }

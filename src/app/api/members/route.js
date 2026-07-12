@@ -5,6 +5,7 @@ import { logCreate } from '@/lib/auditLog';
 export async function GET() {
     try {
         const members = await prisma.member.findMany({
+            where: { deletedAt: null },
             orderBy: { createdAt: 'desc' },
         });
         return NextResponse.json(members);

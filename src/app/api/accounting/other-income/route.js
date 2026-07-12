@@ -7,7 +7,7 @@ export async function GET(request) {
         const { searchParams } = new URL(request.url);
         const categoryId = searchParams.get('categoryId');
 
-        const where = {};
+        const where = { deletedAt: null };
         if (categoryId) where.categoryId = categoryId;
 
         const incomes = await prisma.income.findMany({

@@ -8,7 +8,7 @@ export async function GET(request) {
     const search = searchParams.get('search');
 
     try {
-        const where = {};
+        const where = { deletedAt: null };
 
         if (categoryId && categoryId !== 'all') {
             where.categoryId = categoryId;

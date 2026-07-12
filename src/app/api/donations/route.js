@@ -6,6 +6,7 @@ import { sendSms } from '@/lib/smsService';
 export async function GET() {
     try {
         const donations = await prisma.donation.findMany({
+            where: { deletedAt: null },
             include: { member: true },
             orderBy: { date: 'desc' },
         });

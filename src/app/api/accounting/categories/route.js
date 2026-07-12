@@ -9,6 +9,7 @@ export async function GET() {
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
         const categories = await prisma.category.findMany({
+            where: { deletedAt: null },
             orderBy: { name: 'asc' },
             include: {
                 expenses: {
@@ -16,7 +17,8 @@ export async function GET() {
                         date: {
                             gte: startOfMonth,
                             lte: endOfMonth
-                        }
+                        },
+                        deletedAt: null,
                     },
                     select: {
                         amount: true

@@ -7,7 +7,7 @@ export async function GET(request) {
     const status = searchParams.get('status');
 
     try {
-        const where = {};
+        const where = { deletedAt: null };
         if (period) where.period = period;
         if (status && status !== 'all') where.status = status;
 

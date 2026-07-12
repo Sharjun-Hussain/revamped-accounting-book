@@ -20,24 +20,24 @@ export async function GET(request) {
         // 1. Fetch Data
         // Income (Donations) - uses 'date'
         const donations = await prisma.donation.findMany({
-            where: dateFilter,
+            where: { ...dateFilter, deletedAt: null },
         });
 
         // Income (Sanda Payments) - uses 'date'
         const payments = await prisma.payment.findMany({
-            where: dateFilter,
+            where: { ...dateFilter, deletedAt: null },
             include: { invoice: true }
         });
 
         // Income (Other) - uses 'date'
         const otherIncomes = await prisma.income.findMany({
-            where: dateFilter,
+            where: { ...dateFilter, deletedAt: null },
             include: { category: true }
         });
 
         // Expenses - uses 'date'
         const expenses = await prisma.expense.findMany({
-            where: dateFilter,
+            where: { ...dateFilter, deletedAt: null },
             include: { category: true }
         });
 
