@@ -11,9 +11,11 @@ import {
   UploadCloud,
   FileText,
   X,
-  Loader2
+  Loader2,
+  Heart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,8 +36,11 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { accountingService } from "@/services/accountingService";
+import useSWR from "swr";
+import { apiFetcher } from "@/lib/api";
 
 export const ExpenseDialog = ({ onSuccess, categories, bankAccounts, expenseToEdit, open, setOpen }) => {
+  const { data: donors = [] } = useSWR("/donors", apiFetcher);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // --- Form State ---
@@ -45,7 +50,9 @@ export const ExpenseDialog = ({ onSuccess, categories, bankAccounts, expenseToEd
     category: "",
     payee: "",
     description: "",
-    bankAccountId: ""
+    bankAccountId: "",
+    isSponsored: false,
+    donorName: ""
   });
   
   // --- File State ---
@@ -61,11 +68,13 @@ export const ExpenseDialog = ({ onSuccess, categories, bankAccounts, expenseToEd
               category: expenseToEdit.categoryId,
               payee: expenseToEdit.payee || "",
               description: expenseToEdit.description || "",
-              bankAccountId: "" 
+              bankAccountId: "",
+              isSponsored: false, // You don't usually edit the sponsorship status
+              donorName: "" 
           });
       } else {
           // Reset for add mode
-          setFormData({ amount: "", date: new Date().toISOString().split('T')[0], category: "", payee: "", description: "", bankAccountId: "" });
+          setFormData({ amount: "", date: new Date().toISOString().split('T')[0], category: "", payee: "", description: "", bankAccountId: "", isSponsored: false, donorName: "" });
       }
       setSelectedFile(null);
   }, [expenseToEdit, open]);
@@ -79,6 +88,10 @@ export const ExpenseDialog = ({ onSuccess, categories, bankAccounts, expenseToEd
   // Handle Select Input
   const handleCategoryChange = (value) => {
     setFormData(prev => ({ ...prev, category: value }));
+  };
+
+  const handleToggleSponsor = (checked) => {
+    setFormData(prev => ({ ...prev, isSponsored: checked }));
   };
 
   // --- File Upload Logic ---
@@ -111,6 +124,11 @@ export const ExpenseDialog = ({ onSuccess, categories, bankAccounts, expenseToEd
         return;
     }
 
+    if (formData.isSponsored && !formData.donorName) {
+        toast.error("Please provide the name of the Sponsor.");
+        return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -124,6 +142,11 @@ export const ExpenseDialog = ({ onSuccess, categories, bankAccounts, expenseToEd
         data.append('payee', formData.payee);
         data.append('description', formData.description);
         data.append('bankAccountId', formData.bankAccountId);
+        
+        if (formData.isSponsored) {
+            data.append('isSponsored', 'true');
+            data.append('donorName', formData.donorName);
+        }
         
         if (selectedFile) {
             data.append('file', selectedFile);
@@ -140,7 +163,7 @@ export const ExpenseDialog = ({ onSuccess, categories, bankAccounts, expenseToEd
         setOpen(false);
         setIsSubmitting(false);
         // Reset Form
-        setFormData({ amount: "", date: new Date().toISOString().split('T')[0], category: "", payee: "", description: "", bankAccountId: "" });
+        setFormData({ amount: "", date: new Date().toISOString().split('T')[0], category: "", payee: "", description: "", bankAccountId: "", isSponsored: false, donorName: "" });
         setSelectedFile(null);
         if (onSuccess) onSuccess();
 
@@ -266,7 +289,46 @@ export const ExpenseDialog = ({ onSuccess, categories, bankAccounts, expenseToEd
                     />
                 </div>
 
-                {/* Row 4: File Upload (WORKABLE) */}
+                {/* Row 4: Sponsored Bill Options */}
+                {!expenseToEdit && (
+                    <div className="space-y-4 p-4 bg-emerald-50/50 border border-emerald-100 rounded-xl">
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                                <Label className="text-emerald-900 flex items-center gap-1.5 text-base">
+                                    <Heart className="w-4 h-4 text-emerald-600" />
+                                    Sponsored Bill
+                                </Label>
+                                <p className="text-xs text-emerald-700/80">Turn this on if a donor is directly paying this bill.</p>
+                            </div>
+                            <Switch checked={formData.isSponsored} onCheckedChange={handleToggleSponsor} />
+                        </div>
+                        
+                        {formData.isSponsored && (
+                            <div className="pt-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <Label htmlFor="donorName" className="text-emerald-800 text-sm mb-1.5 block">Sponsor Name</Label>
+                                <Input 
+                                    id="donorName"
+                                    list="donors-list"
+                                    value={formData.donorName}
+                                    onChange={handleInputChange}
+                                    placeholder="Select existing or type new name..."
+                                    className="bg-white border-emerald-200 focus-visible:ring-emerald-500"
+                                />
+                                <datalist id="donors-list">
+                                    {donors.map(donor => (
+                                        <option key={donor.id} value={donor.name} />
+                                    ))}
+                                </datalist>
+                                <p className="text-[10px] text-emerald-600 mt-1.5">
+                                    A donation record will automatically be created to balance this expense. 
+                                    If the name isn't found, a new donor profile will be auto-created.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Row 5: File Upload (WORKABLE) */}
                 <div className="space-y-2">
                     <Label className="text-slate-600">Attach Receipt / Invoice</Label>
                     

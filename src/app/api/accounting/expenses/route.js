@@ -54,8 +54,10 @@ export async function POST(request) {
         const payee = formData.get('payee');
         const bankAccountId = formData.get('bankAccountId');
         const file = formData.get('file');
+        const isSponsored = formData.get('isSponsored') === 'true';
+        const donorName = formData.get('donorName');
 
-        console.log("Parsed fields:", { amount, date, categoryId, payee, hasFile: !!file });
+        console.log("Parsed fields:", { amount, date, categoryId, payee, hasFile: !!file, isSponsored, donorName });
 
         if (!amount || !categoryId) {
             console.error("Missing required fields: amount or categoryId");
@@ -92,8 +94,39 @@ export async function POST(request) {
             });
             console.log("Expense record created:", expense.id);
 
-            // 2. If paid from an account, handle ledger and balance
-            if (bankAccountId) {
+            // 2. If sponsored, create Donor and Donation
+            if (isSponsored && donorName) {
+                console.log(`Processing sponsored bill by: ${donorName}`);
+                // Find or create donor
+                let donor = await tx.donor.findFirst({
+                    where: { name: { equals: donorName, mode: 'insensitive' } }
+                });
+                
+                if (!donor) {
+                    console.log(`Donor ${donorName} not found, creating new...`);
+                    donor = await tx.donor.create({
+                        data: { name: donorName }
+                    });
+                }
+
+                // Create donation record
+                await tx.donation.create({
+                    data: {
+                        amount: parseFloat(amount),
+                        date: new Date(date),
+                        purpose: `Sponsored Expense: ${description}`,
+                        paymentMethod: 'Direct Payment',
+                        donorType: 'Donor',
+                        donorName: donor.name,
+                        donorId: donor.id,
+                        remarks: `Auto-generated for sponsored bill (Expense ID: ${expense.id})`
+                    }
+                });
+                console.log("Donation record created for sponsored bill.");
+            }
+
+            // 3. If paid from an account, handle ledger and balance
+            if (bankAccountId && !isSponsored) { // Don't deduct from bank if sponsored
                 console.log("Processing bank transaction for account:", bankAccountId);
                 const finalDescription = payee ? `${payee} - ${description}` : description;
                 // Create Ledger Entry
