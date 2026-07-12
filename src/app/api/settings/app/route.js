@@ -47,7 +47,8 @@ export async function PUT(request) {
             mosqueName, regNo, email, phone, address,
             currency, fiscalYearStart, autoBillDate, receiptFooter,
             smsEnabled, emailEnabled, logo, textLkApiKey, textLkSenderId,
-            memberIdFormat, memberIdPrefix, nextMemberId // Add new fields
+            memberIdFormat, memberIdPrefix, nextMemberId, // Add new fields
+            autoPrintBulkReceipt
         } = body;
 
         // Validation
@@ -68,7 +69,8 @@ export async function PUT(request) {
                     mosqueName, regNo, email, phone, address,
                     currency, fiscalYearStart, autoBillDate, receiptFooter,
                     smsEnabled, emailEnabled, logo, textLkApiKey, textLkSenderId,
-                    memberIdFormat, memberIdPrefix, nextMemberId: nextMemberId ? parseInt(nextMemberId) : undefined
+                    memberIdFormat, memberIdPrefix, nextMemberId: nextMemberId ? parseInt(nextMemberId) : undefined,
+                    autoPrintBulkReceipt
                 },
             });
 
@@ -81,7 +83,8 @@ export async function PUT(request) {
                     appName, appVersion, footerText, footerCopyright, showFooter,
                     mosqueName, regNo, email, phone, address,
                     currency, fiscalYearStart, autoBillDate, receiptFooter,
-                    smsEnabled, emailEnabled, textLkApiKey, textLkSenderId
+                    smsEnabled, emailEnabled, textLkApiKey, textLkSenderId,
+                    autoPrintBulkReceipt
                 },
             });
         }

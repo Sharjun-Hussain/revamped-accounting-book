@@ -272,6 +272,7 @@ model AppSettings {
   fiscalYearStart String   @default("January")
   autoBillDate    String   @default("1")
   receiptFooter   String?  @default("Jazakallahu Khairan. May Allah accept your deeds.")
+  autoPrintBulkReceipt Boolean @default(false)
   
   // Notifications
   smsEnabled      Boolean  @default(true)
