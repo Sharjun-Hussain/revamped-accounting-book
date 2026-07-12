@@ -292,9 +292,21 @@ export default function BulkCollectionPage() {
             setSelectedPayments({}); 
             setPrintReceipts(result.results);
             setIsConfirmOpen(false);
-            setIsPrintConfirmOpen(true); // Open Print Confirmation
-            
-            refreshData(); // Refresh data to show 'Paid' checkmarks
+
+            const count = result.results.length;
+            toast.success(`${count} payment(s) recorded successfully!`);
+
+            if (appSettings?.autoPrintBulkReceipt) {
+                // Auto-print immediately without asking
+                refreshData();
+                setTimeout(() => {
+                    window.print();
+                }, 500);
+            } else {
+                // Ask user if they want to print
+                setIsPrintConfirmOpen(true);
+                refreshData();
+            }
         } catch (error) {
             console.error(error);
             toast.error("Failed to process payments");

@@ -553,6 +553,17 @@ export default function SettingsPage() {
                                                 </Select>
                                             </div>
                                         </div>
+                                        <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-100">
+                                            <div className="space-y-0.5">
+                                                <Label className="text-base font-medium">Auto-Print After Bulk Collection</Label>
+                                                <p className="text-sm text-slate-500">Automatically trigger receipt printing after confirming a bulk Sanda payment, without asking for confirmation.</p>
+                                            </div>
+                                            <Switch
+                                                checked={settings.autoPrintBulkReceipt || false}
+                                                onCheckedChange={() => handleToggle('autoPrintBulkReceipt')}
+                                                className="data-[state=checked]:bg-emerald-600"
+                                            />
+                                        </div>
                                     </CardContent>
                                 </Card>
 
