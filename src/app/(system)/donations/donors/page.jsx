@@ -15,6 +15,7 @@ import {
   HeartHandshake,
   Pencil,
   Trash2,
+  History,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -56,6 +57,7 @@ import {
 import { DataTable } from "@/components/general/data-table";
 import { donorService } from "@/services/donorService";
 import { DonorForm } from "@/components/donations/donor-form";
+import { DonorHistorySheet } from "@/components/donations/donor-history-sheet";
 
 // --- 1. Animation Variants ---
 const containerVariants = {
@@ -121,6 +123,10 @@ export default function DonorsPage() {
   // Modal State
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingDonor, setEditingDonor] = useState(null);
+  
+  // History Sheet State
+  const [historyDonorId, setHistoryDonorId] = useState(null);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   const fetchDonors = async () => {
     setIsLoading(true);
@@ -250,11 +256,19 @@ export default function DonorsPage() {
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuItem
                 onClick={() => {
+                  setHistoryDonorId(donor.id);
+                  setIsHistoryOpen(true);
+                }}
+              >
+                <History className="w-4 h-4 mr-2 text-emerald-600" /> View Full History
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
                   setEditingDonor(donor);
                   setIsFormOpen(true);
                 }}
               >
-                <Pencil className="w-4 h-4 mr-2" /> Edit Details
+                <Pencil className="w-4 h-4 mr-2 text-slate-500" /> Edit Details
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -298,6 +312,12 @@ export default function DonorsPage() {
         onOpenChange={setIsFormOpen}
         donorToEdit={editingDonor}
         onSuccess={fetchDonors}
+      />
+
+      <DonorHistorySheet 
+        donorId={historyDonorId}
+        open={isHistoryOpen}
+        onOpenChange={setIsHistoryOpen}
       />
 
       <motion.div

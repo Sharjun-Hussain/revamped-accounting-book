@@ -10,13 +10,14 @@ export async function GET(request, { params }) {
         if (!session) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+        
+        const { id } = await params;
 
         const donor = await prisma.donor.findUnique({
-            where: { id: params.id },
+            where: { id },
             include: {
                 donations: {
-                    orderBy: { date: 'desc' },
-                    take: 10
+                    orderBy: { date: 'desc' }
                 }
             }
         });
@@ -39,13 +40,14 @@ export async function PUT(request, { params }) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        const { id } = await params;
         const body = await request.json();
         const { name, contact, email, address } = body;
 
-        const oldDonor = await prisma.donor.findUnique({ where: { id: params.id } });
+        const oldDonor = await prisma.donor.findUnique({ where: { id } });
 
         const donor = await prisma.donor.update({
-            where: { id: params.id },
+            where: { id },
             data: {
                 name,
                 contact,
@@ -72,19 +74,21 @@ export async function DELETE(request, { params }) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        const { id } = await params;
+
         // Check if donor has donations
         const donationCount = await prisma.donation.count({
-            where: { donorId: params.id }
+            where: { donorId: id }
         });
 
         if (donationCount > 0) {
             return NextResponse.json({ error: 'Cannot delete donor with existing donations' }, { status: 400 });
         }
 
-        const currentDonor = await prisma.donor.findUnique({ where: { id: params.id } });
+        const currentDonor = await prisma.donor.findUnique({ where: { id } });
         
         await prisma.donor.delete({
-            where: { id: params.id }
+            where: { id }
         });
 
         if (currentDonor) {
