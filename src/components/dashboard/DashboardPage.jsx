@@ -21,9 +21,11 @@ import {
   UserPlus,
   Receipt,
   Settings,
-  LogOut
+  LogOut,
+  Plus
 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import Link from "next/link";
 
 // --- MOCK DATA ---
 const stats = [
@@ -123,14 +125,14 @@ export default function MosqueDashboard() {
 
   // Search Logic (Client-side filtering of fetched activities)
   // Note: For large datasets, this should be server-side.
-  const filteredActivities = activities.filter(act => 
-      act.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      act.amount.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredActivities = activities.filter(act =>
+    act.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    act.amount.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Notification Logic
   const unreadCount = notifications.filter(n => !n.read).length;
-  
+
   const markAsRead = (id) => {
     setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
   };
@@ -151,15 +153,19 @@ export default function MosqueDashboard() {
 
       {/* --- MAIN CONTENT --- */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-        
+
         {/* Top Row: Welcome & Quick Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
             <h2 className="text-2xl font-bold text-slate-900">Dashboard Overview</h2>
             <p className="text-slate-500">Welcome back, {session?.user?.name || "Administrator"}. Here's what's happening.</p>
           </div>
-          
+
           <div className="flex gap-3">
+            <Link href="/billing/bulk-collection" className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 shadow-sm transition-all">
+              <Plus className="h-4 w-4" />
+              Add Sanda
+            </Link>
             <button className="hidden sm:flex px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 shadow-sm transition-all">
               Download Report
             </button>
@@ -195,7 +201,7 @@ export default function MosqueDashboard() {
 
         {/* Lower Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
+
           {/* Recent Activity */}
           <div className="lg:col-span-2 bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
@@ -205,18 +211,17 @@ export default function MosqueDashboard() {
               </h3>
               <button className="text-sm text-emerald-600 font-medium hover:text-emerald-700">View All</button>
             </div>
-            
+
             <div className="divide-y divide-slate-50 flex-1">
               {filteredActivities.length > 0 ? (
                 filteredActivities.map((activity) => (
                   <div key={activity.id} className="p-5 hover:bg-slate-50 transition-colors flex items-center justify-between group">
                     <div className="flex items-center gap-4">
-                      <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                        activity.type === "Donation" ? "bg-emerald-100 text-emerald-600" : 
-                        activity.type === "Expense" ? "bg-rose-100 text-rose-600" : "bg-blue-100 text-blue-600"
-                      }`}>
-                        {activity.type === "Donation" ? <ArrowUpRight className="h-5 w-5" /> : 
-                         activity.type === "Expense" ? <ArrowDownRight className="h-5 w-5" /> : <Users className="h-5 w-5" />}
+                      <div className={`h-10 w-10 rounded-full flex items-center justify-center ${activity.type === "Donation" ? "bg-emerald-100 text-emerald-600" :
+                          activity.type === "Expense" ? "bg-rose-100 text-rose-600" : "bg-blue-100 text-blue-600"
+                        }`}>
+                        {activity.type === "Donation" ? <ArrowUpRight className="h-5 w-5" /> :
+                          activity.type === "Expense" ? <ArrowDownRight className="h-5 w-5" /> : <Users className="h-5 w-5" />}
                       </div>
                       <div>
                         <p className="font-semibold text-slate-900 group-hover:text-emerald-900 transition-colors">{activity.title}</p>
@@ -227,10 +232,9 @@ export default function MosqueDashboard() {
                       <p className={`font-bold ${activity.amount.includes("+") ? "text-emerald-600" : activity.amount.includes("-") ? "text-slate-800" : "text-slate-400"}`}>
                         {activity.amount}
                       </p>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-semibold ${
-                        activity.status === "Completed" ? "bg-emerald-50 text-emerald-600" : 
-                        activity.status === "Approved" ? "bg-blue-50 text-blue-600" : "bg-amber-50 text-amber-600"
-                      }`}>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-semibold ${activity.status === "Completed" ? "bg-emerald-50 text-emerald-600" :
+                          activity.status === "Approved" ? "bg-blue-50 text-blue-600" : "bg-amber-50 text-amber-600"
+                        }`}>
                         {activity.status}
                       </span>
                     </div>
@@ -244,7 +248,7 @@ export default function MosqueDashboard() {
 
           {/* Right Sidebar: Events & Funds */}
           <div className="space-y-6">
-            
+
             {/* Event Card */}
             <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6 relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-10">
@@ -275,7 +279,7 @@ export default function MosqueDashboard() {
                 View Calendar
               </button>
             </div>
-        
+
           </div>
         </div>
       </main>
