@@ -67,6 +67,7 @@ import { MemberSkeleton } from "@/components/members/MemberSkeleton";
 import { Badge } from "@/components/ui/badge";
 import { CompactTableCard } from "@/components/general/compact-table-card";
 import { CompactFilterToolbar } from "@/components/general/compact-filter-toolbar";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // --- Animation Variants ---
 const containerVariants = {
@@ -424,8 +425,39 @@ export default function MembersPage() {
                     </h3>
 
                     {isStatementLoading ? (
-                      <div className="flex items-center justify-center py-8">
-                        <LoaderIcon className="h-8 w-8 animate-spin text-emerald-600" />
+                      <div className="space-y-6 pt-2">
+                        {/* Two Cards Skeleton */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <Skeleton className="h-[90px] w-full rounded-xl bg-slate-100" />
+                          <Skeleton className="h-[90px] w-full rounded-xl bg-slate-100" />
+                        </div>
+                        
+                        {/* Payment History Grid Skeleton */}
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <Skeleton className="h-4 w-40 bg-slate-100" />
+                            <div className="flex gap-2">
+                              <Skeleton className="h-4 w-10 bg-slate-100" />
+                              <Skeleton className="h-4 w-10 bg-slate-100" />
+                              <Skeleton className="h-4 w-10 bg-slate-100" />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-6 sm:grid-cols-12 gap-2">
+                            {Array.from({ length: 12 }).map((_, i) => (
+                              <Skeleton key={i} className="h-[42px] w-full rounded-lg bg-slate-100" />
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Recent Transactions Skeleton */}
+                        <div className="space-y-3">
+                          <Skeleton className="h-4 w-32 bg-slate-100" />
+                          <div className="space-y-2">
+                            {Array.from({ length: 3 }).map((_, i) => (
+                              <Skeleton key={i} className="h-[52px] w-full rounded-lg bg-slate-100" />
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     ) : statementData ? (
                       <>
