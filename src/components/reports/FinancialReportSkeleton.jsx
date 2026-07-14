@@ -3,65 +3,49 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export function FinancialReportSkeleton() {
   return (
-    <div className="min-h-screen bg-slate-50 relative font-sans">
-      <div className="relative z-10 flex flex-col space-y-6 px-6 pb-6 pt-8 max-w-7xl mx-auto">
-        {/* Header Skeleton */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-2">
-            <div className="h-8 w-64 bg-slate-200 rounded animate-pulse" />
-            <div className="h-4 w-96 bg-slate-200 rounded animate-pulse" />
+    <div className="flex flex-col space-y-6 w-full">
+      {/* Metrics Grid Skeleton */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="relative overflow-hidden bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+            <div className="relative z-10 flex items-center justify-between mb-6">
+              <div className="h-14 w-14 bg-slate-100 rounded-xl animate-pulse" />
+              <div className="h-6 w-16 bg-slate-100 rounded-full animate-pulse" />
+            </div>
+            <div className="relative z-10">
+              <div className="h-4 w-24 bg-slate-100 rounded animate-pulse mb-2" />
+              <div className="h-8 w-32 bg-slate-100 rounded animate-pulse" />
+            </div>
           </div>
-          <div className="h-10 w-64 bg-slate-200 rounded-xl animate-pulse" />
-        </div>
+        ))}
+      </div>
 
-        {/* Tabs Skeleton */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex gap-2">
-            <div className="h-10 w-32 bg-slate-200 rounded-lg animate-pulse" />
-            <div className="h-10 w-40 bg-slate-200 rounded-lg animate-pulse" />
-            <div className="h-10 w-32 bg-slate-200 rounded-lg animate-pulse" />
+      {/* Charts Grid Skeleton */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+          <div className="p-6 border-b border-slate-50 flex items-center justify-between">
+            <div>
+              <div className="h-5 w-48 bg-slate-100 rounded animate-pulse mb-2" />
+              <div className="h-4 w-32 bg-slate-100 rounded animate-pulse" />
+            </div>
           </div>
-          <div className="h-10 w-40 bg-slate-200 rounded-lg animate-pulse" />
+          <div className="p-6 h-[350px] flex items-end justify-between gap-2">
+            {[...Array(12)].map((_, i) => (
+              <div key={i} className="w-full bg-slate-50 rounded-t animate-pulse" style={{ height: `${Math.random() * 80 + 20}%` }} />
+            ))}
+          </div>
         </div>
 
-        {/* Metrics Grid Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i} className="rounded-xl border-slate-200 shadow-sm bg-white">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between space-y-0 pb-2">
-                  <div className="h-4 w-24 bg-slate-200 rounded animate-pulse" />
-                  <div className="h-4 w-4 bg-slate-200 rounded animate-pulse" />
-                </div>
-                <div className="h-8 w-32 bg-slate-200 rounded animate-pulse mt-2" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Charts Grid Skeleton */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="lg:col-span-2 rounded-xl border-slate-200 shadow-sm bg-white">
-            <CardHeader>
-              <div className="h-6 w-48 bg-slate-200 rounded animate-pulse" />
-              <div className="h-4 w-32 bg-slate-200 rounded animate-pulse" />
-            </CardHeader>
-            <CardContent className="h-[350px] flex items-end justify-between p-6 gap-2">
-              {[...Array(12)].map((_, i) => (
-                <div key={i} className="w-full bg-slate-100 rounded-t animate-pulse" style={{ height: `${Math.random() * 80 + 20}%` }} />
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-xl border-slate-200 shadow-sm bg-white">
-            <CardHeader>
-              <div className="h-6 w-40 bg-slate-200 rounded animate-pulse" />
-              <div className="h-4 w-24 bg-slate-200 rounded animate-pulse" />
-            </CardHeader>
-            <CardContent className="h-[350px] flex items-center justify-center">
-              <div className="h-48 w-48 rounded-full border-8 border-slate-100 animate-pulse" />
-            </CardContent>
-          </Card>
+        <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+          <div className="p-6 border-b border-slate-50 flex items-center justify-between">
+            <div>
+              <div className="h-5 w-40 bg-slate-100 rounded animate-pulse mb-2" />
+              <div className="h-4 w-24 bg-slate-100 rounded animate-pulse" />
+            </div>
+          </div>
+          <div className="p-6 h-[350px] flex items-center justify-center">
+            <div className="h-48 w-48 rounded-full border-8 border-slate-50 animate-pulse" />
+          </div>
         </div>
       </div>
     </div>

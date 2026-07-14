@@ -89,14 +89,14 @@ export default function FinancialReportsPage() {
   const [reportMonth, setReportMonth] = useState(monthOptions[0]);
 
   const handleMonthChange = (value) => {
-      setReportMonth(value);
-      const date = parse(value, "MMMM yyyy", new Date());
-      setDateRange({
-          from: startOfMonth(date),
-          to: endOfMonth(date),
-      });
+    setReportMonth(value);
+    const date = parse(value, "MMMM yyyy", new Date());
+    setDateRange({
+      from: startOfMonth(date),
+      to: endOfMonth(date),
+    });
   };
-  
+
   // Data Fetching with SWR
   const swrKey = useMemo(() => {
     const params = new URLSearchParams();
@@ -118,9 +118,9 @@ export default function FinancialReportsPage() {
   const expenseBreakdown = useMemo(() => {
     if (!reportData?.incomeStatement?.expenses) return [];
     return reportData.incomeStatement.expenses.map((e, i) => ({
-        name: e.category,
-        value: e.amount,
-        color: Object.values(THEME)[i % Object.values(THEME).length]
+      name: e.category,
+      value: e.amount,
+      color: Object.values(THEME)[i % Object.values(THEME).length]
     }));
   }, [reportData]);
 
@@ -320,10 +320,7 @@ export default function FinancialReportsPage() {
     });
   };
 
-  if (loading) {
-    return <FinancialReportSkeleton />;
-  }
-
+  // Removed top-level loading check to keep header/tabs visible
   return (
     <div className="min-h-screen bg-slate-50 relative font-sans">
       {/* Background Overlay */}
@@ -353,7 +350,7 @@ export default function FinancialReportsPage() {
 
           {/* MONTHLY REPORT CENTER */}
           <div className="flex items-center gap-2 bg-white p-1 pl-3 pr-1 rounded-xl border border-slate-200 shadow-sm">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+            <span className="text-xs font-bold text-slate-500">
               Monthly Report:
             </span>
             <Select value={reportMonth} onValueChange={handleMonthChange}>
@@ -362,7 +359,7 @@ export default function FinancialReportsPage() {
               </SelectTrigger>
               <SelectContent>
                 {monthOptions.map((month) => (
-                    <SelectItem key={month} value={month}>{month}</SelectItem>
+                  <SelectItem key={month} value={month}>{month}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -405,56 +402,66 @@ export default function FinancialReportsPage() {
               </TabsTrigger>
             </TabsList>
 
-            {/* Contextual Action Button */}
-            {activeTab !== "dashboard" && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-              >
-                <Button
-                  variant="outline"
-                  className="bg-white border-emerald-200 text-emerald-700 hover:bg-emerald-50 shadow-sm"
-                  onClick={
-                    activeTab === "statement"
-                      ? downloadIncomeStatement
-                      : downloadBalanceSheet
-                  }
+            {/* Contextual Action Button / Filters */}
+            <div className="flex items-center gap-3">
+              {activeTab === "dashboard" ? (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
                 >
-                  <Download className="w-4 h-4 mr-2" /> Download Report
-                </Button>
-              </motion.div>
-            )}
-          </div>
-
-          {/* --- TAB 1: DASHBOARD --- */}
-          <TabsContent value="dashboard" className="space-y-6">
-            {/* Date Filter for Dashboard */}
-            <div className="flex justify-end">
-              <Popover>
-                <PopoverTrigger asChild>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-[240px] justify-start text-left font-normal bg-white border-slate-200 shadow-sm"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {format(dateRange.from, "MMM dd")} -{" "}
+                        {format(dateRange.to, "MMM dd, yyyy")}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="end">
+                      <Calendar
+                        initialFocus
+                        mode="range"
+                        defaultMonth={dateRange.from}
+                        selected={dateRange}
+                        onSelect={setDateRange}
+                        numberOfMonths={2}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </motion.div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                >
                   <Button
                     variant="outline"
-                    className="w-[240px] justify-start text-left font-normal bg-white border-slate-200"
+                    className="bg-white border-emerald-200 text-emerald-700 hover:bg-emerald-50 shadow-sm"
+                    onClick={
+                      activeTab === "statement"
+                        ? downloadIncomeStatement
+                        : downloadBalanceSheet
+                    }
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {format(dateRange.from, "MMM dd")} -{" "}
-                    {format(dateRange.to, "MMM dd, yyyy")}
+                    <Download className="w-4 h-4 mr-2" /> Download Report
                   </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
-                  <Calendar
-                    initialFocus
-                    mode="range"
-                    defaultMonth={dateRange.from}
-                    selected={dateRange}
-                    onSelect={setDateRange}
-                    numberOfMonths={2}
-                  />
-                </PopoverContent>
-              </Popover>
+                </motion.div>
+              )}
             </div>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {loading ? (
+            <div className="mt-6">
+              <FinancialReportSkeleton />
+            </div>
+          ) : (
+            <>
+              {/* --- TAB 1: DASHBOARD --- */}
+              <TabsContent value="dashboard" className="space-y-6 mt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <MetricCard
                 title="Net Surplus"
                 value={financialSummary.netSurplus}
@@ -792,9 +799,11 @@ export default function FinancialReportsPage() {
               </CardContent>
             </Card>
           </TabsContent>
-        </Tabs>
-      </motion.div>
-    </div>
+        </>
+      )}
+    </Tabs>
+  </motion.div>
+</div>
   );
 }
 
@@ -809,7 +818,7 @@ const MetricCard = ({ title, value, icon: Icon, trend, change, bg, color, index 
   >
     {/* Subtle background glow effect on hover */}
     <div className={`absolute -right-12 -top-12 w-32 h-32 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-2xl ${bg}`}></div>
-    
+
     <div className="relative z-10 flex items-center justify-between mb-6">
       <div className={`p-3.5 rounded-xl ${bg} ${color} flex items-center justify-center ring-4 ring-slate-50`}>
         <Icon className="h-6 w-6" strokeWidth={2.5} />
@@ -821,7 +830,7 @@ const MetricCard = ({ title, value, icon: Icon, trend, change, bg, color, index 
         </div>
       )}
     </div>
-    
+
     <div className="relative z-10">
       <h3 className="text-slate-500 text-sm font-semibold mb-1">{title}</h3>
       <p className="text-3xl font-extrabold text-slate-900 tracking-tight">Rs. {value.toLocaleString()}</p>
