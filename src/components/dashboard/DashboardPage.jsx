@@ -225,7 +225,7 @@ export default function MosqueDashboard() {
             </div>
             <div className="h-[350px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={monthlyChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <AreaChart data={dashboardData?.chartData || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorDonations" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#059669" stopOpacity={0.3}/>
@@ -243,8 +243,8 @@ export default function MosqueDashboard() {
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' }}
                     formatter={(value) => [`Rs. ${value.toLocaleString()}`]}
                   />
-                  <Area type="monotone" dataKey="donations" name="Donations" stroke="#059669" strokeWidth={3} fillOpacity={1} fill="url(#colorDonations)" />
-                  <Area type="monotone" dataKey="expenses" name="Expenses" stroke="#e11d48" strokeWidth={3} fillOpacity={1} fill="url(#colorExpenses)" />
+                  <Area type="monotone" dataKey="Income" name="Income" stroke="#059669" strokeWidth={3} fillOpacity={1} fill="url(#colorDonations)" />
+                  <Area type="monotone" dataKey="Expense" name="Expenses" stroke="#e11d48" strokeWidth={3} fillOpacity={1} fill="url(#colorExpenses)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>

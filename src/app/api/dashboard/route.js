@@ -36,23 +36,23 @@ const getDashboardData = unstable_cache(
             pendingInvoicesCount
         ] = await Promise.all([
             // All Time
-            prisma.donation.aggregate({ _sum: { amount: true } }),
-            prisma.payment.aggregate({ _sum: { amount: true } }),
-            prisma.income.aggregate({ _sum: { amount: true } }),
+            prisma.donation.aggregate({ _sum: { amount: true }, where: { deletedAt: null } }),
+            prisma.payment.aggregate({ _sum: { amount: true }, where: { deletedAt: null } }),
+            prisma.income.aggregate({ _sum: { amount: true }, where: { deletedAt: null } }),
             // Last Month
-            prisma.donation.aggregate({ _sum: { amount: true }, where: { createdAt: { gte: lastMonthStart, lte: lastMonthEnd } } }),
-            prisma.payment.aggregate({ _sum: { amount: true }, where: { date: { gte: lastMonthStart, lte: lastMonthEnd } } }),
-            prisma.income.aggregate({ _sum: { amount: true }, where: { date: { gte: lastMonthStart, lte: lastMonthEnd } } }),
+            prisma.donation.aggregate({ _sum: { amount: true }, where: { createdAt: { gte: lastMonthStart, lte: lastMonthEnd }, deletedAt: null } }),
+            prisma.payment.aggregate({ _sum: { amount: true }, where: { date: { gte: lastMonthStart, lte: lastMonthEnd }, deletedAt: null } }),
+            prisma.income.aggregate({ _sum: { amount: true }, where: { date: { gte: lastMonthStart, lte: lastMonthEnd }, deletedAt: null } }),
             // This Month
-            prisma.donation.aggregate({ _sum: { amount: true }, where: { createdAt: { gte: currentMonthStart, lte: currentMonthEnd } } }),
-            prisma.payment.aggregate({ _sum: { amount: true }, where: { date: { gte: currentMonthStart, lte: currentMonthEnd } } }),
-            prisma.income.aggregate({ _sum: { amount: true }, where: { date: { gte: currentMonthStart, lte: currentMonthEnd } } }),
+            prisma.donation.aggregate({ _sum: { amount: true }, where: { createdAt: { gte: currentMonthStart, lte: currentMonthEnd }, deletedAt: null } }),
+            prisma.payment.aggregate({ _sum: { amount: true }, where: { date: { gte: currentMonthStart, lte: currentMonthEnd }, deletedAt: null } }),
+            prisma.income.aggregate({ _sum: { amount: true }, where: { date: { gte: currentMonthStart, lte: currentMonthEnd }, deletedAt: null } }),
             // Expenses
-            prisma.expense.aggregate({ _sum: { amount: true }, where: { date: { gte: currentMonthStart, lte: currentMonthEnd } } }),
-            prisma.expense.aggregate({ _sum: { amount: true }, where: { date: { gte: lastMonthStart, lte: lastMonthEnd } } }),
+            prisma.expense.aggregate({ _sum: { amount: true }, where: { date: { gte: currentMonthStart, lte: currentMonthEnd }, deletedAt: null } }),
+            prisma.expense.aggregate({ _sum: { amount: true }, where: { date: { gte: lastMonthStart, lte: lastMonthEnd }, deletedAt: null } }),
             // Counts
-            prisma.member.count({ where: { status: 'active' } }),
-            prisma.invoice.count({ where: { status: { in: ['pending', 'partial', 'overdue'] } } })
+            prisma.member.count({ where: { status: 'active', deletedAt: null } }),
+            prisma.invoice.count({ where: { status: { in: ['pending', 'partial', 'overdue'] }, deletedAt: null } })
         ]);
 
         // --- Calculate Stats Values ---
@@ -71,10 +71,10 @@ const getDashboardData = unstable_cache(
         // 2. RECENT ACTIVITY (Run in parallel)
         // ==========================================
         const [recentDonations, recentPayments, recentExpenses, recentOther] = await Promise.all([
-            prisma.donation.findMany({ take: 5, orderBy: { createdAt: 'desc' }, include: { member: true } }),
-            prisma.payment.findMany({ take: 5, orderBy: { date: 'desc' }, include: { invoice: { include: { member: true } } } }),
-            prisma.expense.findMany({ take: 5, orderBy: { date: 'desc' }, include: { category: true } }),
-            prisma.income.findMany({ take: 5, orderBy: { date: 'desc' }, include: { category: true } })
+            prisma.donation.findMany({ take: 5, orderBy: { createdAt: 'desc' }, where: { deletedAt: null }, include: { member: true } }),
+            prisma.payment.findMany({ take: 5, orderBy: { date: 'desc' }, where: { deletedAt: null }, include: { invoice: { include: { member: true } } } }),
+            prisma.expense.findMany({ take: 5, orderBy: { date: 'desc' }, where: { deletedAt: null }, include: { category: true } }),
+            prisma.income.findMany({ take: 5, orderBy: { date: 'desc' }, where: { deletedAt: null }, include: { category: true } })
         ]);
 
         // Merge and sort activities
@@ -132,10 +132,10 @@ const getDashboardData = unstable_cache(
 
             // Run these 4 queries in parallel for this specific month
             const [mDonations, mPayments, mOther, mExpenses] = await Promise.all([
-                prisma.donation.aggregate({ _sum: { amount: true }, where: { createdAt: { gte: monthStart, lte: monthEnd } } }),
-                prisma.payment.aggregate({ _sum: { amount: true }, where: { date: { gte: monthStart, lte: monthEnd } } }),
-                prisma.income.aggregate({ _sum: { amount: true }, where: { date: { gte: monthStart, lte: monthEnd } } }),
-                prisma.expense.aggregate({ _sum: { amount: true }, where: { date: { gte: monthStart, lte: monthEnd } } })
+                prisma.donation.aggregate({ _sum: { amount: true }, where: { createdAt: { gte: monthStart, lte: monthEnd }, deletedAt: null } }),
+                prisma.payment.aggregate({ _sum: { amount: true }, where: { date: { gte: monthStart, lte: monthEnd }, deletedAt: null } }),
+                prisma.income.aggregate({ _sum: { amount: true }, where: { date: { gte: monthStart, lte: monthEnd }, deletedAt: null } }),
+                prisma.expense.aggregate({ _sum: { amount: true }, where: { date: { gte: monthStart, lte: monthEnd }, deletedAt: null } })
             ]);
 
             return {
