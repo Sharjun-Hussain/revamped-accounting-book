@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function TextLkMessages() {
   const { data: session } = useSession();
@@ -38,6 +39,7 @@ export function TextLkMessages() {
   const [templates, setTemplates] = useState([]);
   const [logs, setLogs] = useState([]);
   const [fetchingLogs, setFetchingLogs] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchData = useCallback(async () => {
     if (!session) return;
@@ -105,8 +107,18 @@ export function TextLkMessages() {
     }
   };
 
+  const filteredLogs = logs.filter(log => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      (log.to || log.recipient || "").toLowerCase().includes(q) ||
+      (log.message || log.body || "").toLowerCase().includes(q) ||
+      (log.status || "").toLowerCase().includes(q)
+    );
+  });
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 font-sans">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Composer */}
       <Card className="lg:col-span-1 border-border bg-card shadow-xs rounded-xl flex flex-col">
         <CardHeader className="border-b border-border bg-muted/30">
@@ -117,7 +129,7 @@ export function TextLkMessages() {
         </CardHeader>
         <CardContent className="pt-6 space-y-5 flex-1">
           <div className="space-y-2">
-            <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Recipient Number</Label>
+            <Label className="text-[13px] font-semibold text-foreground">Recipient Number</Label>
             <Input 
               placeholder="e.g. 947XXXXXXXX" 
               className="h-10 font-bold text-sm bg-muted/40 border-border text-foreground"
@@ -128,7 +140,7 @@ export function TextLkMessages() {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Quick Template</Label>
+            <Label className="text-[13px] font-semibold text-foreground">Quick Template</Label>
             <Select value={templateId} onValueChange={(val) => {
               setTemplateId(val);
               if (val === "none") {
@@ -151,7 +163,7 @@ export function TextLkMessages() {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Message Body</Label>
+            <Label className="text-[13px] font-semibold text-foreground">Message Body</Label>
             <Textarea 
               placeholder="Type your message here..." 
               className="min-h-[160px] bg-muted/40 border-border text-sm leading-relaxed text-foreground focus-visible:ring-indigo-500"
@@ -189,25 +201,46 @@ export function TextLkMessages() {
           <div className="flex items-center gap-2">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-              <Input placeholder="Filter logs..." className="h-8 pl-8 text-xs w-[160px] border-border bg-muted/40 text-foreground" />
+              <Input 
+                placeholder="Search messages..." 
+                className="h-8 pl-8 text-xs w-[160px] border-border bg-muted/40 text-foreground" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
-            <Button variant="outline" size="icon" className="h-8 w-8 border-border text-foreground hover:bg-muted/40">
-              <Filter className="h-3 w-3" />
-            </Button>
           </div>
         </CardHeader>
         <CardContent className="p-0 flex-1 overflow-auto">
           <div className="divide-y divide-border/60">
             {fetchingLogs ? (
-              <div className="p-8 flex justify-center text-muted-foreground">
-                <Clock className="h-6 w-6 animate-spin" />
+              <div className="p-4 space-y-6">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-start gap-4">
+                    <Skeleton className="h-10 w-10 rounded-xl shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-3 w-16" />
+                      </div>
+                      <Skeleton className="h-3 w-full max-w-[200px]" />
+                      <div className="flex gap-2 pt-1">
+                        <Skeleton className="h-4 w-16" />
+                        <Skeleton className="h-3 w-12" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : logs.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground font-medium text-xs">
                 No message history available.
               </div>
+            ) : filteredLogs.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground font-medium text-xs">
+                No messages found matching "{searchQuery}".
+              </div>
             ) : (
-              logs.map((log, i) => {
+              filteredLogs.map((log, i) => {
                 const isDelivered = log.status?.toLowerCase() === 'delivered';
                 const isFailed = log.status?.toLowerCase() === 'failed';
                 
@@ -220,14 +253,14 @@ export function TextLkMessages() {
                       <div className="flex-1 space-y-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-bold text-foreground truncate mr-2">{log.to || log.recipient}</p>
-                          <span className="text-[10px] font-bold text-muted-foreground flex items-center gap-1 uppercase tracking-wider shrink-0">
+                          <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1 shrink-0">
                             <Clock className="h-3 w-3" />
                             {log.sent_at ? new Date(log.sent_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'N/A'}
                           </span>
                         </div>
                         <p className="text-xs text-muted-foreground/80 line-clamp-1 pr-12 leading-relaxed">{log.message || log.body}</p>
                         <div className="pt-1 flex items-center gap-2">
-                          <Badge variant="outline" className={`text-[8px] uppercase px-1.5 py-0 border ${isDelivered ? 'border-emerald-500/30 text-emerald-600' : isFailed ? 'border-rose-500/30 text-rose-600' : 'border-amber-500/30 text-amber-600'}`}>
+                          <Badge variant="outline" className={`text-[10px] px-2 py-0.5 border ${isDelivered ? 'border-emerald-500/30 text-emerald-600' : isFailed ? 'border-rose-500/30 text-rose-600' : 'border-amber-500/30 text-amber-600'}`}>
                             {log.status || 'Pending'}
                           </Badge>
                           <span className="text-[9px] font-bold text-muted-foreground/60">{log.cost || 1} Credit</span>
@@ -242,7 +275,7 @@ export function TextLkMessages() {
               })
             )}
 
-            {!fetchingLogs && logs.length > 0 && (
+            {!fetchingLogs && filteredLogs.length > 0 && (
               <div className="p-8 text-center space-y-2">
                 <p className="text-[11px] font-bold text-muted-foreground">End of message history</p>
                 <Button variant="link" className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline h-auto p-0">Load older messages</Button>

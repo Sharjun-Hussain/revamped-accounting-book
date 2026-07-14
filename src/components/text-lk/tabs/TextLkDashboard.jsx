@@ -17,6 +17,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const COLOR_MAP = {
   indigo: {
@@ -95,25 +96,37 @@ export const TextLkDashboard = React.memo(function TextLkDashboard({ handleTabCh
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {[
-          { label: "Remaining Balance", value: stats.balance !== "N/A" ? `${stats.balance} Credits` : "N/A", icon: Zap, color: "amber" },
-          { label: "Total Sent", value: stats.totalSent, icon: MessageSquare, color: "indigo" },
-          { label: "Delivered", value: stats.delivered, icon: CheckCircle2, color: "emerald" },
-          { label: "Failed", value: stats.failed, icon: AlertCircle, color: "rose" }
-        ].map((stat, i) => {
-          const style = COLOR_MAP[stat.color] || COLOR_MAP.indigo;
-          return (
-            <div key={i} className="bg-card rounded-xl p-6 border border-border shadow-xs flex items-center gap-4 transition-all hover:shadow-md">
-              <div className={`p-3 rounded-lg ${style.bg} ${style.text}`}>
-                <stat.icon className="w-5 h-5 shadow-sm" />
-              </div>
-              <div className="flex flex-col">
-                <p className="text-[12px] font-medium text-muted-foreground uppercase tracking-wider">{stat.label}</p>
-                <h3 className="text-2xl font-bold text-foreground">{stat.value}</h3>
+        {loading ? (
+          [...Array(4)].map((_, i) => (
+            <div key={i} className="bg-card rounded-xl p-6 border border-border shadow-xs flex items-center gap-4">
+              <Skeleton className="w-11 h-11 rounded-lg shrink-0" />
+              <div className="flex flex-col gap-2 w-full">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-6 w-16" />
               </div>
             </div>
-          );
-        })}
+          ))
+        ) : (
+          [
+            { label: "Remaining Balance", value: stats.balance !== "N/A" ? `${stats.balance} Credits` : "N/A", icon: Zap, color: "amber" },
+            { label: "Total Sent", value: stats.totalSent, icon: MessageSquare, color: "indigo" },
+            { label: "Delivered", value: stats.delivered, icon: CheckCircle2, color: "emerald" },
+            { label: "Failed", value: stats.failed, icon: AlertCircle, color: "rose" }
+          ].map((stat, i) => {
+            const style = COLOR_MAP[stat.color] || COLOR_MAP.indigo;
+            return (
+              <div key={i} className="bg-card rounded-xl p-6 border border-border shadow-xs flex items-center gap-4 transition-all hover:shadow-md">
+                <div className={`p-3 rounded-lg ${style.bg} ${style.text}`}>
+                  <stat.icon className="w-5 h-5 shadow-sm" />
+                </div>
+                <div className="flex flex-col">
+                  <p className="text-[12px] font-medium text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+                  <h3 className="text-2xl font-bold text-foreground">{stat.value}</h3>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* Recent Logs */}
@@ -125,7 +138,26 @@ export const TextLkDashboard = React.memo(function TextLkDashboard({ handleTabCh
           </CardHeader>
           <CardContent className="flex-1">
             <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
-              {stats.logs && stats.logs.length > 0 ? (
+              {loading ? (
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="flex items-start gap-3 p-2.5 rounded-lg border border-border bg-card">
+                      <Skeleton className="h-8 w-8 rounded-lg shrink-0" />
+                      <div className="space-y-2 flex-1 pt-1">
+                        <div className="flex justify-between items-center">
+                          <Skeleton className="h-3 w-24" />
+                          <Skeleton className="h-2 w-12" />
+                        </div>
+                        <Skeleton className="h-2 w-full max-w-[200px]" />
+                        <div className="flex gap-2">
+                          <Skeleton className="h-3 w-12" />
+                          <Skeleton className="h-2 w-16" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : stats.logs && stats.logs.length > 0 ? (
                 stats.logs.map((log, index) => (
                   <div key={index} className="flex items-start gap-3 p-2.5 rounded-lg border border-border bg-card hover:bg-muted/20 transition-colors">
                     <div className={`p-1.5 rounded-lg ${log.status === "Delivered" ? "bg-emerald-500/10 text-emerald-500" : log.status === "Failed" ? "bg-rose-500/10 text-rose-500" : "bg-blue-500/10 text-blue-500"}`}>

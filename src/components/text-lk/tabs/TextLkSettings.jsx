@@ -20,12 +20,14 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function TextLkSettings() {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
   const [showKey, setShowKey] = useState(false);
+  const [initializing, setInitializing] = useState(true);
   
   const [config, setConfig] = useState({
     apiKey: "",
@@ -53,6 +55,8 @@ export function TextLkSettings() {
       }
     } catch (error) {
       console.error(error);
+    } finally {
+      setInitializing(false);
     }
   };
 
@@ -103,7 +107,7 @@ export function TextLkSettings() {
   };
 
   return (
-    <div className="space-y-6 font-sans">
+    <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* API Credentials */}
         <Card className="lg:col-span-2 border-border bg-card shadow-xs rounded-xl">
@@ -119,74 +123,103 @@ export function TextLkSettings() {
             </div>
           </CardHeader>
           <CardContent className="pt-6 space-y-6">
-            <div className="flex items-center justify-between p-4 rounded-xl border border-indigo-500/20 bg-indigo-500/5">
-              <div className="space-y-1">
-                <Label className="text-sm font-bold flex items-center gap-2 text-foreground">
-                  Enable Text.lk Integration
-                  <Badge className="bg-indigo-600 dark:bg-indigo-500 h-4 text-[9px]">REST.V3</Badge>
-                </Label>
-                <p className="text-xs text-muted-foreground font-medium">Activate the SMS engine and digital receipts</p>
-              </div>
-              <Switch 
-                checked={config.enabled} 
-                onCheckedChange={(val) => setConfig(prev => ({ ...prev, enabled: val }))}
-                className="data-[state=checked]:bg-indigo-600 dark:data-[state=checked]:bg-indigo-500 cursor-pointer"
-              />
-            </div>
-
-            <div className="grid gap-4">
-              <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">API Key</Label>
-                <div className="relative group">
-                  <Input 
-                    type={showKey ? "text" : "password"} 
-                    placeholder="Enter your Text.lk API v3 Token" 
-                    className="pr-10 h-11 font-mono text-sm bg-muted/40 border-border focus-visible:ring-indigo-500 text-foreground"
-                    value={config.apiKey}
-                    onChange={(e) => setConfig(prev => ({ ...prev, apiKey: e.target.value }))}
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-1 top-1 h-9 w-9 p-0 hover:bg-background rounded-md text-muted-foreground active:scale-90 transition-transform"
-                    onClick={() => setShowKey(!showKey)}
-                  >
-                    {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
+            {initializing ? (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-muted/20">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-48" />
+                    <Skeleton className="h-3 w-64" />
+                  </div>
+                  <Skeleton className="h-6 w-11 rounded-full" />
+                </div>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-11 w-full rounded-md" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-11 w-full rounded-md" />
+                    <Skeleton className="h-3 w-48" />
+                  </div>
+                </div>
+                <div className="pt-4 flex gap-3">
+                  <Skeleton className="h-10 w-40 rounded-md" />
+                  <Skeleton className="h-10 w-40 rounded-md" />
                 </div>
               </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between p-4 rounded-xl border border-indigo-500/20 bg-indigo-500/5">
+                  <div className="space-y-1">
+                    <Label className="text-sm font-bold flex items-center gap-2 text-foreground">
+                      Enable Text.lk Integration
+                      <Badge className="bg-indigo-600 dark:bg-indigo-500 text-white px-2 py-0.5 text-[10px] font-medium leading-none border-none">REST.V3</Badge>
+                    </Label>
+                    <p className="text-xs text-muted-foreground font-medium">Activate the SMS engine and digital receipts</p>
+                  </div>
+                  <Switch 
+                    checked={config.enabled} 
+                    onCheckedChange={(val) => setConfig(prev => ({ ...prev, enabled: val }))}
+                    className="data-[state=checked]:bg-indigo-600 dark:data-[state=checked]:bg-indigo-500 cursor-pointer"
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Sender ID</Label>
-                <Input 
-                  placeholder="e.g. INZEEDO" 
-                  className="h-11 font-bold text-sm bg-muted/40 border-border focus-visible:ring-indigo-500 text-foreground"
-                  value={config.senderId}
-                  onChange={(e) => setConfig(prev => ({ ...prev, senderId: e.target.value.toUpperCase() }))}
-                />
-                <p className="text-[10px] text-muted-foreground font-medium">Must be approved on your Text.lk portal</p>
-              </div>
-            </div>
+                <div className="grid gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[13px] font-semibold text-foreground">API Key</Label>
+                    <div className="relative group">
+                      <Input 
+                        type={showKey ? "text" : "password"} 
+                        placeholder="Enter your Text.lk API v3 Token" 
+                        className="pr-10 h-11 font-mono text-sm bg-muted/40 border-border focus-visible:ring-indigo-500 text-foreground"
+                        value={config.apiKey}
+                        onChange={(e) => setConfig(prev => ({ ...prev, apiKey: e.target.value }))}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-1 top-1 h-9 w-9 p-0 hover:bg-background rounded-md text-muted-foreground active:scale-90 transition-transform"
+                        onClick={() => setShowKey(!showKey)}
+                      >
+                        {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
 
-            <div className="pt-4 flex items-center gap-3">
-              <Button 
-                className="bg-indigo-600 hover:bg-indigo-700 h-10 px-6 font-bold shadow-md shadow-indigo-500/20 dark:shadow-indigo-500/5 active:scale-95 transition-transform"
-                onClick={handleSave}
-                disabled={loading}
-              >
-                <Save className="mr-2 h-4 w-4" />
-                Save Configuration
-              </Button>
-              <Button 
-                variant="outline" 
-                className="h-10 px-6 font-bold border-border text-foreground hover:bg-muted/40 active:scale-95 transition-transform"
-                onClick={handleTest}
-                disabled={testing || !config.apiKey}
-              >
-                <Zap className={`mr-2 h-4 w-4 ${testing ? 'animate-pulse text-amber-500' : ''}`} />
-                Test Connection
-              </Button>
-            </div>
+                  <div className="space-y-2">
+                    <Label className="text-[13px] font-semibold text-foreground">Sender ID</Label>
+                    <Input 
+                      placeholder="e.g. INZEEDO" 
+                      className="h-11 font-bold text-sm bg-muted/40 border-border focus-visible:ring-indigo-500 text-foreground"
+                      value={config.senderId}
+                      onChange={(e) => setConfig(prev => ({ ...prev, senderId: e.target.value.toUpperCase() }))}
+                    />
+                    <p className="text-[10px] text-muted-foreground font-medium">Must be approved on your Text.lk portal</p>
+                  </div>
+                </div>
+
+                <div className="pt-4 flex items-center gap-3">
+                  <Button 
+                    className="bg-indigo-600 hover:bg-indigo-700 h-10 px-6 font-bold shadow-md shadow-indigo-500/20 dark:shadow-indigo-500/5 active:scale-95 transition-transform"
+                    onClick={handleSave}
+                    disabled={loading}
+                  >
+                    <Save className="mr-2 h-4 w-4" />
+                    Save Configuration
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="h-10 px-6 font-bold border-border text-foreground hover:bg-muted/40 active:scale-95 transition-transform"
+                    onClick={handleTest}
+                    disabled={testing || !config.apiKey}
+                  >
+                    <Zap className={`mr-2 h-4 w-4 ${testing ? 'animate-pulse text-amber-500' : ''}`} />
+                    Test Connection
+                  </Button>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -214,7 +247,7 @@ export function TextLkSettings() {
             </div>
 
             <div className="space-y-2">
-              <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-80">Requirements</h4>
+              <h4 className="text-[13px] font-semibold text-foreground">Requirements</h4>
               <ul className="space-y-2">
                 {[
                   "Account Balance (Prepaid/Postpaid)",
