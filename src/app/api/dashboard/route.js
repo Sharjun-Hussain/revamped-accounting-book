@@ -60,11 +60,11 @@ const getDashboardData = unstable_cache(
 
         const lastMonthIncome = (lastMonthDonations._sum.amount || 0) + (lastMonthPayments._sum.amount || 0) + (lastMonthOther._sum.amount || 0);
         const thisMonthIncome = (thisMonthDonations._sum.amount || 0) + (thisMonthPayments._sum.amount || 0) + (thisMonthOther._sum.amount || 0);
-        const incomeChange = lastMonthIncome === 0 ? 100 : ((thisMonthIncome - lastMonthIncome) / lastMonthIncome) * 100;
+        const incomeChange = lastMonthIncome === 0 ? (thisMonthIncome === 0 ? 0 : 100) : ((thisMonthIncome - lastMonthIncome) / lastMonthIncome) * 100;
 
         const monthlyExpenseValue = thisMonthExpensesRaw._sum.amount || 0;
         const lastMonthExpenseValue = lastMonthExpensesRaw._sum.amount || 0;
-        const expenseChange = lastMonthExpenseValue === 0 ? 100 : ((monthlyExpenseValue - lastMonthExpenseValue) / lastMonthExpenseValue) * 100;
+        const expenseChange = lastMonthExpenseValue === 0 ? (monthlyExpenseValue === 0 ? 0 : 100) : ((monthlyExpenseValue - lastMonthExpenseValue) / lastMonthExpenseValue) * 100;
 
 
         // ==========================================

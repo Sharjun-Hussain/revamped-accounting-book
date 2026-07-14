@@ -18,6 +18,7 @@ import {
   Landmark,
   CreditCard,
   Tags,
+  MessageSquare,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -167,6 +168,13 @@ export function AppSidebar({ ...props }) {
         icon: ShieldCheck,
       },
     ],
+    Communication: [
+      {
+        name: "Text.lk SMS",
+        url: "/sms",
+        icon: MessageSquare,
+      },
+    ],
     Settings: [
       {
         name: "System Settings",
@@ -194,6 +202,7 @@ export function AppSidebar({ ...props }) {
         <NavProjects projects={data.Donations} label="Donations" />
 
         <NavProjects projects={data.Reports} label="Reporting" />
+        <NavProjects projects={data.Communication} label="Communication" />
         <NavProjects projects={data.Settings} label="Administration" />
       </SidebarContent>
       <SidebarFooter>

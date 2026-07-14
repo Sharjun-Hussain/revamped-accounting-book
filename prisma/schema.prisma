@@ -313,3 +313,30 @@ model AdminNotification {
   @@index([isRead])
   @@index([type])
 }
+
+model TextLkTemplate {
+  id              String   @id @default(cuid())
+  name            String
+  body            String
+  dlt_template_id String?
+  is_active       Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("textlk_templates")
+}
+
+model TextLkCampaign {
+  id              String   @id @default(cuid())
+  name            String
+  message         String
+  contact_list_id String?
+  dlt_template_id String?
+  schedule_time   DateTime?
+  status          String   @default("Pending")
+  response_data   Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("textlk_campaigns")
+}

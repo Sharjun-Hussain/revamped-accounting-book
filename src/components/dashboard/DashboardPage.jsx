@@ -204,7 +204,7 @@ export default function MosqueDashboard() {
               </div>
               
               <div className="relative z-10">
-                <h3 className="text-slate-500 text-xs font-semibold tracking-wide uppercase mb-1">{stat.title}</h3>
+                <h3 className="text-slate-500 text-sm font-semibold mb-1">{stat.title}</h3>
                 <p className="text-3xl font-extrabold text-slate-900 tracking-tight">{stat.value}</p>
               </div>
             </motion.div>
