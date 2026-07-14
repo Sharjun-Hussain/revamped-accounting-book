@@ -21,6 +21,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const getActionBadgeColor = (action) => {
     switch (action) {
@@ -52,8 +53,31 @@ export default function AuditLogTable({
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center py-8">
-                <div className="text-muted-foreground">Loading audit logs...</div>
+            <div className="rounded-md border">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Timestamp</TableHead>
+                            <TableHead>Action</TableHead>
+                            <TableHead>Entity Type</TableHead>
+                            <TableHead>Entity Name</TableHead>
+                            <TableHead>User</TableHead>
+                            <TableHead className="text-right">Details</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {[1, 2, 3, 4, 5, 6, 7].map((index) => (
+                            <TableRow key={index}>
+                                <TableCell><Skeleton className="h-4 w-[120px]" /></TableCell>
+                                <TableCell><Skeleton className="h-6 w-[80px] rounded-full" /></TableCell>
+                                <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
+                                <TableCell><Skeleton className="h-4 w-[150px]" /></TableCell>
+                                <TableCell><Skeleton className="h-4 w-[120px]" /></TableCell>
+                                <TableCell className="text-right flex justify-end"><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
             </div>
         );
     }

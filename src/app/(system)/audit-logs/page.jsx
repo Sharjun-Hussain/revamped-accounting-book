@@ -6,6 +6,7 @@ import AuditLogTable from '@/components/audit-logs/AuditLogTable';
 import AuditLogFilters from '@/components/audit-logs/AuditLogFilters';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { apiFetcher } from '@/lib/api';
+import { ShieldCheck } from 'lucide-react';
 
 export default function AuditLogsPage() {
     const [filters, setFilters] = useState({
@@ -47,7 +48,10 @@ export default function AuditLogsPage() {
     return (
         <div className=" py-6 space-y-6 mx-5">
             <div>
-                <h1 className="lg:text-3xl text-2xl font-bold tracking-tight">Audit Logs</h1>
+                <h1 className="lg:text-3xl text-2xl font-bold tracking-tight flex items-center gap-3">
+                    <ShieldCheck className="h-8 w-8 text-indigo-600" />
+                    Audit Logs
+                </h1>
                 <p className="text-muted-foreground mt-2 lg:text-base text-sm">
                     Track all changes and activities in the system
                 </p>
