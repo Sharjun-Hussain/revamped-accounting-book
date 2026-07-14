@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { 
-  Users, 
-  RefreshCcw, 
-  Search, 
-  FolderPlus, 
+import {
+  Users,
+  RefreshCcw,
+  Search,
+  FolderPlus,
   MoreVertical,
   CheckCircle2,
   Folder,
@@ -23,13 +23,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from "@/components/ui/table";
 import {
   Dialog,
@@ -73,7 +73,7 @@ export function TextLkContacts() {
       });
       if (!response.ok) throw new Error("Failed to load contact groups");
       const data = await response.json();
-      
+
       let rawGroups = [];
       if (data && data.data) {
         if (Array.isArray(data.data)) {
@@ -107,7 +107,7 @@ export function TextLkContacts() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Sync failed");
-      
+
       toast.success(data.message, { id: toastId });
       fetchGroups(); // Refresh list
     } catch (error) {
@@ -134,7 +134,7 @@ export function TextLkContacts() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Failed to create group");
-      
+
       toast.success("Contact group created successfully!", { id: toastId });
       setIsAddOpen(false);
       setNewGroupName("");
@@ -161,7 +161,7 @@ export function TextLkContacts() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Failed to update group");
-      
+
       toast.success("Contact group updated successfully!", { id: toastId });
       setIsEditOpen(false);
       setEditGroupUid("");
@@ -182,7 +182,7 @@ export function TextLkContacts() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Failed to delete group");
-      
+
       toast.success("Contact group deleted successfully!", { id: toastId });
       setIsDeleteOpen(false);
       setDeleteGroupUid("");
@@ -212,17 +212,17 @@ export function TextLkContacts() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="relative flex-1 max-w-md group">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-indigo-600 transition-colors" />
-          <Input 
-            placeholder="Search contact groups by name or UID..." 
+          <Input
+            placeholder="Search contact groups by name or UID..."
             className="pl-11 h-10 border-border bg-card text-foreground rounded-lg focus-visible:ring-1 focus-visible:ring-indigo-500 font-medium"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
         <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             className="h-10 border-border text-foreground bg-card hover:bg-muted/40 rounded-lg transition-all active:scale-95"
             onClick={fetchGroups}
             disabled={loading}
@@ -232,7 +232,7 @@ export function TextLkContacts() {
           </Button>
           <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
             <DialogTrigger asChild>
-              <Button 
+              <Button
                 className="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-700 h-10 font-bold rounded-lg transition-all active:scale-95"
               >
                 <FolderPlus className="mr-2 h-4 w-4" />
@@ -246,8 +246,8 @@ export function TextLkContacts() {
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <Label className="text-xs font-bold uppercase text-muted-foreground">Group Name</Label>
-                  <Input 
-                    placeholder="e.g. Premium VIP Customers" 
+                  <Input
+                    placeholder="e.g. Premium VIP Customers"
                     value={newGroupName}
                     onChange={(e) => setNewGroupName(e.target.value)}
                     className="bg-muted/40 border-border text-foreground focus-visible:ring-indigo-500"
@@ -263,29 +263,6 @@ export function TextLkContacts() {
       </div>
 
       {/* Sync Banner */}
-      <Card className="bg-indigo-500/5 border-indigo-500/20 shadow-none border-dashed border-2 rounded-xl">
-        <CardContent className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-xs border border-indigo-500/20">
-              <Layers className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-indigo-900 dark:text-indigo-200">Sync with POS Customers</p>
-              <p className="text-xs text-indigo-600/70 dark:text-indigo-400/80 font-medium tracking-tight">Automatically compile your POS contact ledger and export them to your Text.lk Groups.</p>
-            </div>
-          </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="border-indigo-500/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/10 font-extrabold px-6 rounded-lg active:scale-95 transition-transform"
-            onClick={handleSync}
-            disabled={syncing}
-          >
-            {syncing ? <RefreshCcw className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Start Sync
-          </Button>
-        </CardContent>
-      </Card>
 
       {/* Table Section */}
       <Card className="border-border bg-card shadow-xs overflow-hidden rounded-xl">
@@ -330,9 +307,9 @@ export function TextLkContacts() {
                         <code className="text-xs px-2.5 py-1 bg-muted rounded-md font-mono text-muted-foreground font-bold border border-border shadow-xs select-all">
                           {group.uid}
                         </code>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="h-6 w-6 text-muted-foreground hover:text-foreground active:scale-90"
                           onClick={() => copyToClipboard(group.uid)}
                           title="Copy UID"
@@ -360,7 +337,7 @@ export function TextLkContacts() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="bg-card border-border">
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => {
                               setEditGroupUid(group.uid);
                               setEditGroupName(displayName);
@@ -371,7 +348,7 @@ export function TextLkContacts() {
                             <Edit2 className="h-3.5 w-3.5 text-indigo-500" />
                             Edit Group Name
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => {
                               setDeleteGroupUid(group.uid);
                               setDeleteGroupName(displayName);
@@ -412,8 +389,8 @@ export function TextLkContacts() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label className="text-xs font-bold uppercase text-muted-foreground">Group Name</Label>
-              <Input 
-                placeholder="e.g. VIP Customers Updated" 
+              <Input
+                placeholder="e.g. VIP Customers Updated"
                 value={editGroupName}
                 onChange={(e) => setEditGroupName(e.target.value)}
                 className="bg-muted/40 border-border text-foreground focus-visible:ring-indigo-500"
