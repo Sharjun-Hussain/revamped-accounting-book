@@ -46,12 +46,13 @@ const TABS = [
 
 export default function RecycleBinPage() {
   const [activeTab, setActiveTab] = useState('members');
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingId, setProcessingId] = useState(null);
 
-  const { data, error, isLoading } = useSWR('/admin/recycle-bin', apiFetcher);
+  const { data, error, isLoading, mutate } = useSWR('/admin/recycle-bin', apiFetcher);
 
   const handleAction = async (ids, type, action) => {
-    setIsProcessing(true);
+    const pId = ids.length === 1 ? ids[0] : 'bulk';
+    setProcessingId(`${action}-${pId}`);
     try {
       const method = action === 'restore' ? 'PUT' : 'DELETE';
       const endpoint = '/api/admin/recycle-bin';
@@ -66,7 +67,7 @@ export default function RecycleBinPage() {
       
       if (res.ok) {
         toast.success(result.message);
-        mutate('/admin/recycle-bin');
+        await mutate(); // Re-fetch the data to update the UI
       } else {
         toast.error(result.error || 'Operation failed');
       }
@@ -74,16 +75,16 @@ export default function RecycleBinPage() {
       console.error(err);
       toast.error('Operation failed');
     } finally {
-      setIsProcessing(false);
+      setProcessingId(null);
     }
   };
 
-  const renderTable = (items, type) => {
+  const renderTable = (items, label, modelName) => {
     if (!items || items.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center p-12 text-slate-400">
           <Trash2 className="h-12 w-12 mb-4 opacity-20" />
-          <p>No deleted {type} found in the recycle bin.</p>
+          <p>No deleted {label} found in the recycle bin.</p>
         </div>
       );
     }
@@ -124,26 +125,30 @@ export default function RecycleBinPage() {
                     <Button 
                       size="sm" 
                       variant="outline" 
-                      onClick={() => handleAction([item.id], type, 'restore')}
-                      disabled={isProcessing}
-                      className="h-8 border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
+                      onClick={() => handleAction([item.id], modelName, 'restore')}
+                      className="h-8 border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 w-24"
                     >
-                      <RotateCcw className="h-3.5 w-3.5 mr-1" />
-                      Restore
+                      {processingId === `restore-${item.id}` ? (
+                        <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Restoring...</>
+                      ) : (
+                        <><RotateCcw className="h-3.5 w-3.5 mr-1" /> Restore</>
+                      )}
                     </Button>
                     <Button 
                       size="sm" 
                       variant="destructive" 
                       onClick={() => {
                         if (confirm('Are you sure you want to permanently delete this? This cannot be undone.')) {
-                          handleAction([item.id], type, 'delete');
+                          handleAction([item.id], modelName, 'delete');
                         }
                       }}
-                      disabled={isProcessing}
-                      className="h-8 bg-rose-600 hover:bg-rose-700"
+                      className="h-8 bg-rose-600 hover:bg-rose-700 w-24"
                     >
-                      <Trash2 className="h-3.5 w-3.5 mr-1" />
-                      Purge
+                      {processingId === `delete-${item.id}` ? (
+                        <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Purging...</>
+                      ) : (
+                        <><Trash2 className="h-3.5 w-3.5 mr-1" /> Purge</>
+                      )}
                     </Button>
                   </div>
                 </TableCell>
@@ -177,7 +182,7 @@ export default function RecycleBinPage() {
            style={{ backgroundImage: `radial-gradient(#059669 1px, transparent 1px)`, backgroundSize: '24px 24px' }}>
       </div>
 
-      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <main className={`relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 ${processingId ? 'pointer-events-none' : ''}`}>
         <div className="mb-6">
             <h1 className="text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-3">
               <Trash2 className="h-8 w-8 text-rose-500" />
@@ -251,9 +256,13 @@ export default function RecycleBinPage() {
                                                 variant="outline" 
                                                 size="sm"
                                                 onClick={() => handleAction(data[tab.id].map(i => i.id), getModelName(tab.id), 'restore')}
-                                                disabled={isProcessing}
+                                                className="w-32"
                                             >
-                                                Restore All
+                                                {processingId === 'restore-bulk' ? (
+                                                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Restoring...</>
+                                                ) : (
+                                                    "Restore All"
+                                                )}
                                             </Button>
                                             <Button 
                                                 variant="destructive" 
@@ -263,15 +272,19 @@ export default function RecycleBinPage() {
                                                         handleAction(data[tab.id].map(i => i.id), getModelName(tab.id), 'delete');
                                                     }
                                                 }}
-                                                disabled={isProcessing}
+                                                className="w-32"
                                             >
-                                                Purge All
+                                                {processingId === 'delete-bulk' ? (
+                                                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Purging...</>
+                                                ) : (
+                                                    "Purge All"
+                                                )}
                                             </Button>
                                         </div>
                                     )}
                                 </CardHeader>
                                 <CardContent className="p-0">
-                                    {renderTable(data?.[tab.id], tab.label)}
+                                    {renderTable(data?.[tab.id], tab.label, getModelName(tab.id))}
                                 </CardContent>
                             </Card>
                         </TabsContent>
