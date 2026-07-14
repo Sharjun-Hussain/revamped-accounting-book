@@ -198,9 +198,9 @@ export default function RecycleBinPage() {
             </div>
         )}
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col lg:flex-row gap-8 lg:gap-12 h-[calc(100vh-180px)]">
             
-            <aside className="lg:w-64 flex-shrink-0 sticky top-24 self-start">
+            <aside className="lg:w-64 flex-shrink-0 h-full overflow-y-auto no-scrollbar pb-10">
                 <div>
                     <TabsList className="flex flex-col h-auto bg-transparent p-0 space-y-1 border-none">
                         {TABS.map((item) => (
@@ -227,7 +227,7 @@ export default function RecycleBinPage() {
                 </div>
             </aside>
 
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 h-full overflow-y-auto pr-2 pb-10">
                 {isLoading ? (
                     <div className="space-y-4">
                         <Skeleton className="h-12 w-full" />
@@ -238,7 +238,7 @@ export default function RecycleBinPage() {
                     TABS.map((tab) => (
                         <TabsContent key={tab.id} value={tab.id} className="mt-0">
                             <Card className="border-slate-200 shadow-sm">
-                                <CardHeader className="pb-4 border-b border-slate-100 flex flex-row items-center justify-between">
+                                <CardHeader className="pb-4 border-b border-slate-100 flex flex-row items-center justify-between sticky top-0 bg-white z-10 rounded-t-xl">
                                     <div>
                                         <CardTitle className="text-lg font-medium">{tab.label}</CardTitle>
                                         <CardDescription>
