@@ -63,6 +63,8 @@ export default function MemberStatementPage() {
 
   // Data Fetching with SWR
   const { data: members = [], isLoading: loading } = useSWR('/members', apiFetcher);
+  const { data: appSettings } = useSWR('/settings/app', apiFetcher);
+
   
   // Conditional Fetching for individual statement
   const statementKey = selectedMember ? `/members/${selectedMember.id}/statement` : null;
@@ -112,7 +114,8 @@ export default function MemberStatementPage() {
             { label: "Total Billed", value: `Rs. ${financialData.totalBilled.toLocaleString()}`, isBold: false },
             { label: "Total Paid", value: `(Rs. ${financialData.totalPaid.toLocaleString()})`, isBold: false },
             { label: "CLOSING BALANCE", value: `Rs. ${financialData.balance.toLocaleString()}`, isBold: true }
-        ]
+        ],
+        settings: appSettings
     });
   };
 

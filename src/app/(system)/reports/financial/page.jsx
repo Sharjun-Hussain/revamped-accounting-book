@@ -16,6 +16,8 @@ import {
   Landmark,
   Printer,
   ChevronDown,
+  ArrowUpRight,
+  ArrowDownRight,
 } from "lucide-react";
 import {
   AreaChart,
@@ -104,6 +106,8 @@ export default function FinancialReportsPage() {
   }, [dateRange]);
 
   const { data: reportData, isLoading: loading } = useSWR(swrKey, apiFetcher);
+  const { data: appSettings } = useSWR('/settings/app', apiFetcher);
+
 
   // Derived Data
   const financialSummary = reportData?.summary || { totalIncome: 0, totalExpense: 0, netSurplus: 0, cashOnHand: 0, bankBalance: 0, pendingBills: 0 };
@@ -177,6 +181,7 @@ export default function FinancialReportsPage() {
           isBold: true,
         },
       ],
+      settings: appSettings,
     });
   };
 
@@ -238,6 +243,7 @@ export default function FinancialReportsPage() {
           isBold: true,
         },
       ],
+      settings: appSettings,
     });
   };
 
@@ -310,6 +316,7 @@ export default function FinancialReportsPage() {
           isBold: true,
         },
       ],
+      settings: appSettings,
     });
   };
 
@@ -447,42 +454,56 @@ export default function FinancialReportsPage() {
               </Popover>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <MetricCard
                 title="Net Surplus"
                 value={financialSummary.netSurplus}
                 trend="up"
+                change="Net Profit"
                 icon={TrendingUp}
+                bg="bg-emerald-100"
+                color="text-emerald-600"
+                index={0}
               />
               <MetricCard
                 title="Total Income"
                 value={financialSummary.totalIncome}
                 trend="neutral"
                 icon={DollarSign}
+                bg="bg-blue-100"
+                color="text-blue-600"
+                index={1}
               />
               <MetricCard
                 title="Total Expense"
                 value={financialSummary.totalExpense}
                 trend="down"
+                change="Outflow"
                 icon={TrendingDown}
+                bg="bg-rose-100"
+                color="text-rose-600"
+                index={2}
               />
               <MetricCard
                 title="Cash on Hand"
                 value={financialSummary.cashOnHand}
                 trend="neutral"
                 icon={Landmark}
+                bg="bg-amber-100"
+                color="text-amber-600"
+                index={3}
               />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card className="lg:col-span-2 rounded-xl border-slate-200 shadow-sm bg-white">
-                <CardHeader>
-                  <CardTitle className="text-base font-semibold text-slate-800">
+              <div className="lg:col-span-2 bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-slate-50">
+                  <h3 className="font-bold text-slate-900 flex items-center gap-2">
                     Financial Performance
-                  </CardTitle>
-                  <CardDescription>Income vs Expense over time</CardDescription>
-                </CardHeader>
-                <CardContent className="h-[350px]">
+                  </h3>
+                  <p className="text-sm text-slate-500">Income vs Expense over time</p>
+                </div>
+                <div className="p-6 h-[350px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart
                       data={monthlyPerformance}
@@ -526,28 +547,31 @@ export default function FinancialReportsPage() {
                           />
                         </linearGradient>
                       </defs>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        stroke="#f1f5f9"
+                      />
                       <XAxis
                         dataKey="name"
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fill: "#64748b" }}
+                        tick={{ fill: "#64748b", fontSize: 12 }}
+                        dy={10}
                       />
                       <YAxis
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fill: "#64748b" }}
-                      />
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        vertical={false}
-                        stroke="#e2e8f0"
+                        tick={{ fill: "#64748b", fontSize: 12 }}
+                        tickFormatter={(value) => `Rs ${value / 1000}k`}
                       />
                       <Tooltip
                         contentStyle={{
-                          borderRadius: "8px",
-                          border: "none",
-                          boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                          borderRadius: '12px',
+                          border: 'none',
+                          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
                         }}
+                        formatter={(value) => [`Rs. ${value.toLocaleString()}`]}
                       />
                       <Area
                         type="monotone"
@@ -567,17 +591,17 @@ export default function FinancialReportsPage() {
                       />
                     </AreaChart>
                   </ResponsiveContainer>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
-              <Card className="rounded-xl border-slate-200 shadow-sm bg-white">
-                <CardHeader>
-                  <CardTitle className="text-base font-semibold text-slate-800">
+              <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-slate-50">
+                  <h3 className="font-bold text-slate-900 flex items-center gap-2">
                     Expense Allocation
-                  </CardTitle>
-                  <CardDescription>Breakdown by category</CardDescription>
-                </CardHeader>
-                <CardContent className="h-[350px]">
+                  </h3>
+                  <p className="text-sm text-slate-500">Breakdown by category</p>
+                </div>
+                <div className="p-6 h-[350px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -595,7 +619,14 @@ export default function FinancialReportsPage() {
                           />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip
+                        contentStyle={{
+                          borderRadius: '12px',
+                          border: 'none',
+                          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
+                        }}
+                        formatter={(value) => [`Rs. ${value.toLocaleString()}`]}
+                      />
                       <Legend
                         layout="horizontal"
                         verticalAlign="bottom"
@@ -604,8 +635,8 @@ export default function FinancialReportsPage() {
                       />
                     </PieChart>
                   </ResponsiveContainer>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </div>
           </TabsContent>
 
@@ -768,16 +799,32 @@ export default function FinancialReportsPage() {
 }
 
 // Helper for Dashboard Cards
-const MetricCard = ({ title, value, icon: Icon, trend }) => (
-  <Card className="rounded-xl border-slate-200 shadow-sm bg-white">
-    <CardContent className="p-6">
-      <div className="flex items-center justify-between space-y-0 pb-2">
-        <p className="text-sm font-medium text-slate-500">{title}</p>
-        <Icon className="h-4 w-4 text-slate-400" />
+const MetricCard = ({ title, value, icon: Icon, trend, change, bg, color, index = 0 }) => (
+  <motion.div
+    initial={{ y: 20, opacity: 0 }}
+    animate={{ y: 0, opacity: 1 }}
+    transition={{ delay: index * 0.1 }}
+    whileHover={{ y: -4, transition: { duration: 0.2 } }}
+    className="relative overflow-hidden bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 group"
+  >
+    {/* Subtle background glow effect on hover */}
+    <div className={`absolute -right-12 -top-12 w-32 h-32 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-2xl ${bg}`}></div>
+    
+    <div className="relative z-10 flex items-center justify-between mb-6">
+      <div className={`p-3.5 rounded-xl ${bg} ${color} flex items-center justify-center ring-4 ring-slate-50`}>
+        <Icon className="h-6 w-6" strokeWidth={2.5} />
       </div>
-      <div className="text-2xl font-bold text-slate-900 mt-2">
-        Rs. {value.toLocaleString()}
-      </div>
-    </CardContent>
-  </Card>
+      {trend !== "neutral" && change && (
+        <div className={`flex items-center text-xs font-bold ${trend === "up" ? "text-emerald-600 bg-emerald-50" : "text-rose-600 bg-rose-50"} px-2.5 py-1.5 rounded-full shadow-sm`}>
+          {trend === "up" ? <ArrowUpRight className="h-3.5 w-3.5 mr-1" strokeWidth={3} /> : <ArrowDownRight className="h-3.5 w-3.5 mr-1" strokeWidth={3} />}
+          {change}
+        </div>
+      )}
+    </div>
+    
+    <div className="relative z-10">
+      <h3 className="text-slate-500 text-sm font-semibold mb-1">{title}</h3>
+      <p className="text-3xl font-extrabold text-slate-900 tracking-tight">Rs. {value.toLocaleString()}</p>
+    </div>
+  </motion.div>
 );

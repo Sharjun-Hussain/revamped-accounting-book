@@ -190,7 +190,7 @@ export function AppSidebar({ ...props }) {
   };
 
   return (
-    <Sidebar {...props}>
+    <Sidebar className="border-r border-slate-200 shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] z-20" {...props}>
       <SidebarHeader>
         <TeamSwitcher teams={data.teams} />
       </SidebarHeader>
