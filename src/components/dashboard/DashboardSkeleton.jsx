@@ -40,9 +40,9 @@ export function DashboardSkeleton() {
         {/* Stats Grid Skeleton */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <div className="h-12 w-12 bg-slate-200 rounded-lg animate-pulse" />
+            <div key={i} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+              <div className="flex items-center justify-between mb-6">
+                <div className="h-12 w-12 bg-slate-200 rounded-xl animate-pulse" />
                 <div className="h-6 w-16 bg-slate-200 rounded-full animate-pulse" />
               </div>
               <div className="space-y-2">
@@ -53,12 +53,20 @@ export function DashboardSkeleton() {
           ))}
         </div>
 
-        {/* Lower Section Skeleton */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Recent Activity Skeleton */}
-          <div className="lg:col-span-2 bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col h-[500px]">
+        {/* Chart Section Skeleton */}
+        <div className="mb-8 bg-white rounded-xl border border-slate-100 shadow-sm p-6 flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <div className="h-6 w-40 bg-slate-200 rounded animate-pulse" />
+            <div className="h-8 w-24 bg-slate-200 rounded-md animate-pulse" />
+          </div>
+          <div className="h-[350px] w-full bg-slate-100 rounded-lg animate-pulse" />
+        </div>
+
+        {/* Recent Activity Section Skeleton */}
+        <div className="grid grid-cols-1 gap-8">
+          <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-              <div className="h-6 w-40 bg-slate-200 rounded animate-pulse" />
+              <div className="h-6 w-48 bg-slate-200 rounded animate-pulse" />
               <div className="h-4 w-16 bg-slate-200 rounded animate-pulse" />
             </div>
             <div className="p-6 space-y-6">
@@ -78,28 +86,6 @@ export function DashboardSkeleton() {
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Right Sidebar Skeleton */}
-          <div className="space-y-6">
-            {/* Events Skeleton */}
-            <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6 h-[300px]">
-              <div className="h-6 w-40 bg-slate-200 rounded animate-pulse mb-6" />
-              <div className="space-y-4">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="flex gap-3">
-                    <div className="h-12 w-14 bg-slate-200 rounded-lg animate-pulse" />
-                    <div className="space-y-2 flex-1">
-                      <div className="h-4 w-full bg-slate-200 rounded animate-pulse" />
-                      <div className="h-3 w-2/3 bg-slate-200 rounded animate-pulse" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Fund Card Skeleton */}
-            <div className="bg-slate-200 rounded-xl shadow-lg p-6 h-[200px] animate-pulse" />
           </div>
         </div>
       </main>
