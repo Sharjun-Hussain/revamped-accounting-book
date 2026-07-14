@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import Link from "next/link";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 // --- MOCK DATA ---
 const stats = [
@@ -47,6 +48,16 @@ const initialNotifications = [
   { id: 1, text: "New donation received: Rs. 50,000", time: "2 min ago", read: false },
   { id: 2, text: "Monthly Electricity bill generated", time: "1 hour ago", read: false },
   { id: 3, text: "Member #402 payment overdue", time: "5 hours ago", read: true },
+];
+
+const monthlyChartData = [
+  { name: "Jan", donations: 420000, expenses: 240000 },
+  { name: "Feb", donations: 380000, expenses: 139000 },
+  { name: "Mar", donations: 520000, expenses: 980000 },
+  { name: "Apr", donations: 278000, expenses: 390800 },
+  { name: "May", donations: 489000, expenses: 480000 },
+  { name: "Jun", donations: 639000, expenses: 380000 },
+  { name: "Jul", donations: 849000, expenses: 430000 },
 ];
 
 // --- ANIMATION VARIANTS ---
@@ -200,7 +211,46 @@ export default function MosqueDashboard() {
           ))}
         </div>
 
-        {/* Lower Section */}
+        {/* Chart Section */}
+        <div className="mb-8 bg-white rounded-xl border border-slate-100 shadow-sm p-6 flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+              <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-emerald-600" />
+                Monthly Overview
+              </h3>
+              <select className="text-sm border-slate-200 rounded-md bg-slate-50 text-slate-600 px-3 py-1.5 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                <option>This Year</option>
+                <option>Last Year</option>
+              </select>
+            </div>
+            <div className="h-[350px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={monthlyChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorDonations" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#059669" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#059669" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="colorExpenses" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#e11d48" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#e11d48" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} tickFormatter={(value) => `Rs ${value/1000}k`} />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' }}
+                    formatter={(value) => [`Rs. ${value.toLocaleString()}`]}
+                  />
+                  <Area type="monotone" dataKey="donations" name="Donations" stroke="#059669" strokeWidth={3} fillOpacity={1} fill="url(#colorDonations)" />
+                  <Area type="monotone" dataKey="expenses" name="Expenses" stroke="#e11d48" strokeWidth={3} fillOpacity={1} fill="url(#colorExpenses)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+        </div>
+
+        {/* Recent Activity Section */}
         <div className="grid grid-cols-1 gap-8">
 
           {/* Recent Activity */}
