@@ -72,10 +72,10 @@ export function TextLkManagement() {
               <LayoutDashboard className="h-4 w-4" />
               Dashboard
             </TabsTrigger>
-            <TabsTrigger value="contacts" className="rounded-lg data-[state=active]:bg-indigo-600 data-[state=active]:text-white dark:data-[state=active]:text-white px-5 font-bold text-xs gap-2 transition-all cursor-pointer">
+            {/* <TabsTrigger value="contacts" className="rounded-lg data-[state=active]:bg-indigo-600 data-[state=active]:text-white dark:data-[state=active]:text-white px-5 font-bold text-xs gap-2 transition-all cursor-pointer">
               <Users className="h-4 w-4" />
               Contact Groups
-            </TabsTrigger>
+            </TabsTrigger> */}
             <TabsTrigger value="templates" className="rounded-lg data-[state=active]:bg-indigo-600 data-[state=active]:text-white dark:data-[state=active]:text-white px-5 font-bold text-xs gap-2 transition-all cursor-pointer">
               <FileText className="h-4 w-4" />
               Templates
@@ -84,10 +84,10 @@ export function TextLkManagement() {
               <MessageSquare className="h-4 w-4" />
               Direct SMS
             </TabsTrigger>
-            <TabsTrigger value="campaigns" className="rounded-lg data-[state=active]:bg-indigo-600 data-[state=active]:text-white dark:data-[state=active]:text-white px-5 font-bold text-xs gap-2 transition-all cursor-pointer">
+            {/* <TabsTrigger value="campaigns" className="rounded-lg data-[state=active]:bg-indigo-600 data-[state=active]:text-white dark:data-[state=active]:text-white px-5 font-bold text-xs gap-2 transition-all cursor-pointer">
               <Zap className="h-4 w-4" />
               Campaigns
-            </TabsTrigger>
+            </TabsTrigger> */}
             <TabsTrigger value="settings" className="rounded-lg data-[state=active]:bg-indigo-600 data-[state=active]:text-white dark:data-[state=active]:text-white px-5 font-bold text-xs gap-2 transition-all cursor-pointer">
               <Settings className="h-4 w-4" />
               API Settings
@@ -98,9 +98,9 @@ export function TextLkManagement() {
             <TextLkDashboard handleTabChange={handleTabChange} />
           </TabsContent>
 
-          <TabsContent value="contacts" className="mt-0 border-none p-0 focus-visible:ring-0">
+          {/* <TabsContent value="contacts" className="mt-0 border-none p-0 focus-visible:ring-0">
             <TextLkContacts />
-          </TabsContent>
+          </TabsContent> */}
 
           <TabsContent value="templates" className="mt-0 border-none p-0 focus-visible:ring-0">
             <TextLkTemplates />
@@ -110,9 +110,9 @@ export function TextLkManagement() {
             <TextLkMessages />
           </TabsContent>
 
-          <TabsContent value="campaigns" className="mt-0 border-none p-0 focus-visible:ring-0">
+          {/* <TabsContent value="campaigns" className="mt-0 border-none p-0 focus-visible:ring-0">
             <TextLkCampaigns />
-          </TabsContent>
+          </TabsContent> */}
 
           <TabsContent value="settings" className="mt-0 border-none p-0 focus-visible:ring-0">
             <TextLkSettings />
