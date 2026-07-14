@@ -19,6 +19,7 @@ import {
   CreditCard,
   Tags,
   MessageSquare,
+  Trash2,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -180,6 +181,11 @@ export function AppSidebar({ ...props }) {
         name: "System Settings",
         url: "/settings",
         icon: Settings2,
+      },
+      {
+        name: "Recycle Bin",
+        url: "/admin/recycle-bin",
+        icon: Trash2,
       },
       // {
       //   name: "User Roles (RBAC)",
