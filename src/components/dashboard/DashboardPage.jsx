@@ -49,12 +49,6 @@ const initialNotifications = [
   { id: 3, text: "Member #402 payment overdue", time: "5 hours ago", read: true },
 ];
 
-const upcomingEvents = [
-  { id: 1, title: "Tafsir Class", time: "7:15 PM", date: "Friday", attendees: "450+" },
-  { id: 2, title: "Ladies Bayan", time: "4:30 PM", date: "Saturday", attendees: "120" },
-  { id: 3, title: "Quran Class ", time: "10:00 AM", date: "Sunday", attendees: "35" },
-];
-
 // --- ANIMATION VARIANTS ---
 const menuVariants = {
   hidden: { opacity: 0, y: -10, scale: 0.95 },
@@ -180,30 +174,37 @@ export default function MosqueDashboard() {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-300"
+              whileHover={{ y: -4, transition: { duration: 0.2 } }}
+              className="relative overflow-hidden bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 group"
             >
-              <div className="flex items-center justify-between mb-4">
-                <div className={`p-3 rounded-lg ${stat.bg}`}>
-                  <stat.icon className={`h-6 w-6 ${stat.color}`} />
+              {/* Subtle background glow effect on hover */}
+              <div className={`absolute -right-12 -top-12 w-32 h-32 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-2xl ${stat.bg}`}></div>
+              
+              <div className="relative z-10 flex items-center justify-between mb-6">
+                <div className={`p-3.5 rounded-xl ${stat.bg} ${stat.color} flex items-center justify-center ring-4 ring-slate-50`}>
+                  <stat.icon className="h-6 w-6" strokeWidth={2.5} />
                 </div>
                 {stat.trend !== "neutral" && (
-                  <div className={`flex items-center text-xs font-semibold ${stat.trend === "up" ? "text-emerald-600" : "text-rose-600"} bg-opacity-10 px-2 py-1 rounded-full`}>
-                    {stat.trend === "up" ? <ArrowUpRight className="h-3 w-3 mr-1" /> : <ArrowDownRight className="h-3 w-3 mr-1" />}
+                  <div className={`flex items-center text-xs font-bold ${stat.trend === "up" ? "text-emerald-600 bg-emerald-50" : "text-rose-600 bg-rose-50"} px-2.5 py-1.5 rounded-full shadow-sm`}>
+                    {stat.trend === "up" ? <ArrowUpRight className="h-3.5 w-3.5 mr-1" strokeWidth={3} /> : <ArrowDownRight className="h-3.5 w-3.5 mr-1" strokeWidth={3} />}
                     {stat.change}
                   </div>
                 )}
               </div>
-              <h3 className="text-slate-500 text-sm font-medium">{stat.title}</h3>
-              <p className="text-2xl font-bold text-slate-900 mt-1">{stat.value}</p>
+              
+              <div className="relative z-10">
+                <h3 className="text-slate-500 text-xs font-semibold tracking-wide uppercase mb-1">{stat.title}</h3>
+                <p className="text-3xl font-extrabold text-slate-900 tracking-tight">{stat.value}</p>
+              </div>
             </motion.div>
           ))}
         </div>
 
         {/* Lower Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 gap-8">
 
           {/* Recent Activity */}
-          <div className="lg:col-span-2 bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+          <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
               <h3 className="font-bold text-slate-900 flex items-center gap-2">
                 <ActivityIcon className="h-5 w-5 text-emerald-600" />
@@ -246,41 +247,6 @@ export default function MosqueDashboard() {
             </div>
           </div>
 
-          {/* Right Sidebar: Events & Funds */}
-          <div className="space-y-6">
-
-            {/* Event Card */}
-            <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6 relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-10">
-                <Moon className="h-24 w-24 text-emerald-600 transform rotate-12" />
-              </div>
-              <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-emerald-600" />
-                Upcoming Events
-              </h3>
-              <div className="space-y-4 relative z-10">
-                {upcomingEvents.map((event) => (
-                  <div key={event.id} className="flex items-start gap-3 pb-4 border-b border-slate-50 last:border-0 last:pb-0">
-                    <div className="bg-emerald-50 text-emerald-700 rounded-lg p-2 text-center min-w-[3.5rem]">
-                      <span className="block text-xs font-bold uppercase">{event.date.substring(0, 3)}</span>
-                      <span className="block text-lg font-bold">{event.id + 12}</span>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-slate-800 text-sm">{event.title}</h4>
-                      <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
-                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                        {event.time} • {event.attendees} Exp.
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <button className="w-full mt-4 py-2 text-sm text-emerald-700 bg-emerald-50 rounded-lg font-medium hover:bg-emerald-100 transition-colors">
-                View Calendar
-              </button>
-            </div>
-
-          </div>
         </div>
       </main>
     </div>
