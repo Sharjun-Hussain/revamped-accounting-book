@@ -1,5 +1,12 @@
 import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
+import createIntlMiddleware from 'next-intl/middleware';
+import { locales } from './i18n';
+
+const intlMiddleware = createIntlMiddleware({
+  locales: locales,
+  defaultLocale: 'en'
+});
 
 // Routes that are always publicly accessible (no login needed)
 const PUBLIC_PAGE_PREFIXES = [
@@ -28,14 +35,20 @@ export async function middleware(req) {
     return NextResponse.next();
   }
 
+  // Strip locale for prefix checking
+  const localePrefixPattern = new RegExp(`^/(${locales.join('|')})`);
+  const pathWithoutLocale = pathname.replace(localePrefixPattern, '') || '/';
+
   // Always allow public pages
-  if (PUBLIC_PAGE_PREFIXES.some(p => pathname.startsWith(p))) {
-    return NextResponse.next();
+  if (PUBLIC_PAGE_PREFIXES.some(p => pathWithoutLocale.startsWith(p))) {
+    // Run intl middleware to handle localization for public pages
+    const response = intlMiddleware(req);
+    return addSecurityHeaders(response);
   }
 
   // Always allow public API routes
   if (PUBLIC_API_PREFIXES.some(p => pathname.startsWith(p))) {
-    return NextResponse.next();
+    return addSecurityHeaders(NextResponse.next());
   }
 
   // Check for a valid session token
@@ -54,14 +67,25 @@ export async function middleware(req) {
     }
 
     // Page routes → redirect to /login preserving the intended URL
+    // We should redirect to the localized login page, e.g. /en/login
+    // intlMiddleware handles the locale injection, so we can just redirect to /login
+    // Wait, we need to redirect to the correct locale. We will redirect to /login and intlMiddleware will catch it on the next request.
     const loginUrl = new URL('/login', req.url);
     loginUrl.searchParams.set('callbackUrl', req.url);
     return NextResponse.redirect(loginUrl);
   }
 
-  // Authenticated — add security headers to every response
-  const response = NextResponse.next();
+  // Authenticated
+  if (pathname.startsWith('/api/')) {
+    return addSecurityHeaders(NextResponse.next());
+  }
 
+  // For authenticated page routes, run intl middleware
+  const response = intlMiddleware(req);
+  return addSecurityHeaders(response);
+}
+
+function addSecurityHeaders(response) {
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');

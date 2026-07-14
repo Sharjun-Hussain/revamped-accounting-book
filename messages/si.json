@@ -1,0 +1,15 @@
+{
+  "Navigation": {
+    "Dashboard": "උපකරණ පුවරුව",
+    "Members": "සාමාජිකයින්",
+    "Donations": "පරිත්‍යාග",
+    "Invoices": "ඉන්වොයිසි",
+    "Expenses": "වියදම්",
+    "Income": "ආදායම",
+    "Bank Accounts": "බැංකු ගිණුම්",
+    "System Settings": "පද්ධති සැකසුම්",
+    "Recycle Bin": "ප්‍රතිචක්‍රීකරණ බඳුන",
+    "SMS Service": "කෙටි පණිවුඩ සේවාව",
+    "Reporting": "වාර්තා කිරීම"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "Navigation": {
+    "Dashboard": "கட்டுப்பாட்டு அறை",
+    "Members": "உறுப்பினர்கள்",
+    "Donations": "நன்கொடைகள்",
+    "Invoices": "விலைப்பட்டியல்கள்",
+    "Expenses": "செலவுகள்",
+    "Income": "வருமானம்",
+    "Bank Accounts": "வங்கி கணக்குகள்",
+    "System Settings": "அமைப்பு அமைப்புகள்",
+    "Recycle Bin": "குப்பைத் தொட்டி",
+    "SMS Service": "குறுஞ்செய்தி சேவை",
+    "Reporting": "அறிக்கைகள்"
+  }
+}

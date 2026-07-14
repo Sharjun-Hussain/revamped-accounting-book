@@ -1,0 +1,15 @@
+{
+  "Navigation": {
+    "Dashboard": "Dashboard",
+    "Members": "Members",
+    "Donations": "Donations",
+    "Invoices": "Invoices",
+    "Expenses": "Expenses",
+    "Income": "Income",
+    "Bank Accounts": "Bank Accounts",
+    "System Settings": "System Settings",
+    "Recycle Bin": "Recycle Bin",
+    "SMS Service": "SMS Service",
+    "Reporting": "Reporting"
+  }
+}

@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Minus, Search, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 import { useZoom } from "@/context/ZoomContext";
 import { QuickActions } from "@/components/general/QuickActions";
+import LanguageSwitcher from "@/components/general/LanguageSwitcher";
 
 export function SystemBreadcrumb() {
   const pathname = usePathname();
@@ -45,7 +46,7 @@ export function SystemBreadcrumb() {
 
     const pathSegments = pathname
       .split("/")
-      .filter((segment) => segment !== "" && segment !== "pos");
+      .filter((segment) => segment !== "" && segment !== "pos" && !["en", "ta", "si"].includes(segment));
 
     if (pathSegments.length === 0) {
       setBreadcrumbItems([]);
@@ -147,8 +148,9 @@ export function SystemBreadcrumb() {
           <BreadcrumbList>{breadcrumbItems}</BreadcrumbList>
         </div>
         
-        <div className="flex items-center gap-2">
-           <QuickActions className="ml-4" />
+        <div className="flex items-center gap-3">
+           <LanguageSwitcher />
+           <QuickActions />
            <ZoomControls />
         </div>
       </div>

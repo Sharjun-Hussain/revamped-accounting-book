@@ -34,9 +34,11 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { useSession } from "next-auth/react";
+import { useTranslations } from "next-intl";
 
 export function AppSidebar({ ...props }) {
   const { data: session } = useSession();
+  const t = useTranslations("Navigation");
   const [branding, setBranding] = React.useState({
     name: "Masjid Admin",
     logo: Landmark, // Default icon
@@ -130,12 +132,12 @@ export function AppSidebar({ ...props }) {
     // Flat Lists for High-Frequency Access
     Core: [
       {
-        name: "Dashboard",
+        name: t("Dashboard"),
         url: "/",
         icon: LayoutDashboard,
       },
       {
-        name: "Members Registry",
+        name: t("Members"),
         url: "/members",
         icon: Users,
       },
@@ -178,12 +180,12 @@ export function AppSidebar({ ...props }) {
     ],
     Settings: [
       {
-        name: "System Settings",
+        name: t("System Settings"),
         url: "/settings",
         icon: Settings2,
       },
       {
-        name: "Recycle Bin",
+        name: t("Recycle Bin"),
         url: "/admin/recycle-bin",
         icon: Trash2,
       },
