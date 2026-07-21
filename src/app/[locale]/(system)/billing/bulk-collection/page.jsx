@@ -175,6 +175,10 @@ export default function BulkCollectionPage() {
     // Maximise View State
     const [isMaximised, setIsMaximised] = useState(false);
 
+    // Hover State for Crosshair
+    const [hoveredRow, setHoveredRow] = useState(null);
+    const [hoveredCol, setHoveredCol] = useState(null);
+
     const refreshData = () => {
         mutate(`/sanda/bulk-status?startMonth=${startMonth}&endMonth=${endMonth}`);
     };
@@ -419,7 +423,13 @@ export default function BulkCollectionPage() {
                                     <TableRow>
                                         <TableHead className="w-[200px] min-w-[200px] sticky left-0 bg-white z-40 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Member</TableHead>
                                         {months.map(month => (
-                                            <TableHead key={month} className="text-center min-w-[80px] cursor-pointer hover:bg-muted/50" onClick={() => handleSelectColumn(month)}>
+                                            <TableHead 
+                                                key={month} 
+                                                onMouseEnter={() => setHoveredCol(month)}
+                                                onMouseLeave={() => setHoveredCol(null)}
+                                                className={`text-center min-w-[80px] cursor-pointer transition-colors ${hoveredCol === month ? 'bg-slate-100 text-slate-900' : 'hover:bg-muted/50'}`} 
+                                                onClick={() => handleSelectColumn(month)}
+                                            >
                                                 {format(parseISO(month + '-01'), 'MMM yy')}
                                             </TableHead>
                                         ))}
@@ -450,8 +460,13 @@ export default function BulkCollectionPage() {
                                         </TableRow>
                                     ) : (
                                         filteredMembers.map((member) => (
-                                            <TableRow key={member.memberId} className="hover:bg-slate-50 transition-colors">
-                                                <TableCell className="font-medium sticky left-0 bg-white z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleMemberClick(member)}>
+                                            <TableRow key={member.memberId} className={`transition-colors ${hoveredRow === member.memberId ? 'bg-slate-50' : 'hover:bg-slate-50'}`}>
+                                                <TableCell 
+                                                    onMouseEnter={() => setHoveredRow(member.memberId)}
+                                                    onMouseLeave={() => setHoveredRow(null)}
+                                                    className={`font-medium sticky left-0 z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] cursor-pointer transition-colors ${hoveredRow === member.memberId ? 'bg-slate-100' : 'bg-white hover:bg-slate-100'}`} 
+                                                    onClick={() => handleMemberClick(member)}
+                                                >
                                                     <div className="flex flex-col">
                                                         <span>{member.name}</span>
                                                         <div className="flex justify-between items-center mt-0.5">
@@ -465,14 +480,23 @@ export default function BulkCollectionPage() {
                                                 {months.map(month => {
                                                     const status = member.payments[month]?.status || 'pending';
                                                     const isSelected = !!selectedPayments[`${member.memberId}_${month}`];
+                                                    const isHovered = hoveredRow === member.memberId || hoveredCol === month;
+                                                    
+                                                    let cellBg = 'hover:bg-slate-50';
+                                                    if (status === 'paid') {
+                                                        cellBg = isHovered ? 'bg-green-100' : 'bg-green-50 hover:bg-green-100';
+                                                    } else if (isSelected) {
+                                                        cellBg = isHovered ? 'bg-primary/30' : 'bg-primary/20 hover:bg-primary/30';
+                                                    } else if (isHovered) {
+                                                        cellBg = 'bg-slate-100';
+                                                    }
                                                     
                                                     return (
                                                         <TableCell 
                                                             key={month} 
-                                                            className={`text-center p-1 border-l cursor-pointer transition-colors
-                                                                ${status === 'paid' ? 'bg-green-50 hover:bg-green-100' : 
-                                                                  isSelected ? 'bg-primary/20 hover:bg-primary/30' : 'hover:bg-muted'}
-                                                            `}
+                                                            onMouseEnter={() => { setHoveredRow(member.memberId); setHoveredCol(month); }}
+                                                            onMouseLeave={() => { setHoveredRow(null); setHoveredCol(null); }}
+                                                            className={`text-center p-1 border-l cursor-pointer transition-colors ${cellBg}`}
                                                             onClick={() => toggleSelection(member.memberId, month, status)}
                                                         >
                                                             {status === 'paid' ? (
