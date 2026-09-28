@@ -36,6 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { apiFetch } from "@/lib/backendFetch";
 
 export function TextLkCampaigns() {
   const { data: session } = useSession();
@@ -60,9 +61,9 @@ export function TextLkCampaigns() {
     setLoading(true);
     try {
       const [campRes, groupRes, tempRes] = await Promise.all([
-        fetch(`/api/text-lk/campaigns`, { headers: { Authorization: `Bearer internal` }, cache: 'no-store' }),
-        fetch(`/api/text-lk/contacts`, { headers: { Authorization: `Bearer internal` }, cache: 'no-store' }), // Actually we need groups, but I'll use the initialize-group names for now
-        fetch(`/api/text-lk/templates`, { headers: { Authorization: `Bearer internal` }, cache: 'no-store' })
+        apiFetch(`/api/text-lk/campaigns`, { headers: { Authorization: `Bearer internal` }, cache: 'no-store' }),
+        apiFetch(`/api/text-lk/contacts`, { headers: { Authorization: `Bearer internal` }, cache: 'no-store' }), // Actually we need groups, but I'll use the initialize-group names for now
+        apiFetch(`/api/text-lk/templates`, { headers: { Authorization: `Bearer internal` }, cache: 'no-store' })
       ]);
 
       const campData = await campRes.json();
@@ -91,7 +92,7 @@ export function TextLkCampaigns() {
     }
 
     try {
-      const response = await fetch(`/api/text-lk/campaigns`, {
+      const response = await apiFetch(`/api/text-lk/campaigns`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

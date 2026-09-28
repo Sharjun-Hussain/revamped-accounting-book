@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { apiFetch } from "@/lib/backendFetch";
 
 export function TextLkMessages() {
   const { data: session } = useSession();
@@ -46,11 +47,11 @@ export function TextLkMessages() {
     try {
       setFetchingLogs(true);
       const [tplRes, statsRes] = await Promise.all([
-        fetch(`/api/text-lk/templates`, {
+        apiFetch(`/api/text-lk/templates`, {
           headers: { Authorization: `Bearer internal` },
           cache: 'no-store'
         }),
-        fetch(`/api/text-lk/stats`, {
+        apiFetch(`/api/text-lk/stats`, {
           headers: { Authorization: `Bearer internal` },
           cache: 'no-store'
         })
@@ -85,7 +86,7 @@ export function TextLkMessages() {
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/text-lk/send`, {
+      const response = await apiFetch(`/api/text-lk/send`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

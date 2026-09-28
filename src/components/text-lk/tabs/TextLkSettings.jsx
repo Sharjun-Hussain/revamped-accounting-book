@@ -21,6 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { apiFetch } from "@/lib/backendFetch";
 
 export function TextLkSettings() {
   const { data: session } = useSession();
@@ -41,7 +42,7 @@ export function TextLkSettings() {
 
   const fetchConfig = async () => {
     try {
-      const response = await fetch(`/api/text-lk/config`, {
+      const response = await apiFetch(`/api/text-lk/config`, {
         headers: { Authorization: `Bearer internal` },
         cache: 'no-store'
       });
@@ -63,7 +64,7 @@ export function TextLkSettings() {
   const handleSave = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/text-lk/config`, {
+      const response = await apiFetch(`/api/text-lk/config`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -84,7 +85,7 @@ export function TextLkSettings() {
   const handleTest = async () => {
     setTesting(true);
     try {
-      const response = await fetch(`/api/text-lk/test`, {
+      const response = await apiFetch(`/api/text-lk/test`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

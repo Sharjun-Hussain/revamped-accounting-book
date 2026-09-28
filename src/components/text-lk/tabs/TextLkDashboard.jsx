@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { apiFetch } from "@/lib/backendFetch";
 
 const COLOR_MAP = {
   indigo: {
@@ -61,7 +62,7 @@ export const TextLkDashboard = React.memo(function TextLkDashboard({ handleTabCh
     if (!session) return;
     try {
       setLoading(true);
-      const response = await fetch(`/api/text-lk/stats`, {
+      const response = await apiFetch(`/api/text-lk/stats`, {
         headers: { Authorization: `Bearer internal` },
         cache: 'no-store'
       });

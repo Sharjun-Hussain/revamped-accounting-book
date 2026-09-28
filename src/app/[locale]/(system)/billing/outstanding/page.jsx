@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { apiFetcher } from "@/lib/api";
+import { apiFetch } from "@/lib/backendFetch";
 import { motion } from "framer-motion";
 import {
   AlertCircle,
@@ -299,7 +300,7 @@ export default function ArrearsPage() {
         method: "Cash",
       }));
 
-      const res = await fetch("/api/sanda/bulk-pay", {
+      const res = await apiFetch("/api/sanda/bulk-pay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

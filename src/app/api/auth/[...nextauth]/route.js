@@ -1,13 +1,23 @@
-// pages/api/auth/[...nextauth].js (or app/api/auth/[...nextauth]/route.ts)
+// NextAuth credentials provider backed by the Express + MySQL backend.
+// Login is proxied to POST <backend>/auth/login; the backend JWT is kept in
+// the session (backendToken) and attached to every backend call by
+// src/lib/api.js and src/lib/backendFetch.js.
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import prisma from "@/lib/prisma";
-import bcrypt from "bcryptjs";
+
+const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1').replace(/\/$/, '');
+
+const toLegacyRole = (roles) => {
+  const names = (roles || []).map((r) => r.name);
+  if (names.includes('Super Admin')) return 'superadmin';
+  if (names.includes('Mosque Admin')) return 'admin';
+  return 'user';
+};
 
 export const authOptions = {
   session: {
     strategy: "jwt",
-    maxAge: 3600, // 1 hour
+    maxAge: 7 * 24 * 3600, // 7 days (matches backend JWT_EXPIRES_IN)
   },
 
   providers: [
@@ -23,35 +33,35 @@ export const authOptions = {
           return null;
         }
 
-        const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email,
-          },
-        });
-
-        if (!user || !user.password) {
-          return null;
+        let res;
+        try {
+          res = await fetch(`${BACKEND_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: credentials.email, password: credentials.password }),
+            cache: 'no-store',
+          });
+        } catch {
+          throw new Error("Cannot reach the backend API. Is it running?");
         }
 
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
-
-        if (!isPasswordValid) {
-          return null;
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(body.message || body.error || "Invalid email or password.");
         }
 
-        if (user.status !== 'approved') {
-          throw new Error("Your account is pending approval.");
-        }
+        // Backend envelope: { status, data: { token, user } }
+        const { token, user } = body.data || {};
+        if (!token || !user) return null;
 
         return {
           id: user.id,
           name: user.name,
           email: user.email,
           image: user.image,
-          role: user.role,
+          role: toLegacyRole(user.roles),
+          backendToken: token,
+          organizationId: user.organizationId || null,
         };
       },
     }),
@@ -62,6 +72,9 @@ export const authOptions = {
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        token.backendToken = user.backendToken;
+        token.accessToken = user.backendToken;
+        token.organizationId = user.organizationId;
       }
       return token;
     },
@@ -70,6 +83,9 @@ export const authOptions = {
       if (session.user) {
         session.user.id = token.id;
         session.user.role = token.role;
+        session.backendToken = token.backendToken;
+        session.accessToken = token.accessToken;
+        session.organizationId = token.organizationId;
       }
       return session;
     },

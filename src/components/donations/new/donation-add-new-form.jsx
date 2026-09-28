@@ -53,6 +53,7 @@ import { Badge } from "@/components/ui/badge";
 import { donationService } from "@/services/donationService";
 import { memberService } from "@/services/memberService";
 import { donorService } from "@/services/donorService";
+import api from "@/lib/api";
 import { DonorForm } from "@/components/donations/donor-form";
 
 // --- CONFIGURATION ---
@@ -224,9 +225,9 @@ export default function DonationEntryWithPrint({ initialData }) {
           try {
               const [membersData, settingsData, donorsData, accountsData] = await Promise.all([
                   memberService.getAll(),
-                  fetch('/api/settings/app').then(res => res.json()),
+                  api.get('/settings/app').then(res => res.data),
                   donorService.getAll(),
-                  fetch('/api/accounting/bank-accounts').then(res => res.json())
+                  api.get('/accounting/bank-accounts').then(res => res.data)
               ]);
               setMembers(membersData);
               setAppSettings(settingsData);

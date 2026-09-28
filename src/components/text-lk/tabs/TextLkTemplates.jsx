@@ -26,6 +26,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { apiFetch } from "@/lib/backendFetch";
 
 export function TextLkTemplates() {
   const { data: session } = useSession();
@@ -42,7 +43,7 @@ export function TextLkTemplates() {
   const fetchTemplates = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/text-lk/templates`, {
+      const response = await apiFetch(`/api/text-lk/templates`, {
         headers: { Authorization: `Bearer internal` },
         cache: 'no-store'
       });
@@ -69,7 +70,7 @@ export function TextLkTemplates() {
 
   const handleCreate = async () => {
     try {
-      const response = await fetch(`/api/text-lk/templates`, {
+      const response = await apiFetch(`/api/text-lk/templates`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -90,7 +91,7 @@ export function TextLkTemplates() {
   const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to delete this template?")) return;
     try {
-      const response = await fetch(`/api/text-lk/templates/${id}`, {
+      const response = await apiFetch(`/api/text-lk/templates/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer internal` },
         cache: 'no-store'

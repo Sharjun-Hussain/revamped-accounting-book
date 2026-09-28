@@ -26,6 +26,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { apiFetch } from "@/lib/backendFetch";
 
 // --- Configuration: Solid Islamic Emerald Theme ---
 const THEME_COLOR = "#046c4e"; // Deep Emerald Green
@@ -51,7 +52,7 @@ export default function LoginPage() {
   const [mosqueName, setMosqueName] = useState("Majidhul Haadhi");
 
   useEffect(() => {
-    fetch('/api/settings/app')
+    apiFetch('/api/public/branding')
       .then(res => res.json())
       .then(data => {
         if (data.logo) setLogoSrc(data.logo);

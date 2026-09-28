@@ -99,7 +99,7 @@ function addSecurityHeaders(response) {
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob: https:",
-      "connect-src 'self' https://app.text.lk https://*.supabase.co wss://*.supabase.co",
+      "connect-src 'self' http://localhost:5001 http://127.0.0.1:5001 https://app.text.lk https://*.supabase.co wss://*.supabase.co",
       "frame-ancestors 'none'",
     ].join('; ')
   );

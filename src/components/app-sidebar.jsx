@@ -45,17 +45,19 @@ export function AppSidebar({ ...props }) {
   });
 
   React.useEffect(() => {
-    fetch('/api/settings/app')
-      .then(res => res.json())
-      .then(data => {
-        if (data.mosqueName) {
-          setBranding({
-            name: data.mosqueName,
-            logo: data.logo ? () => <img src={data.logo} alt="Logo" className="h-8 w-8 object-contain rounded-md" /> : Landmark
-          });
-        }
-      })
-      .catch(err => console.error("Failed to load branding", err));
+    import('@/lib/api').then(({ default: api }) =>
+      api.get('/settings/app')
+        .then(res => res.data)
+        .then(data => {
+          if (data.mosqueName) {
+            setBranding({
+              name: data.mosqueName,
+              logo: data.logo ? () => <img src={data.logo} alt="Logo" className="h-8 w-8 object-contain rounded-md" /> : Landmark
+            });
+          }
+        })
+        .catch(err => console.error("Failed to load branding", err))
+    );
   }, []);
 
   const data = {

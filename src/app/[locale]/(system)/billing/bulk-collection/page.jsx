@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import useSWR, { mutate } from 'swr';
 import { apiFetcher } from "@/lib/api";
+import { apiFetch } from "@/lib/backendFetch";
 import { format, addMonths, subMonths, eachMonthOfInterval, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { Search, Loader2, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight, User, Phone, Mail, MapPin, Calendar, CreditCard, Printer, Maximize2, Minimize2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -279,7 +280,7 @@ export default function BulkCollectionPage() {
             });
 
             console.log("Processing bulk payments:", payments);
-            const res = await fetch('/api/sanda/bulk-pay', {
+            const res = await apiFetch('/api/sanda/bulk-pay', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 

@@ -37,6 +37,7 @@ import {
   parseImportRow,
   SANDHA_PLAN_OPTIONS,
 } from "@/lib/member-import-utils";
+import { apiFetch } from "@/lib/backendFetch";
 
 export function BulkUploadModal({ open, onOpenChange, onSuccess }) {
   const [file, setFile] = useState(null);
@@ -125,7 +126,7 @@ export function BulkUploadModal({ open, onOpenChange, onSuccess }) {
     setIsUploading(true);
     setUploadError(null);
     try {
-      const response = await fetch("/api/members/bulk", {
+      const response = await apiFetch("/api/members/bulk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ members: data }),

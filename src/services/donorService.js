@@ -1,11 +1,11 @@
 import { toast } from "sonner";
+import api from "@/lib/api";
 
 export const donorService = {
     getAll: async (search = "") => {
         try {
-            const res = await fetch(`/api/donors?search=${search}`);
-            if (!res.ok) throw new Error("Failed to fetch donors");
-            return await res.json();
+            const res = await api.get(`/donors${search ? `?search=${encodeURIComponent(search)}` : ""}`);
+            return res.data;
         } catch (error) {
             console.error("Error fetching donors:", error);
             toast.error("Failed to load donors");
@@ -15,9 +15,8 @@ export const donorService = {
 
     getById: async (id) => {
         try {
-            const res = await fetch(`/api/donors/${id}`);
-            if (!res.ok) throw new Error("Failed to fetch donor");
-            return await res.json();
+            const res = await api.get(`/donors/${id}`);
+            return res.data;
         } catch (error) {
             console.error("Error fetching donor:", error);
             toast.error("Failed to load donor details");
@@ -27,16 +26,8 @@ export const donorService = {
 
     create: async (data) => {
         try {
-            const res = await fetch("/api/donors", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
-            });
-            if (!res.ok) {
-                const error = await res.json();
-                throw new Error(error.error || "Failed to create donor");
-            }
-            return await res.json();
+            const res = await api.post("/donors", data);
+            return res.data;
         } catch (error) {
             console.error("Error creating donor:", error);
             throw error;
@@ -45,16 +36,8 @@ export const donorService = {
 
     update: async (id, data) => {
         try {
-            const res = await fetch(`/api/donors/${id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
-            });
-            if (!res.ok) {
-                const error = await res.json();
-                throw new Error(error.error || "Failed to update donor");
-            }
-            return await res.json();
+            const res = await api.put(`/donors/${id}`, data);
+            return res.data;
         } catch (error) {
             console.error("Error updating donor:", error);
             throw error;
@@ -63,13 +46,7 @@ export const donorService = {
 
     delete: async (id) => {
         try {
-            const res = await fetch(`/api/donors/${id}`, {
-                method: "DELETE",
-            });
-            if (!res.ok) {
-                const error = await res.json();
-                throw new Error(error.error || "Failed to delete donor");
-            }
+            await api.delete(`/donors/${id}`);
             return true;
         } catch (error) {
             console.error("Error deleting donor:", error);

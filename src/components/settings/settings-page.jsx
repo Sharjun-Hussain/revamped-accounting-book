@@ -61,6 +61,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils"; 
+import { apiFetch } from "@/lib/backendFetch";
 
 // --- MOCK DATA ---
 const teamMembers = [
@@ -155,7 +156,7 @@ export default function SettingsPage() {
     try {
       // FIXED: Swapped order to {...footerSettings, ...settings}
       // This ensures 'settings' (which contains your edits) overwrites the old data in 'footerSettings'
-      const response = await fetch('/api/settings/app', {
+      const response = await apiFetch('/api/settings/app', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...footerSettings, ...settings }), 
@@ -197,7 +198,7 @@ export default function SettingsPage() {
   const handleSaveFooter = async () => {
     setIsSaving(true);
     try {
-      const response = await fetch('/api/settings/app', {
+      const response = await apiFetch('/api/settings/app', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(footerSettings),
@@ -220,7 +221,7 @@ export default function SettingsPage() {
   const handleFactoryReset = async () => {
     setIsResetting(true);
     try {
-      const response = await fetch('/api/system/factory-reset', {
+      const response = await apiFetch('/api/system/factory-reset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -250,7 +251,7 @@ export default function SettingsPage() {
   const handleContactAdmin = async () => {
     setIsContactSending(true);
     try {
-      const response = await fetch('/api/contact-admin', {
+      const response = await apiFetch('/api/contact-admin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -277,7 +278,7 @@ export default function SettingsPage() {
 
   const handleMarkRead = async (notificationId, markAllRead = false) => {
     try {
-      const response = await fetch('/api/admin/notifications', {
+      const response = await apiFetch('/api/admin/notifications', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notificationId, markAllRead }),
@@ -293,7 +294,7 @@ export default function SettingsPage() {
 
   const handleResetAction = async (resetRequestId, action) => {
     try {
-      const response = await fetch('/api/admin/reset-requests', {
+      const response = await apiFetch('/api/admin/reset-requests', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ resetRequestId, action }),
@@ -840,9 +841,23 @@ export default function SettingsPage() {
                                         <Button 
                                             variant="outline" 
                                             className="gap-2"
-                                            onClick={() => {
-                                                window.open('/api/system/backup', '_blank');
-                                                toast.success('Backup download started');
+                                            onClick={async () => {
+                                                try {
+                                                  const res = await apiFetch('/api/system/backup');
+                                                  if (!res.ok) throw new Error('Backup failed');
+                                                  const blob = await res.blob();
+                                                  const url = window.URL.createObjectURL(blob);
+                                                  const a = document.createElement('a');
+                                                  a.href = url;
+                                                  a.download = `mosque-backup-${new Date().toISOString().slice(0, 10)}.json`;
+                                                  document.body.appendChild(a);
+                                                  a.click();
+                                                  a.remove();
+                                                  window.URL.revokeObjectURL(url);
+                                                  toast.success('Backup download started');
+                                                } catch {
+                                                  toast.error('Backup download failed');
+                                                }
                                             }}
                                         >
                                             <Download className="w-4 h-4" /> Download

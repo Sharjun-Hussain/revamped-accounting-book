@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { apiFetch } from "@/lib/backendFetch";
 
 const TABS = [
   { id: 'members', label: 'Members', icon: 'users' },
@@ -57,7 +58,7 @@ export default function RecycleBinPage() {
       const method = action === 'restore' ? 'PUT' : 'DELETE';
       const endpoint = '/api/admin/recycle-bin';
 
-      const res = await fetch(endpoint, {
+      const res = await apiFetch(endpoint, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids, type }),

@@ -44,6 +44,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { apiFetch } from "@/lib/backendFetch";
 
 export function TextLkContacts() {
   const { data: session } = useSession();
@@ -67,7 +68,7 @@ export function TextLkContacts() {
   const fetchGroups = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/text-lk/contacts`, {
+      const response = await apiFetch(`/api/text-lk/contacts`, {
         headers: { Authorization: `Bearer internal` },
         cache: 'no-store'
       });
@@ -100,7 +101,7 @@ export function TextLkContacts() {
     setSyncing(true);
     const toastId = toast.loading("Exporting POS customers to Text.lk...");
     try {
-      const response = await fetch(`/api/text-lk/sync`, {
+      const response = await apiFetch(`/api/text-lk/sync`, {
         method: "POST",
         headers: { Authorization: `Bearer internal` },
         cache: 'no-store'
@@ -124,7 +125,7 @@ export function TextLkContacts() {
     }
     const toastId = toast.loading("Creating contact group...");
     try {
-      const response = await fetch(`/api/text-lk/contacts`, {
+      const response = await apiFetch(`/api/text-lk/contacts`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -151,7 +152,7 @@ export function TextLkContacts() {
     }
     const toastId = toast.loading("Updating contact group...");
     try {
-      const response = await fetch(`/api/text-lk/contacts/${editGroupUid}`, {
+      const response = await apiFetch(`/api/text-lk/contacts/${editGroupUid}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -175,7 +176,7 @@ export function TextLkContacts() {
   const handleDeleteGroup = async () => {
     const toastId = toast.loading("Deleting contact group...");
     try {
-      const response = await fetch(`/api/text-lk/contacts/${deleteGroupUid}`, {
+      const response = await apiFetch(`/api/text-lk/contacts/${deleteGroupUid}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer internal` },
         cache: 'no-store'
